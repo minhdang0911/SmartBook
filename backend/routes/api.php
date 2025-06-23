@@ -13,6 +13,7 @@ use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\RatingController;
 
+
 // Lấy thông tin user bằng sanctum (nếu dùng Sanctum thôi)
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -41,6 +42,8 @@ Route::get('/test-api', function () {
     return response()->json(['message' => 'API đang hoạt động ✅']);
 });
 Route::post('/register', [AuthController::class, 'register']);
+Route::post('/send-otp', [AuthController::class, 'sendOtp']);
+Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 // Route đăng nhập
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/login/google', [GoogleController::class, 'redirectToGoogle']);
@@ -106,3 +109,4 @@ Route::get('/ratings/book/{bookId}/stats', [RatingController::class, 'getBookRat
 
 // Quan trọng: đặt sau cùng để tránh nuốt route
 Route::get('/books/{id}', [BookController::class, 'show']);
+

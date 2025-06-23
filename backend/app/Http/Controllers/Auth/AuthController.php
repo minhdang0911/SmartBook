@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Models\User;
+use App\Models\OtpVerification;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
@@ -13,15 +14,15 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 use App\Notifications\ResetPasswordNotification;
+use App\Notifications\OtpVerificationNotification;
 
 class AuthController extends Controller
 {
-    public function login(Request $request)
+     public function login(Request $request)
     {
         $credentials = $request->only('email', 'password');
         $ttlInSeconds = Auth::factory()->getTTL() * 60;
         $expiresAtTimestamp = time() + $ttlInSeconds;
-
 
         if (!$token = Auth::attempt($credentials)) {
             return response()->json([
@@ -29,14 +30,19 @@ class AuthController extends Controller
                 'message' => 'Email hoặc mật khẩu không đúng.'
             ], 401);
         }
+
+        $user = auth()->user();
+        
         return response()->json([
             'status' => true,
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => $ttlInSeconds,
-            'expires_at' => $expiresAtTimestamp, // cái này chính là 1750392325 dạng timestamp
+            'expires_at' => $expiresAtTimestamp,
+            'user' => $user,
+            'email_verified' => $user->hasVerifiedEmail(),
+            'email_verified_at' => $user->email_verified_at
         ], 200);
-
     }
 
     public function register(Request $request)
@@ -44,7 +50,7 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6|confirmed', // yêu cầu password_confirmation
+            'password' => 'required|string|min:6|confirmed',
         ]);
 
         if ($validator->fails()) {
@@ -54,31 +60,187 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+        try {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'email_verified_at' => null, // Đặt email verify = false
+            ]);
 
-        $token = Auth::login($user); // tự động login và trả token luôn
+            $token = Auth::login($user);
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Đăng ký thành công!',
-            'access_token' => $token,
-            'token_type' => 'bearer',
-            'expires_in' => Auth::factory()->getTTL() * 60,
-            'user' => $user
-        ], 201);
+            // Tự động gửi OTP sau khi đăng ký thành công
+            $otp = OtpVerification::generateOtp();
+            $expiresAt = Carbon::now()->addMinutes(5);
+
+            // Lưu OTP vào database
+            OtpVerification::create([
+                'email' => $user->email,
+                'otp' => $otp,
+                'expires_at' => $expiresAt
+            ]);
+
+            // Gửi email OTP
+            $user->notify(new OtpVerificationNotification($otp));
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Đăng ký thành công! Mã OTP đã được gửi về email của bạn.',
+                'access_token' => $token,
+                'token_type' => 'bearer',
+                'expires_in' => Auth::factory()->getTTL() * 60,
+                'user' => $user,
+                'email_verified' => false,
+                'otp_expires_at' => $expiresAt->timestamp
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Có lỗi xảy ra khi đăng ký: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function me()
     {
+        $user = auth()->user();
         return response()->json([
             'status' => true,
-            'user' => auth()->user()
+             'user' => auth()->user()
         ]);
     }
+
+    // API gửi OTP
+    public function sendOtp(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|email|exists:users,email',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $email = $request->email;
+            
+            // Kiểm tra user đã verify chưa
+            $user = User::where('email', $email)->first();
+            if ($user->hasVerifiedEmail()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Email đã được xác thực trước đó.'
+                ], 400);
+            }
+
+            // Xóa OTP cũ nếu có
+            OtpVerification::where('email', $email)->delete();
+
+            // Tạo OTP mới
+            $otp = OtpVerification::generateOtp();
+            $expiresAt = Carbon::now()->addMinutes(5); // OTP có hiệu lực 5 phút
+
+            // Lưu OTP vào database
+            OtpVerification::create([
+                'email' => $email,
+                'otp' => $otp,
+                'expires_at' => $expiresAt
+            ]);
+
+            // Gửi email OTP
+            $user->notify(new OtpVerificationNotification($otp));
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Mã OTP đã được gửi về email của bạn.',
+                'expires_at' => $expiresAt->timestamp
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // API xác thực OTP
+    public function verifyOtp(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|email|exists:users,email',
+                'otp' => 'required|string|size:6',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $email = $request->email;
+            $inputOtp = $request->otp;
+
+            // Tìm OTP trong database
+            $otpRecord = OtpVerification::where('email', $email)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if (!$otpRecord) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Không tìm thấy mã OTP. Vui lòng yêu cầu gửi lại.'
+                ], 400);
+            }
+
+            // Kiểm tra OTP đã hết hạn chưa
+            if ($otpRecord->isExpired()) {
+                $otpRecord->delete(); // Xóa OTP hết hạn
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Mã OTP đã hết hạn. Vui lòng yêu cầu gửi lại.'
+                ], 400);
+            }
+
+            // Kiểm tra OTP có khớp không
+            if ($otpRecord->otp !== $inputOtp) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Mã OTP không đúng. Vui lòng kiểm tra lại.'
+                ], 400);
+            }
+
+            // OTP đúng - cập nhật email_verified_at
+            $user = User::where('email', $email)->first();
+            $user->email_verified_at = Carbon::now();
+            $user->save();
+
+            // Xóa OTP đã sử dụng
+            $otpRecord->delete();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Xác thực email thành công!',
+                'user' => $user,
+                'email_verified' => true
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Các method khác giữ nguyên...
     public function forgotPassword(Request $request)
     {
         try {
@@ -89,20 +251,17 @@ class AuthController extends Controller
             $token = Str::random(60);
             $hashedToken = Hash::make($token);
 
-            // Lưu vào bảng password_resets
             DB::table('password_resets')->updateOrInsert(
                 ['email' => $request->email],
                 ['token' => $hashedToken, 'created_at' => Carbon::now()]
             );
 
-            // Gửi email
             $user = User::where('email', $request->email)->first();
-            $user->notify(new ResetPasswordNotification($token)); // gửi token chưa mã hóa
+            $user->notify(new ResetPasswordNotification($token));
 
             return response()->json([
                 'status' => true,
-                'message' => 'Email khôi phục đã được gửi!',
-                'token' => $token // để test
+                'message' => 'Email khôi phục đã được gửi!'
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -111,6 +270,7 @@ class AuthController extends Controller
             ], 500);
         }
     }
+
     public function resetPassword(Request $request)
     {
         $request->validate([
@@ -130,11 +290,6 @@ class AuthController extends Controller
             ], 400);
         }
 
-        // Log để kiểm tra nếu cần
-        \Log::info('Token gửi về:', [$request->token]);
-        \Log::info('Token trong DB:', [$reset->token]);
-
-        // So sánh token
         if (!Hash::check($request->token, $reset->token)) {
             return response()->json([
                 'status' => false,
@@ -142,12 +297,10 @@ class AuthController extends Controller
             ], 400);
         }
 
-        // Cập nhật mật khẩu
         $user = User::where('email', $request->email)->first();
         $user->password = Hash::make($request->password);
         $user->save();
 
-        // Xóa token
         DB::table('password_resets')->where('email', $request->email)->delete();
 
         return response()->json([
@@ -155,5 +308,4 @@ class AuthController extends Controller
             'message' => 'Mật khẩu đã được đặt lại thành công!'
         ]);
     }
-
 }
