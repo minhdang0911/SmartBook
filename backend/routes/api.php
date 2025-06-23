@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\BannerController;
 use Illuminate\Http\Request;
@@ -84,6 +85,21 @@ Route::prefix('banners')->group(function () {
     Route::get('/{id}', [BannerController::class, 'show']);       // GET /api/banners/{id}
     Route::put('/{id}', [BannerController::class, 'update']);     // PUT /api/banners/{id}
     Route::delete('/{id}', [BannerController::class, 'destroy']); // DELETE /api/banners/{id}
+});
+
+Route::middleware('auth:api')->group(function () {
+    // Cart routes
+    Route::prefix('cart')->group(function () {
+        Route::get('/', [CartController::class, 'index']);
+        Route::post('/add', [CartController::class, 'addToCart']);
+        Route::post('/item/{cartItemId}', [CartController::class, 'updateCartItem']);
+     Route::post('/remove', [CartController::class, 'removeFromCart']);
+        
+        // Xóa single item (DELETE với URL param - tương thích API cũ)
+        Route::delete('/item/{cartItemId}', [CartController::class, 'removeFromCartSingle']);
+        Route::delete('/clear', [CartController::class, 'clearCart']);
+        Route::get('/count', [CartController::class, 'getCartCount']);
+    });
 });
 
 
