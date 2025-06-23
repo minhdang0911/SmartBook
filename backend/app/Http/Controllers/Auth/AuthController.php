@@ -15,16 +15,17 @@ use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\OtpVerificationNotification;
+use Tymon\JWTAuth\Facades\JWTFactory;
+
+
 
 class AuthController extends Controller
 {
-     public function login(Request $request)
+    public function login(Request $request)
     {
         $credentials = $request->only('email', 'password');
-        $ttlInSeconds = Auth::factory()->getTTL() * 60;
-        $expiresAtTimestamp = time() + $ttlInSeconds;
 
-        if (!$token = Auth::attempt($credentials)) {
+        if (!$token = auth()->attempt($credentials)) {
             return response()->json([
                 'status' => false,
                 'message' => 'Email hoặc mật khẩu không đúng.'
@@ -32,18 +33,30 @@ class AuthController extends Controller
         }
 
         $user = auth()->user();
-        
+
+        // Tính thời gian 23:59:59 hôm nay
+        $expiresAt = Carbon::today()->addHours(23)->addMinutes(59)->addSeconds(59);
+
+        // Tạo custom token có exp cố định là cuối ngày
+        $payload = JWTFactory::customClaims([
+            'sub' => $user->getJWTIdentifier(),
+            'exp' => $expiresAt->timestamp,
+        ])->make();
+
+        $customToken = JWTAuth::encode($payload)->get();
+
         return response()->json([
             'status' => true,
-            'access_token' => $token,
+            'access_token' => $customToken,
             'token_type' => 'bearer',
-            'expires_in' => $ttlInSeconds,
-            'expires_at' => $expiresAtTimestamp,
+            'expires_at' => $expiresAt->timestamp,
             'user' => $user,
             'email_verified' => $user->hasVerifiedEmail(),
             'email_verified_at' => $user->email_verified_at
         ], 200);
     }
+
+
 
     public function register(Request $request)
     {
@@ -64,6 +77,7 @@ class AuthController extends Controller
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
+                'phone' => $request->phone,
                 'password' => Hash::make($request->password),
                 'email_verified_at' => null, // Đặt email verify = false
             ]);
@@ -108,7 +122,7 @@ class AuthController extends Controller
         $user = auth()->user();
         return response()->json([
             'status' => true,
-             'user' => auth()->user()
+            'user' => auth()->user()
         ]);
     }
 
@@ -128,7 +142,7 @@ class AuthController extends Controller
             }
 
             $email = $request->email;
-            
+
             // Kiểm tra user đã verify chưa
             $user = User::where('email', $email)->first();
             if ($user->hasVerifiedEmail()) {

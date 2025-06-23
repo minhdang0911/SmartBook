@@ -3,6 +3,7 @@
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\BannerController;
+use App\Http\Controllers\OrderController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Home\BookController;
@@ -86,6 +87,9 @@ Route::prefix('banners')->group(function () {
     Route::put('/{id}', [BannerController::class, 'update']);     // PUT /api/banners/{id}
     Route::delete('/{id}', [BannerController::class, 'destroy']); // DELETE /api/banners/{id}
 });
+
+Route::middleware('auth:api')->post('/orders', [OrderController::class, 'store']);
+
 
 Route::middleware('auth:api')->group(function () {
     // Cart routes

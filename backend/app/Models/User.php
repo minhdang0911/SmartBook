@@ -15,6 +15,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         'name',
         'email',
         'password',
+        'phone',
         'email_verified_at', // Thêm field này
     ];
 
