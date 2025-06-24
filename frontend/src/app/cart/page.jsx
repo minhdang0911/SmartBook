@@ -421,7 +421,7 @@ const Cart = () => {
                   className="cart-checkout-btn"
                   disabled={selectedItems.length === 0}
                   onClick={() => {
-                    message.info('Chức năng thanh toán đang được phát triển');
+                  window.location.href="/payment"
                   }}
                 >
                   Mua hàng ({selectedItems.length} sản phẩm)

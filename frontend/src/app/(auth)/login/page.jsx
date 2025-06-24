@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Form, Input, Button, Modal, Typography, Divider, message } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, MailOutlined, EyeInvisibleOutlined, EyeTwoTone, PhoneOutlined } from '@ant-design/icons';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiLoginUser, apiForgotPassword, apiRegisterUser, apiSendOtp, apiVerifyOtp } from '../../../../apis/user';
 import './AuthPage.css';
@@ -24,9 +24,9 @@ export default function AuthPage() {
   const [mounted, setMounted] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [showNotif, setShowNotif] = useState(false);
-const [notifContent, setNotifContent] = useState({ message: '', description: '' });
+  const [notifContent, setNotifContent] = useState({ message: '', description: '' });
 
-  
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const otpInputRefs = useRef([]);
@@ -47,156 +47,156 @@ const [notifContent, setNotifContent] = useState({ message: '', description: '' 
   }, [countdown]);
 
   const onFinish = async (values) => {
-  setLoading(true);
-  try {
-    if (isLogin) {
-      const data = await apiLoginUser(values.email, values.password);
+    setLoading(true);
+    try {
+      if (isLogin) {
+        const data = await apiLoginUser(values.email, values.password);
 
-      if (!data.email_verified) {
+        if (!data.email_verified) {
+          setOtpEmail(values.email);
+          setNotifContent({
+            message: '⚠️ Chưa xác thực email',
+            description: 'Vui lòng kiểm tra email và nhập mã OTP!'
+          });
+          setShowNotif(true);
+          await handleSendOtp(values.email);
+          setShowOtp(true);
+        } else {
+          localStorage.setItem('token', data.access_token);
+          setNotifContent({
+            message: '🎉 Đăng nhập thành công!',
+            description: `Chào mừng trở lại, ${data.user?.name || 'người dùng'}!`
+          });
+          setShowNotif(true);
+          setTimeout(() => window.location.href = '/', 1500);
+        }
+      } else {
+        await apiRegisterUser(values.name, values.email, values.password, values.password_confirmation, values.phone);
         setOtpEmail(values.email);
         setNotifContent({
-          message: '⚠️ Chưa xác thực email',
-          description: 'Vui lòng kiểm tra email và nhập mã OTP!'
+          message: '🎉 Đăng ký thành công!',
+          description: 'Vui lòng kiểm tra email và nhập mã OTP để xác thực.'
         });
         setShowNotif(true);
         await handleSendOtp(values.email);
         setShowOtp(true);
-      } else {
-        localStorage.setItem('token', data.access_token);
-        setNotifContent({
-          message: '🎉 Đăng nhập thành công!',
-          description: `Chào mừng trở lại, ${data.user?.name || 'người dùng'}!`
-        });
-        setShowNotif(true);
-        setTimeout(() => window.location.href = '/', 1500);
       }
-    } else {
-      await apiRegisterUser(values.name, values.email, values.password, values.password_confirmation);
-      setOtpEmail(values.email);
+    } catch (err) {
       setNotifContent({
-        message: '🎉 Đăng ký thành công!',
-        description: 'Vui lòng kiểm tra email và nhập mã OTP để xác thực.'
+        message: '❌ Lỗi',
+        description: err.message || 'Có lỗi xảy ra, vui lòng thử lại!'
       });
       setShowNotif(true);
-      await handleSendOtp(values.email);
-      setShowOtp(true);
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    setNotifContent({
-      message: '❌ Lỗi',
-      description: err.message || 'Có lỗi xảy ra, vui lòng thử lại!'
-    });
-    setShowNotif(true);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 
- const handleSendOtp = async (email) => {
-  setSendOtpLoading(true);
-  try {
-    await apiSendOtp(email);
-    setNotifContent({
-      message: '📤 OTP đã gửi',
-      description: 'Vui lòng kiểm tra email để lấy mã OTP.'
-    });
-    setShowNotif(true);
-    setCountdown(60);
-  } catch (err) {
-    setNotifContent({
-      message: '❌ Không thể gửi OTP',
-      description: err.message || 'Vui lòng thử lại!'
-    });
-    setShowNotif(true);
-  } finally {
-    setSendOtpLoading(false);
-  }
-};
-
-const handleOtpChange = (index, value) => {
-  if (!/^\d?$/.test(value)) return;
-
-  const newOtpValues = [...otpValues];
-  newOtpValues[index] = value.slice(0, 1); // chỉ lấy 1 số đầu tiên
-  setOtpValues(newOtpValues);
-
-  if (value && index < 5) {
-    otpInputRefs.current[index + 1]?.focus();
-  }
-};
-
-
-useEffect(() => {
-  if (showOtp) {
-    setTimeout(() => otpInputRefs.current[0]?.focus(), 300);
-  }
-}, [showOtp]);
-
-
- const handleOtpKeyDown = (index, e) => {
-  if (e.key === 'Backspace') {
-    if (otpValues[index]) {
-      const newOtp = [...otpValues];
-      newOtp[index] = '';
-      setOtpValues(newOtp);
-    } else if (index > 0) {
-      otpInputRefs.current[index - 1]?.focus();
+  const handleSendOtp = async (email) => {
+    setSendOtpLoading(true);
+    try {
+      await apiSendOtp(email);
+      setNotifContent({
+        message: '📤 OTP đã gửi',
+        description: 'Vui lòng kiểm tra email để lấy mã OTP.'
+      });
+      setShowNotif(true);
+      setCountdown(60);
+    } catch (err) {
+      setNotifContent({
+        message: '❌ Không thể gửi OTP',
+        description: err.message || 'Vui lòng thử lại!'
+      });
+      setShowNotif(true);
+    } finally {
+      setSendOtpLoading(false);
     }
-  }
+  };
 
-  // Dán OTP (Ctrl + V)
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
-    navigator.clipboard.readText().then((text) => {
-      const numbers = text.replace(/\D/g, '').slice(0, 6);
-      if (numbers.length === 6) {
-        const newOtp = numbers.split('');
+  const handleOtpChange = (index, value) => {
+    if (!/^\d?$/.test(value)) return;
+
+    const newOtpValues = [...otpValues];
+    newOtpValues[index] = value.slice(0, 1); // chỉ lấy 1 số đầu tiên
+    setOtpValues(newOtpValues);
+
+    if (value && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+
+  useEffect(() => {
+    if (showOtp) {
+      setTimeout(() => otpInputRefs.current[0]?.focus(), 300);
+    }
+  }, [showOtp]);
+
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === 'Backspace') {
+      if (otpValues[index]) {
+        const newOtp = [...otpValues];
+        newOtp[index] = '';
         setOtpValues(newOtp);
-        otpInputRefs.current[5]?.focus();
+      } else if (index > 0) {
+        otpInputRefs.current[index - 1]?.focus();
       }
-    });
-  }
-};
+    }
+
+    // Dán OTP (Ctrl + V)
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+      navigator.clipboard.readText().then((text) => {
+        const numbers = text.replace(/\D/g, '').slice(0, 6);
+        if (numbers.length === 6) {
+          const newOtp = numbers.split('');
+          setOtpValues(newOtp);
+          otpInputRefs.current[5]?.focus();
+        }
+      });
+    }
+  };
 
 
   const handleVerifyOtp = async () => {
-  const otpCode = otpValues.join('');
-  if (otpCode.length !== 6) {
-    setNotifContent({
-      message: '⚠️ Thiếu mã',
-      description: 'Vui lòng nhập đủ 6 số.'
-    });
-    setShowNotif(true);
-    return;
-  }
-
-  setOtpLoading(true);
-  try {
-    const result = await apiVerifyOtp(otpEmail, otpCode);
-    setNotifContent({
-      message: '✅ Xác thực thành công!',
-      description: `${result.message}\nChào mừng ${result.user.name}!`
-    });
-    setShowNotif(true);
-    setShowOtp(false);
-    resetOtpModal();
-
-    if (isLogin) {
-      window.location.href = '/login';
-    } else {
-      setIsLogin(true);
-      router.push('/login?mode=login');
+    const otpCode = otpValues.join('');
+    if (otpCode.length !== 6) {
+      setNotifContent({
+        message: '⚠️ Thiếu mã',
+        description: 'Vui lòng nhập đủ 6 số.'
+      });
+      setShowNotif(true);
+      return;
     }
-  } catch (err) {
-    setNotifContent({
-      message: '❌ Xác thực thất bại!',
-      description: err.message || 'OTP không đúng!'
-    });
-    setShowNotif(true);
-  } finally {
-    setOtpLoading(false);
-  }
-};
+
+    setOtpLoading(true);
+    try {
+      const result = await apiVerifyOtp(otpEmail, otpCode);
+      setNotifContent({
+        message: '✅ Xác thực thành công!',
+        description: `${result.message}\nChào mừng ${result.user.name}!`
+      });
+      setShowNotif(true);
+      setShowOtp(false);
+      resetOtpModal();
+
+      if (isLogin) {
+        window.location.href = '/login';
+      } else {
+        setIsLogin(true);
+        router.push('/login?mode=login');
+      }
+    } catch (err) {
+      setNotifContent({
+        message: '❌ Xác thực thất bại!',
+        description: err.message || 'OTP không đúng!'
+      });
+      setShowNotif(true);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
 
 
   const handleResendOtp = () => {
@@ -210,25 +210,25 @@ useEffect(() => {
   };
 
   const handleForgotPassword = async (values) => {
-  setForgotLoading(true);
-  try {
-    await apiForgotPassword(values.email);
-    setNotifContent({
-      message: '📧 Gửi thành công',
-      description: 'Hãy kiểm tra email để đặt lại mật khẩu.'
-    });
-    setShowNotif(true);
-    setShowForgot(false);
-  } catch (err) {
-    setNotifContent({
-      message: '❌ Gửi thất bại',
-      description: err.message || 'Có lỗi xảy ra, vui lòng thử lại!'
-    });
-    setShowNotif(true);
-  } finally {
-    setForgotLoading(false);
-  }
-};
+    setForgotLoading(true);
+    try {
+      await apiForgotPassword(values.email);
+      setNotifContent({
+        message: '📧 Gửi thành công',
+        description: 'Hãy kiểm tra email để đặt lại mật khẩu.'
+      });
+      setShowNotif(true);
+      setShowForgot(false);
+    } catch (err) {
+      setNotifContent({
+        message: '❌ Gửi thất bại',
+        description: err.message || 'Có lỗi xảy ra, vui lòng thử lại!'
+      });
+      setShowNotif(true);
+    } finally {
+      setForgotLoading(false);
+    }
+  };
 
 
   const switchMode = () => {
@@ -261,11 +261,20 @@ useEffect(() => {
 
         <div className="form-container fade-in">
           <Form name="auth_form" onFinish={onFinish} layout="vertical" size="large" autoComplete="off">
-            {!isLogin && (
-              <Form.Item name="name" rules={[{ required: true, message: 'Vui lòng nhập họ tên!' }]}>
-                <Input prefix={<UserOutlined />} placeholder="Họ và tên" autoComplete="name" />
-              </Form.Item>
-            )}
+              {!isLogin && (
+
+                <>
+                <Form.Item name="name" rules={[{ required: true, message: 'Vui lòng nhập họ tên!' }]}>
+                  <Input prefix={<UserOutlined />} placeholder="Họ và tên" autoComplete="name" />
+                </Form.Item>
+
+                <Form.Item name="phone" label="Số điện thoại">
+              <Input placeholder="Nhập số điện thoại" />
+            </Form.Item>
+            </>
+              )}
+            
+
             <Form.Item
               name="email"
               rules={[
@@ -426,18 +435,18 @@ useEffect(() => {
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: 16 }}>
-          <Button 
-            type="primary" 
-            onClick={handleVerifyOtp} 
+          <Button
+            type="primary"
+            onClick={handleVerifyOtp}
             loading={otpLoading}
             style={{ width: '100%', marginBottom: 12 }}
             disabled={otpValues.join('').length !== 6}
           >
             ✅ Xác thực OTP
           </Button>
-          
-          <Button 
-            type="link" 
+
+          <Button
+            type="link"
             onClick={handleResendOtp}
             loading={sendOtpLoading}
             disabled={countdown > 0}
@@ -448,14 +457,14 @@ useEffect(() => {
         </div>
       </Modal>
       {showNotif && (
-  <CustomNotification
-    message={notifContent.message}
-    description={notifContent.description}
-    onClose={() => setShowNotif(false)}
-  />
-)}
+        <CustomNotification
+          message={notifContent.message}
+          description={notifContent.description}
+          onClose={() => setShowNotif(false)}
+        />
+      )}
 
     </div>
-    
+
   );
 }

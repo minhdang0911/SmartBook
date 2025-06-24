@@ -16,6 +16,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\RatingController;
 
 
+
 // Lấy thông tin user bằng sanctum (nếu dùng Sanctum thôi)
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -40,6 +41,7 @@ Route::get('/books', [BookController::class, 'index']);
 Route::get('/ebooks', [EbookController::class, 'Ebooks']);
 Route::get('/buybooks', [BuybookController::class, 'buyBooks']);
 Route::get('/books/search', [BookController::class, 'search']);
+Route::get('/books/ids', [BookController::class, 'getAllIds']);
 Route::get('/test-api', function () {
     return response()->json(['message' => 'API đang hoạt động ✅']);
 });
@@ -79,14 +81,6 @@ Route::post('/books/follow', [BookFollowController::class, 'follow']);
 Route::delete('/books/unfollow', [BookFollowController::class, 'unfollow']);
 Route::get('/books/check-follow', [BookFollowController::class, 'checkFollowStatus']);
 
-
-Route::prefix('banners')->group(function () {
-    Route::get('/', [BannerController::class, 'index']);          // GET /api/banners
-    Route::post('/', [BannerController::class, 'store']);         // POST /api/banners
-    Route::get('/{id}', [BannerController::class, 'show']);       // GET /api/banners/{id}
-    Route::put('/{id}', [BannerController::class, 'update']);     // PUT /api/banners/{id}
-    Route::delete('/{id}', [BannerController::class, 'destroy']); // DELETE /api/banners/{id}
-});
 
 Route::middleware('auth:api')->post('/orders', [OrderController::class, 'store']);
 
@@ -130,3 +124,22 @@ Route::get('/ratings/book/{bookId}/stats', [RatingController::class, 'getBookRat
 // Quan trọng: đặt sau cùng để tránh nuốt route
 Route::get('/books/{id}', [BookController::class, 'show']);
 
+//banner
+
+Route::prefix('banners')->group(function () {
+    Route::get('/', [BannerController::class, 'index']);
+     Route::get('/get', [BannerController::class, 'GetBanner']);
+    Route::post('/', [BannerController::class, 'store']);
+    Route::get('{id}', [BannerController::class, 'show']);
+    Route::put('{id}', [BannerController::class, 'update']);
+    Route::delete('{id}', [BannerController::class, 'destroy']);
+});
+
+Route::get('/test', function() {
+    try {
+        $result = \Cloudinary\Cloudinary::api()->ping();
+        return response()->json(['status' => 'success', 'data' => $result]);
+    } catch (\Exception $e) {
+        return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+    }
+});

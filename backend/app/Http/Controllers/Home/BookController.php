@@ -53,6 +53,31 @@ class BookController extends Controller
         ]);
     }
 
+
+    public function getAllIds()
+    {
+        try {
+            // Lấy tất cả ID và title của sách
+            $books = Book::select('id', 'title')
+                        ->orderBy('title', 'asc')
+                        ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Lấy danh sách ID và tên sách thành công',
+                'data' => $books,
+                'total' => $books->count()
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Có lỗi xảy ra khi lấy danh sách sách',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function search(Request $request)
     {
         $query = Book::with(['author', 'category', 'publisher']);

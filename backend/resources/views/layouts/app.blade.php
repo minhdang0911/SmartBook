@@ -11,6 +11,116 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
     @stack('styles')
+     <style>
+        body {
+            background: #f5f5f5;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .banner-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        .banner-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 32px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        .banner-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .banner-image {
+            width: 100px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #f0f0f0;
+        }
+        .status-tag {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+        .action-btn {
+            margin: 0 4px;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin: 0;
+            padding: 20px 24px;
+        }
+        .ant-modal-body {
+            padding: 24px;
+        }
+        .ant-modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #f0f0f0;
+            text-align: right;
+            background: #fafafa;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e8e8e8;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .upload-area {
+            border: 2px dashed #d9d9d9;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            background: #fafafa;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f0f2ff;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 10px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+        }
+    </style>
 </head>
 <body>
     {{-- Navbar --}}
