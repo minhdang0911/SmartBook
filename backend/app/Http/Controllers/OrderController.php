@@ -8,106 +8,480 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\JsonResponse;
 
 class OrderController extends Controller
 {
-   public function store(Request $request)
-{
-    $user = auth()->user();
+    public function store(Request $request): JsonResponse
+    {
+        $user = Auth::user();
 
-    DB::beginTransaction();
-    try {
-        $cartItemIds = $request->input('cart_item_ids', []);
+        DB::beginTransaction();
+        try {
+            $cartItemIds = $request->input('cart_item_ids', []);
 
-        // Lấy cart
-        $cart = Cart::where('user_id', $user->id)->first();
+            // Lấy cart
+            $cart = Cart::where('user_id', $user->id)->first();
 
-        if (!$cart) {
-            return response()->json(['success' => false, 'message' => 'Không tìm thấy giỏ hàng.'], 400);
+            if (!$cart) {
+                return response()->json(['success' => false, 'message' => 'Không tìm thấy giỏ hàng.'], 400);
+            }
+
+            // Lấy danh sách cart items được chọn
+            $cartItems = $cart->cartItems()->with('book')
+                ->whereIn('id', $cartItemIds)
+                ->get();
+
+            if ($cartItems->isEmpty()) {
+                return response()->json(['success' => false, 'message' => 'Không có sản phẩm nào được chọn.'], 400);
+            }
+
+            // Tính tổng tiền các item được chọn
+            $total = $cartItems->sum(function ($item) {
+                return $item->quantity * $item->price;
+            });
+
+            // Ghép địa chỉ từ các trường
+            $address = 'Số ' . $request->input('sonha') . ', '
+                . $request->input('street') . ', '
+                . $request->input('ward_name') . ', '
+                . $request->input('district_name');
+
+            // Tạo đơn hàng
+            $order = Order::create([
+                'user_id'       => $user->id,
+                'sonha'         => $request->input('sonha'),
+                'street'        => $request->input('street'),
+                'district_id'   => $request->input('district_id'),
+                'ward_id'       => $request->input('ward_id'),
+                'ward_name'     => $request->input('ward_name'),
+                'district_name' => $request->input('district_name'),
+                'payment'       => $request->input('payment', 'cod'),
+                'status'        => 'pending',
+                'price'         => $total,
+                'shipping_fee'  => 0,
+                'total_price'   => $total,
+                'address'       => $address,
+                'created_at'    => now(),
+            ]);
+
+            // Tạo order items
+            foreach ($cartItems as $item) {
+                $book = $item->book;
+
+                if (!$book) {
+                    DB::rollBack();
+                    return response()->json(['success' => false, 'message' => 'Sách không tồn tại.'], 400);
+                }
+
+                if ($book->stock < $item->quantity) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Sách '{$book->title}' không đủ tồn kho."
+                    ], 400);
+                }
+
+                $book->stock -= $item->quantity;
+                $book->save();
+
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'book_id'  => $book->id,
+                    'quantity' => $item->quantity,
+                    'price'    => $item->price,
+                ]);
+            }
+
+            // Xoá item khỏi giỏ
+            $cart->cartItems()->whereIn('id', $cartItemIds)->delete();
+
+            // Cập nhật tổng còn lại
+            $remainingAmount = $cart->cartItems()->sum(DB::raw('quantity * price'));
+            $cart->update(['total_amount' => $remainingAmount]);
+
+            DB::commit();
+
+            return response()->json([
+                'success'  => true,
+                'message'  => 'Đặt hàng thành công.',
+                'order_id' => $order->id
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Đã xảy ra lỗi khi tạo đơn hàng.',
+                'error'   => $e->getMessage()
+            ], 500);
         }
+    }
 
-        // Lấy danh sách cart items được chọn
-        $cartItems = $cart->cartItems()->with('book')
-            ->whereIn('id', $cartItemIds)
-            ->get();
+    public function index(Request $request): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            $perPage = $request->input('per_page', 10);
+            $status = $request->input('status');
+            $sortBy = $request->input('sort_by', 'created_at');
+            $sortOrder = $request->input('sort_order', 'desc');
 
-        if ($cartItems->isEmpty()) {
-            return response()->json(['success' => false, 'message' => 'Không có sản phẩm nào được chọn.'], 400);
+            $query = Order::with(['orderItems.book.author', 'orderItems.book.category'])
+                ->where('user_id', $user->id);
+
+            if ($status) {
+                $query->where('status', $status);
+            }
+
+            $query->orderBy($sortBy, $sortOrder);
+            $orders = $query->paginate($perPage);
+
+            $formattedOrders = collect($orders->items())->map(function ($order) {
+                return [
+                    'id' => $order->id,
+                    'status' => $order->status,
+                    'payment' => $order->payment,
+                    'price' => $order->price,
+                    'shipping_fee' => $order->shipping_fee,
+                    'total_price' => $order->total_price,
+                    'address' => $order->address,
+                    'sonha' => $order->sonha,
+                    'street' => $order->street,
+                    'ward_name' => $order->ward_name,
+                    'district_name' => $order->district_name,
+                    'created_at' => $order->created_at,
+                    'updated_at' => $order->updated_at,
+                    'items' => $order->orderItems->map(function ($item) {
+                        return [
+                            'id' => $item->id,
+                            'quantity' => $item->quantity,
+                            'price' => $item->price,
+                            'book' => [
+                                'id' => $item->book->id,
+                                'title' => $item->book->title,
+                                'image' => $item->book->image,
+                                'price' => $item->book->price,
+                                'author' => $item->book->author ? $item->book->author->name : null,
+                                'category' => $item->book->category ? $item->book->category->name : null,
+                            ]
+                        ];
+                    }),
+                    'total_items' => $order->orderItems->sum('quantity')
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Lấy danh sách đơn hàng thành công',
+                'data' => [
+                    'orders' => $formattedOrders,
+                    'pagination' => [
+                        'current_page' => $orders->currentPage(),
+                        'per_page' => $orders->perPage(),
+                        'total' => $orders->total(),
+                        'last_page' => $orders->lastPage(),
+                        'from' => $orders->firstItem(),
+                        'to' => $orders->lastItem()
+                    ]
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
         }
+    }
 
-        // Tính tổng tiền các item được chọn
-        $total = $cartItems->sum(function ($item) {
-            return $item->quantity * $item->price;
-        });
+    public function show($orderId): JsonResponse
+    {
+        try {
+            $user = Auth::user();
 
-        // Ghép địa chỉ từ các trường
-        $address = 'Số ' . $request->input('sonha') . ', '
-            . $request->input('street') . ', '
-            . $request->input('ward_name') . ', '
-            . $request->input('district_name');
+            $order = Order::with(['orderItems.book.author', 'orderItems.book.category'])
+                ->where('user_id', $user->id)
+                ->find($orderId);
 
-        // Tạo đơn hàng
-        $order = Order::create([
-            'user_id'       => $user->id,
-            'sonha'         => $request->input('sonha'),
-            'street'        => $request->input('street'),
-            'district_id'   => $request->input('district_id'),
-            'ward_id'       => $request->input('ward_id'),
-             'ward_name' => $request->input('ward_name'),
-            'district_name' => $request->input('district_name'),
-            'payment'       => $request->input('payment', 'cod'),
-            'status'        => 'pending',
-            'price'         => $total,
-            'shipping_fee'  => 0,
-            'total_price'   => $total,
-            'address'       => $address,
-            'created_at'    => now(),
-        ]);
-
-        // Tạo các order item và xử lý tồn kho
-        foreach ($cartItems as $item) {
-            $book = $item->book;
-
-            if ($book->stock < $item->quantity) {
-                DB::rollBack();
+            if (!$order) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Sách '{$book->title}' không đủ tồn kho."
+                    'message' => 'Không tìm thấy đơn hàng'
+                ], 404);
+            }
+
+            $formattedOrder = [
+                'id' => $order->id,
+                'status' => $order->status,
+                'payment' => $order->payment,
+                'price' => $order->price,
+                'shipping_fee' => $order->shipping_fee,
+                'total_price' => $order->total_price,
+                'address' => $order->address,
+                'sonha' => $order->sonha,
+                'street' => $order->street,
+                'ward_id' => $order->ward_id,
+                'district_id' => $order->district_id,
+                'ward_name' => $order->ward_name,
+                'district_name' => $order->district_name,
+                'created_at' => $order->created_at,
+                'updated_at' => $order->updated_at,
+                'items' => $order->orderItems->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'quantity' => $item->quantity,
+                        'price' => $item->price,
+                        'subtotal' => $item->quantity * $item->price,
+                        'book' => [
+                            'id' => $item->book->id,
+                            'title' => $item->book->title,
+                            'image' => $item->book->image,
+                            'price' => $item->book->price,
+                            'description' => $item->book->description,
+                            'author' => $item->book->author ? [
+                                'id' => $item->book->author->id,
+                                'name' => $item->book->author->name
+                            ] : null,
+                            'category' => $item->book->category ? [
+                                'id' => $item->book->category->id,
+                                'name' => $item->book->category->name
+                            ] : null,
+                        ]
+                    ];
+                }),
+                'total_items' => $order->orderItems->sum('quantity')
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Lấy chi tiết đơn hàng thành công',
+                'data' => [
+                    'order' => $formattedOrder
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getOrderStats(): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+
+            $stats = [
+                'total_orders' => Order::where('user_id', $user->id)->count(),
+                'pending_orders' => Order::where('user_id', $user->id)->where('status', 'pending')->count(),
+                'processing_orders' => Order::where('user_id', $user->id)->where('status', 'processing')->count(),
+                'shipped_orders' => Order::where('user_id', $user->id)->where('status', 'shipped')->count(),
+                'delivered_orders' => Order::where('user_id', $user->id)->where('status', 'delivered')->count(),
+                'cancelled_orders' => Order::where('user_id', $user->id)->where('status', 'cancelled')->count(),
+                'total_spent' => Order::where('user_id', $user->id)
+                    ->whereIn('status', ['delivered', 'processing', 'shipped'])
+                    ->sum('total_price')
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Lấy thống kê đơn hàng thành công',
+                'data' => $stats
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function cancelOrder($orderId): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+
+            $order = Order::with('orderItems.book')
+                ->where('user_id', $user->id)
+                ->find($orderId);
+
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy đơn hàng'
+                ], 404);
+            }
+
+            if ($order->status !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Chỉ có thể hủy đơn hàng đang chờ xử lý'
                 ], 400);
             }
 
-            // Trừ tồn kho
-            $book->stock -= $item->quantity;
-            $book->save();
+            DB::beginTransaction();
+            foreach ($order->orderItems as $item) {
+                $book = $item->book;
+                if ($book) {
+                    $book->stock += $item->quantity;
+                    $book->save();
+                }
+            }
 
-            OrderItem::create([
-                'order_id' => $order->id,
-                'book_id'  => $book->id,
-                'quantity' => $item->quantity,
-                'price'    => $item->price,
+            $order->status = 'cancelled';
+            $order->save();
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Hủy đơn hàng thành công',
+                'data' => [
+                    'order_id' => $order->id,
+                    'status' => $order->status
+                ]
             ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateOrderStatus(Request $request, $orderId): JsonResponse
+{
+    try {
+        $user = Auth::user();
+
+        // Nếu cần check quyền admin thì kiểm tra ở đây
+        // if (!$user->is_admin) { return response()->json(['message' => 'Unauthorized'], 403); }
+
+        $order = Order::find($orderId);
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy đơn hàng'
+            ], 404);
         }
 
-        // Xóa các item đã mua
-        $cart->cartItems()->whereIn('id', $cartItemIds)->delete();
+        $newStatus = $request->input('status');
+        $validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 
-        // Cập nhật lại total_amount còn lại
-        $remainingAmount = $cart->cartItems()->sum(DB::raw('quantity * price'));
-        $cart->update(['total_amount' => $remainingAmount]);
+        if (!in_array($newStatus, $validStatuses)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Trạng thái không hợp lệ'
+            ], 400);
+        }
 
-        DB::commit();
+        $order->status = $newStatus;
+        $order->save();
 
         return response()->json([
-            'success'  => true,
-            'message'  => 'Đặt hàng thành công.',
-            'order_id' => $order->id
+            'success' => true,
+            'message' => 'Cập nhật trạng thái đơn hàng thành công',
+            'data' => [
+                'order_id' => $order->id,
+                'status' => $order->status
+            ]
         ]);
     } catch (\Exception $e) {
-        DB::rollBack();
         return response()->json([
             'success' => false,
-            'message' => 'Đã xảy ra lỗi khi tạo đơn hàng.',
-            'error'   => $e->getMessage()
+            'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
+public function getAllOrders(Request $request): JsonResponse
+{
+    try {
+        $user = Auth::user();
+
+        // Chỉ cho phép admin xem tất cả đơn hàng
+        // if (!$user || !$user->is_admin) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Bạn không có quyền truy cập'
+        //     ], 403);
+        // }
+
+        $perPage = $request->input('per_page', 10);
+        $status = $request->input('status');
+        $sortBy = $request->input('sort_by', 'created_at');
+        $sortOrder = $request->input('sort_order', 'desc');
+
+        $query = Order::with(['user', 'orderItems.book.author', 'orderItems.book.category']);
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        $query->orderBy($sortBy, $sortOrder);
+        $orders = $query->paginate($perPage);
+
+        $formattedOrders = collect($orders->items())->map(function ($order) {
+            return [
+                'id' => $order->id,
+                'user' => [
+                    'id' => $order->user->id,
+                    'name' => $order->user->name,
+                    'email' => $order->user->email
+                ],
+                'status' => $order->status,
+                'payment' => $order->payment,
+                'price' => $order->price,
+                'shipping_fee' => $order->shipping_fee,
+                'total_price' => $order->total_price,
+                'address' => $order->address,
+                'sonha' => $order->sonha,
+                'street' => $order->street,
+                'ward_name' => $order->ward_name,
+                'district_name' => $order->district_name,
+                'created_at' => $order->created_at,
+                'updated_at' => $order->updated_at,
+                'items' => $order->orderItems->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'quantity' => $item->quantity,
+                        'price' => $item->price,
+                        'book' => [
+                            'id' => $item->book->id,
+                            'title' => $item->book->title,
+                            'image' => $item->book->image,
+                            'price' => $item->book->price,
+                            'author' => $item->book->author ? $item->book->author->name : null,
+                            'category' => $item->book->category ? $item->book->category->name : null,
+                        ]
+                    ];
+                }),
+                'total_items' => $order->orderItems->sum('quantity')
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Lấy tất cả đơn hàng thành công',
+            'data' => [
+                'orders' => $formattedOrders,
+                'pagination' => [
+                    'current_page' => $orders->currentPage(),
+                    'per_page' => $orders->perPage(),
+                    'total' => $orders->total(),
+                    'last_page' => $orders->lastPage(),
+                    'from' => $orders->firstItem(),
+                    'to' => $orders->lastItem()
+                ]
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
         ], 500);
     }
 }

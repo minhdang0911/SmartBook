@@ -8,7 +8,6 @@ import { apiLoginUser, apiForgotPassword, apiRegisterUser, apiSendOtp, apiVerify
 import './AuthPage.css';
 import CustomNotification from './Notifi';
 
-
 const { Title, Text } = Typography;
 
 export default function AuthPage() {
@@ -25,7 +24,7 @@ export default function AuthPage() {
   const [countdown, setCountdown] = useState(0);
   const [showNotif, setShowNotif] = useState(false);
   const [notifContent, setNotifContent] = useState({ message: '', description: '' });
-
+  const [otpSent, setOtpSent] = useState(false); // 🔒 Flag chống gửi OTP duplicate
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -47,6 +46,8 @@ export default function AuthPage() {
   }, [countdown]);
 
   const onFinish = async (values) => {
+    if (loading) return; // 🔒 Chặn double submit
+
     setLoading(true);
     try {
       if (isLogin) {
@@ -59,6 +60,8 @@ export default function AuthPage() {
             description: 'Vui lòng kiểm tra email và nhập mã OTP!'
           });
           setShowNotif(true);
+
+          console.log('📩 Gửi OTP đến:', values.email);
           await handleSendOtp(values.email);
           setShowOtp(true);
         } else {
@@ -71,14 +74,31 @@ export default function AuthPage() {
           setTimeout(() => window.location.href = '/', 1500);
         }
       } else {
-        await apiRegisterUser(values.name, values.email, values.password, values.password_confirmation, values.phone);
+        // 🔥 REGISTER - Kiểm tra xem API có tự gửi OTP không
+        const registerResult = await apiRegisterUser(
+          values.name,
+          values.email,
+          values.password,
+          values.password_confirmation,
+          values.phone
+        );
+
         setOtpEmail(values.email);
         setNotifContent({
           message: '🎉 Đăng ký thành công!',
           description: 'Vui lòng kiểm tra email và nhập mã OTP để xác thực.'
         });
         setShowNotif(true);
-        await handleSendOtp(values.email);
+
+        // ✅ CHỈ GỬI OTP NÉU API REGISTER CHƯA TỰ GỬI
+        if (!registerResult?.otp_sent && !registerResult?.otp_already_sent) {
+          console.log('📩 Gửi OTP đến:', values.email);
+          await handleSendOtp(values.email);
+        } else {
+          console.log('📩 OTP đã được gửi tự động từ API register');
+          setCountdown(60); // Set countdown ngay cả khi không gọi handleSendOtp
+        }
+        
         setShowOtp(true);
       }
     } catch (err) {
@@ -92,9 +112,16 @@ export default function AuthPage() {
     }
   };
 
-
   const handleSendOtp = async (email) => {
+    // 🔒 Chặn gửi duplicate trong thời gian ngắn
+    if (otpSent || sendOtpLoading) {
+      console.log('🚫 OTP đã được gửi, bỏ qua request duplicate');
+      return;
+    }
+
     setSendOtpLoading(true);
+    setOtpSent(true);
+    
     try {
       await apiSendOtp(email);
       setNotifContent({
@@ -111,6 +138,8 @@ export default function AuthPage() {
       setShowNotif(true);
     } finally {
       setSendOtpLoading(false);
+      // Reset flag sau 3 giây để cho phép gửi lại
+      setTimeout(() => setOtpSent(false), 3000);
     }
   };
 
@@ -118,7 +147,7 @@ export default function AuthPage() {
     if (!/^\d?$/.test(value)) return;
 
     const newOtpValues = [...otpValues];
-    newOtpValues[index] = value.slice(0, 1); // chỉ lấy 1 số đầu tiên
+    newOtpValues[index] = value.slice(0, 1);
     setOtpValues(newOtpValues);
 
     if (value && index < 5) {
@@ -126,13 +155,11 @@ export default function AuthPage() {
     }
   };
 
-
   useEffect(() => {
     if (showOtp) {
       setTimeout(() => otpInputRefs.current[0]?.focus(), 300);
     }
   }, [showOtp]);
-
 
   const handleOtpKeyDown = (index, e) => {
     if (e.key === 'Backspace') {
@@ -157,7 +184,6 @@ export default function AuthPage() {
       });
     }
   };
-
 
   const handleVerifyOtp = async () => {
     const otpCode = otpValues.join('');
@@ -198,15 +224,15 @@ export default function AuthPage() {
     }
   };
 
-
   const handleResendOtp = () => {
-    if (countdown > 0) return;
+    if (countdown > 0 || otpSent) return;
     handleSendOtp(otpEmail);
   };
 
   const resetOtpModal = () => {
     setOtpValues(['', '', '', '', '', '']);
     setCountdown(0);
+    setOtpSent(false); // Reset flag khi đóng modal
   };
 
   const handleForgotPassword = async (values) => {
@@ -229,7 +255,6 @@ export default function AuthPage() {
       setForgotLoading(false);
     }
   };
-
 
   const switchMode = () => {
     const newMode = isLogin ? 'register' : 'login';
@@ -261,19 +286,17 @@ export default function AuthPage() {
 
         <div className="form-container fade-in">
           <Form name="auth_form" onFinish={onFinish} layout="vertical" size="large" autoComplete="off">
-              {!isLogin && (
-
-                <>
+            {!isLogin && (
+              <>
                 <Form.Item name="name" rules={[{ required: true, message: 'Vui lòng nhập họ tên!' }]}>
                   <Input prefix={<UserOutlined />} placeholder="Họ và tên" autoComplete="name" />
                 </Form.Item>
 
                 <Form.Item name="phone" label="Số điện thoại">
-              <Input placeholder="Nhập số điện thoại" />
-            </Form.Item>
-            </>
-              )}
-            
+                  <Input placeholder="Nhập số điện thoại" />
+                </Form.Item>
+              </>
+            )}
 
             <Form.Item
               name="email"
@@ -284,6 +307,7 @@ export default function AuthPage() {
             >
               <Input prefix={<MailOutlined />} placeholder="Email" autoComplete="email" />
             </Form.Item>
+            
             <Form.Item
               name="password"
               rules={[
@@ -298,6 +322,7 @@ export default function AuthPage() {
                 autoComplete={isLogin ? 'current-password' : 'new-password'}
               />
             </Form.Item>
+            
             {!isLogin && (
               <Form.Item
                 name="password_confirmation"
@@ -320,6 +345,7 @@ export default function AuthPage() {
                 />
               </Form.Item>
             )}
+            
             {isLogin && (
               <div style={{ textAlign: 'right', marginBottom: 16 }}>
                 <span className="forgot-link" onClick={() => setShowForgot(true)}>
@@ -327,8 +353,15 @@ export default function AuthPage() {
                 </span>
               </div>
             )}
+            
             <Form.Item>
-              <Button type="primary" htmlType="submit" className="submit-btn" loading={loading}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                className="submit-btn"
+                loading={loading}
+                disabled={loading}
+              >
                 {isLogin ? '🔑 Đăng nhập' : '📝 Đăng ký'}
               </Button>
             </Form.Item>
@@ -449,13 +482,14 @@ export default function AuthPage() {
             type="link"
             onClick={handleResendOtp}
             loading={sendOtpLoading}
-            disabled={countdown > 0}
+            disabled={countdown > 0 || otpSent}
             style={{ padding: 0 }}
           >
             {countdown > 0 ? `📤 Gửi lại sau ${countdown}s` : '📤 Gửi lại mã OTP'}
           </Button>
         </div>
       </Modal>
+      
       {showNotif && (
         <CustomNotification
           message={notifContent.message}
@@ -463,8 +497,6 @@ export default function AuthPage() {
           onClose={() => setShowNotif(false)}
         />
       )}
-
     </div>
-
   );
 }

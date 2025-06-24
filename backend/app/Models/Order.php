@@ -36,8 +36,9 @@ class Order extends Model
     }
 
     // Quan hệ với OrderItems
-    public function order_items()
+    public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
     }
+
 }
