@@ -62,7 +62,7 @@ Route::get('/login/google/callback', [GoogleController::class, 'handleGoogleCall
 // routes/api.php
 Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('reset-password', [AuthController::class, 'resetPassword']);
-    
+
 Route::get('/reset-password', function (Request $request) {
     return view('auth.reset-password', [
         'token' => $request->token,
@@ -82,17 +82,39 @@ Route::delete('/books/unfollow', [BookFollowController::class, 'unfollow']);
 Route::get('/books/check-follow', [BookFollowController::class, 'checkFollowStatus']);
 
 // api order
+// Routes còn thiếu cho OrderController
+
+// 1. Route để GHN webhook cập nhật trạng thái shipping
+Route::post('/webhook/shipping-status', [OrderController::class, 'updateShippingStatus']);
+
+// 2. Route để lấy thông tin tracking từ GHN
+Route::middleware('auth:api')->get('/orders/{id}/shipping-info', [OrderController::class, 'getShippingInfo']);
+
+// Tổng hợp tất cả routes đầy đủ:
 Route::middleware('auth:api')->post('/orders', [OrderController::class, 'store']);
+
 Route::middleware('auth:api')->group(function () {
     Route::get('/orders', [OrderController::class, 'index']);
-     Route::get('/admin/orders', [OrderController::class, 'getAllOrders']);
-        Route::get('/orders/stats', [OrderController::class, 'getOrderStats']);
-        Route::put('/orders/{id}/status', [OrderController::class, 'updateOrderStatus']); 
+    Route::get('/admin/orders', [OrderController::class, 'getAllOrders']);
+    Route::get('/orders/stats', [OrderController::class, 'getOrderStats']);
+    Route::put('/orders/{id}/status', [OrderController::class, 'updateOrderStatus']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
+    Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']);
+    // Lấy thống kê đơn hàng của user
+    Route::get('/orders/stats/summary', [OrderController::class, 'getOrderStats']);
+    // Tạo đơn ship với GHN
+  Route::post('/orders/{orderId}/shipping', [OrderController::class, 'createShipping']);
 
-Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']);
+    // Routes còn thiếu:
+    Route::get('/orders/{id}/shipping-info', [OrderController::class, 'getShippingInfo']);
+    // Webhook từ GHN để cập nhật trạng thái vận chuyển
+    Route::post('/webhook/ghn/shipping-status', [OrderController::class, 'updateShippingStatus']);
+    Route::get('/orders/{orderId}/sync-status', [OrderController::class, 'syncOrderStatusFromGHN']);
+
 });
 
+// Webhook route không cần auth vì được gọi từ GHN
+Route::post('/webhook/shipping-status', [OrderController::class, 'updateShippingStatus']);
 
 Route::middleware('auth:api')->group(function () {
     // Cart routes
@@ -100,8 +122,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/', [CartController::class, 'index']);
         Route::post('/add', [CartController::class, 'addToCart']);
         Route::post('/item/{cartItemId}', [CartController::class, 'updateCartItem']);
-     Route::post('/remove', [CartController::class, 'removeFromCart']);
-        
+        Route::post('/remove', [CartController::class, 'removeFromCart']);
+
         // Xóa single item (DELETE với URL param - tương thích API cũ)
         Route::delete('/item/{cartItemId}', [CartController::class, 'removeFromCartSingle']);
         Route::delete('/clear', [CartController::class, 'clearCart']);
@@ -114,21 +136,21 @@ Route::middleware('auth:api')->group(function () {
 Route::middleware('auth:api')->group(function () {
     // Tạo hoặc cập nhật rating
     Route::post('/ratings', [RatingController::class, 'store']);
-    
+
     // Lấy rating của user cho một sách cụ thể
     Route::get('/ratings/book/{bookId}', [RatingController::class, 'getUserRating']);
-    
+
     // Lấy tất cả ratings của user hiện tại
     Route::get('/ratings/my-ratings', [RatingController::class, 'getUserRatings']);
-    
+
     // Xóa rating của user cho một sách
     Route::delete('/ratings/book/{bookId}', [RatingController::class, 'destroy']);
-  
+
 });
 
 // Public route - không cần authentication
 Route::get('/ratings/book/{bookId}/stats', [RatingController::class, 'getBookRatingStats']);
-  Route::get('/ratings/book/{bookId}/filter', [RatingController::class, 'getRatingsByStar']);
+Route::get('/ratings/book/{bookId}/filter', [RatingController::class, 'getRatingsByStar']);
 
 // Quan trọng: đặt sau cùng để tránh nuốt route
 Route::get('/books/{id}', [BookController::class, 'show']);
@@ -137,7 +159,7 @@ Route::get('/books/{id}', [BookController::class, 'show']);
 
 Route::prefix('banners')->group(function () {
     Route::get('/', [BannerController::class, 'index']);
-     Route::get('/get', [BannerController::class, 'GetBanner']);
+    Route::get('/get', [BannerController::class, 'GetBanner']);
     Route::post('/', [BannerController::class, 'store']);
     Route::get('{id}', [BannerController::class, 'show']);
     Route::put('{id}', [BannerController::class, 'update']);

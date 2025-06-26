@@ -34,5 +34,9 @@ return [
         'api_key' => env('CLOUDINARY_API_KEY'),
         'api_secret' => env('CLOUDINARY_API_SECRET'),
     ],
+    'ghn' => [
+        'token' => env('GHN_TOKEN'),
+        'shop_id' => env('GHN_SHOP_ID'),
+    ],
 
 ];

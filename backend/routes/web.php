@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Home\EbookController;
+use App\Http\Controllers\Admin\OrderController;
 use Illuminate\Support\Facades\Route;
 
 // Admin Controllers
@@ -16,7 +17,7 @@ use App\Http\Controllers\Admin\PublisherController;
 use App\Http\Controllers\Home\BookController as HomeBookController;
 
 // Auth
-use App\Http\Controllers\Auth\GoogleController; 
+use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\ProfileController;
 
 // ===================== Public Routes =====================
@@ -34,6 +35,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::resource('categories', CategoryController::class);
     Route::resource('books', AdminBookController::class);
     Route::resource('banners', BannerController::class);
+    Route::resource('orders', OrderController::class);
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
@@ -55,5 +57,8 @@ Route::middleware('auth')->group(function () {
 });
 
 
+
+
+
 // Auth scaffolding
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
