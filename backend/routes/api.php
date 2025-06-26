@@ -90,7 +90,7 @@ Route::middleware('auth:api')->group(function () {
         Route::put('/orders/{id}/status', [OrderController::class, 'updateOrderStatus']); 
     Route::get('/orders/{id}', [OrderController::class, 'show']);
 
-    Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']);
+Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']);
 });
 
 

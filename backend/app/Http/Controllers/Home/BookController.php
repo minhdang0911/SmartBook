@@ -338,6 +338,7 @@ class BookController extends Controller
                 'views' => $book->views,
                 'likes' => $book->likes,
                 'format' => 'paper',
+                  'is_physical' => $book->is_physical,
             ]);
         } elseif ($book->is_physical == 0) {
             // Sách điện tử
