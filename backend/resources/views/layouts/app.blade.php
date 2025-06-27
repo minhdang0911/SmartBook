@@ -161,6 +161,7 @@
                     </li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.banners.index') }}">Banner</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.orders.index') }}">Order</a></li>
+                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.Coupons.index') }}">Mã giảm giá</a></li>
                 </ul>
 
                 {{-- Dropdown người dùng --}}

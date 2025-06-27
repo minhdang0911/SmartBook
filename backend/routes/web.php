@@ -12,7 +12,7 @@ use App\Http\Controllers\Admin\BookController as AdminBookController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PublisherController;
-
+use App\Http\Controllers\CouponController;
 // Home Controllers
 use App\Http\Controllers\Home\BookController as HomeBookController;
 
@@ -36,6 +36,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::resource('books', AdminBookController::class);
     Route::resource('banners', BannerController::class);
     Route::resource('orders', OrderController::class);
+      Route::resource('Coupons', CouponController::class);
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 

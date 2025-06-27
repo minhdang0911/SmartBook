@@ -17,8 +17,8 @@ use Illuminate\Support\Facades\Log;
 class OrderController extends Controller
 {
     private $ghnApiUrl = 'https://online-gateway.ghn.vn/shiip/public-api/v2';
-    private $ghnToken ='d123c170-4729-11f0-8342-3e24ae01a77c';
-    private $ghnShopId='5832428';
+    private $ghnToken = '49c70366-532e-11f0-b053-3671f28aa7e4';
+    private $ghnShopId = '5860204';
 
 
     public function store(Request $request): JsonResponse
@@ -68,12 +68,14 @@ class OrderController extends Controller
                 'district_name' => $request->input('district_name'),
                 'payment' => $request->input('payment', 'cod'),
                 'status' => 'pending',
-                'price' => $total,
-                'shipping_fee' => 0,
-                'total_price' => $total,
+                'price' => $total, // giữ nguyên: tiền sách
+                'shipping_fee' => $request->input('shipping_fee', 0), // ✅ dùng phí ship từ FE
+                'total_price' => $request->input('total_price', $total), // ✅ dùng tổng từ FE
                 'address' => $address,
                 'created_at' => now(),
+                // 'phOne'=> $request->input('phone'),
             ]);
+
 
             // Tạo order items và kiểm tra stock
             foreach ($cartItems as $item) {
@@ -136,162 +138,162 @@ class OrderController extends Controller
     }
 
     // API riêng để tạo đơn ship
-public function createShipping(Request $request, $orderId): JsonResponse
-{
-    try {
-        $user = Auth::user();
-        Log::info('Bắt đầu tạo đơn ship cho order ID: ' . $orderId);
-
-        $order = Order::with(['orderItems.book', 'user'])->find($orderId);
-
-        if (!$order) {
-            Log::warning("Không tìm thấy đơn hàng ID: {$orderId}");
-            return response()->json([
-                'success' => false,
-                'message' => 'Không tìm thấy đơn hàng'
-            ], 404);
-        }
-
-        if ($order->shipping_code) {
-            Log::info("Đơn hàng {$orderId} đã có mã vận đơn: " . $order->shipping_code);
-            return response()->json([
-                'success' => false,
-                'message' => 'Đơn hàng đã có mã vận đơn: ' . $order->shipping_code
-            ], 400);
-        }
-
-        DB::beginTransaction();
+    public function createShipping(Request $request, $orderId): JsonResponse
+    {
         try {
-            Log::info("Gọi GHN API tạo đơn hàng cho order ID: {$orderId}");
-            $shippingResult = $this->createGHNShippingOrder($order, $request);
+            $user = Auth::user();
+            Log::info('Bắt đầu tạo đơn ship cho order ID: ' . $orderId);
 
-            if (!$shippingResult['success']) {
-                DB::rollBack();
-                Log::error("Lỗi từ GHN: " . $shippingResult['message']);
+            $order = Order::with(['orderItems.book', 'user'])->find($orderId);
+
+            if (!$order) {
+                Log::warning("Không tìm thấy đơn hàng ID: {$orderId}");
                 return response()->json([
                     'success' => false,
-                    'message' => 'Lỗi tạo đơn ship: ' . $shippingResult['message']
+                    'message' => 'Không tìm thấy đơn hàng'
+                ], 404);
+            }
+
+            if ($order->shipping_code) {
+                Log::info("Đơn hàng {$orderId} đã có mã vận đơn: " . $order->shipping_code);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Đơn hàng đã có mã vận đơn: ' . $order->shipping_code
                 ], 400);
             }
 
-            $shippingFee = $shippingResult['data']['total_fee'] ?? 0;
-            $order->update([
-                'shipping_code' => $shippingResult['data']['order_code'],
-                'status' => 'ready_to_pick',
-                'shipping_fee' => $shippingFee,
-                'total_price' => $order->price + $shippingFee
-            ]);
+            DB::beginTransaction();
+            try {
+                Log::info("Gọi GHN API tạo đơn hàng cho order ID: {$orderId}");
+                $shippingResult = $this->createGHNShippingOrder($order, $request);
 
-            DB::commit();
+                if (!$shippingResult['success']) {
+                    DB::rollBack();
+                    Log::error("Lỗi từ GHN: " . $shippingResult['message']);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Lỗi tạo đơn ship: ' . $shippingResult['message']
+                    ], 400);
+                }
 
-            Log::info("Tạo đơn ship thành công cho order ID: {$order->id}, mã vận đơn: " . $order->shipping_code);
+                $shippingFee = $shippingResult['data']['total_fee'] ?? 0;
+                $order->update([
+                    'shipping_code' => $shippingResult['data']['order_code'],
+                    'status' => 'ready_to_pick',
+                    'shipping_fee' => $shippingFee,
+                    'total_price' => $order->price + $shippingFee
+                ]);
 
-            $order->refresh();
+                DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Tạo đơn ship thành công',
-                'data' => [
-                    'order_id' => $order->id,
-                    'shipping_code' => $order->shipping_code,
-                    'status' => $order->status,
-                    'shipping_fee' => $order->shipping_fee,
-                    'total_price' => $order->total_price,
-                    'ghn_data' => $shippingResult['data']
-                ]
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error("Lỗi khi tạo đơn ship nội bộ (DB): " . $e->getMessage());
-            throw $e;
-        }
+                Log::info("Tạo đơn ship thành công cho order ID: {$order->id}, mã vận đơn: " . $order->shipping_code);
 
-    } catch (\Exception $e) {
-        Log::error("Lỗi tổng khi tạo đơn ship: " . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
-        ], 500);
-    }
-}
-protected function createGHNShippingOrder($order, $request = null)
-{
-    try {
-        $items = $order->orderItems->map(function ($item) {
-            return [
-                'name' => $item->book->title,
-                'quantity' => $item->quantity,
-                'weight' => 200,
-                'length' => 20,
-                'width' => 15,
-                'height' => 2
-            ];
-        })->toArray();
+                $order->refresh();
 
-        $customerName = $request ? $request->input('customer_name', $order->user->name) : $order->user->name;
-        $customerPhone = $request ? $request->input('customer_phone', $order->user->phone ?? '') : ($order->user->phone ?? '');
-
-        $orderData = [
-            'payment_type_id' => $order->payment === 'cod' ? 2 : 1,
-            'note' => $order->note ?? '',
-            'required_note' => 'KHONGCHOXEMHANG',
-            'to_name' => $customerName,
-            'to_phone' => $customerPhone,
-            'to_address' => $order->address,
-            'to_ward_code' => (string)$order->ward_id,
-            'to_district_id' => $order->district_id,
-           'cod_amount' => $order->payment === 'cod' ? (int) $order->price : 0,
-
-            'content' => 'Sách',
-            'weight' => array_sum(array_column($items, 'weight')),
-            'length' => 25,
-            'width' => 20,
-            'height' => 10,
-            'service_type_id' => 2,
-            'items' => $items
-        ];
-
-        Log::info("Dữ liệu gửi GHN:", $orderData);
-
-        $response = Http::withHeaders([
-            'Token' => $this->ghnToken,
-            'ShopId' => $this->ghnShopId,
-            'Content-Type' => 'application/json'
-        ])->post($this->ghnApiUrl . '/shipping-order/create', $orderData);
-
-        Log::info("Phản hồi từ GHN", [
-            'status' => $response->status(),
-            'body' => $response->body()
-        ]);
-
-        if ($response->successful()) {
-            $responseData = $response->json();
-            if ($responseData['code'] == 200) {
-                return [
+                return response()->json([
                     'success' => true,
-                    'data' => $responseData['data']
+                    'message' => 'Tạo đơn ship thành công',
+                    'data' => [
+                        'order_id' => $order->id,
+                        'shipping_code' => $order->shipping_code,
+                        'status' => $order->status,
+                        'shipping_fee' => $order->shipping_fee,
+                        'total_price' => $order->total_price,
+                        'ghn_data' => $shippingResult['data']
+                    ]
+                ]);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error("Lỗi khi tạo đơn ship nội bộ (DB): " . $e->getMessage());
+                throw $e;
+            }
+
+        } catch (\Exception $e) {
+            Log::error("Lỗi tổng khi tạo đơn ship: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    protected function createGHNShippingOrder($order, $request = null)
+    {
+        try {
+            $items = $order->orderItems->map(function ($item) {
+                return [
+                    'name' => $item->book->title,
+                    'quantity' => $item->quantity,
+                    'weight' => 200,
+                    'length' => 20,
+                    'width' => 15,
+                    'height' => 2
                 ];
+            })->toArray();
+
+            $customerName = $request ? $request->input('customer_name', $order->user->name) : $order->user->name;
+            $customerPhone = $request ? $request->input('customer_phone', $order->user->phone ?? '') : ($order->user->phone ?? '');
+
+            $orderData = [
+                'payment_type_id' => $order->payment === 'cod' ? 2 : 1,
+                'note' => $order->note ?? '',
+                'required_note' => 'KHONGCHOXEMHANG',
+                'to_name' => $customerName,
+                'to_phone' => $customerPhone,
+                'to_address' => $order->address,
+                'to_ward_code' => (string) $order->ward_id,
+                'to_district_id' => $order->district_id,
+                'cod_amount' => $order->payment === 'cod' ? (int) $order->price : 0,
+
+                'content' => 'Sách',
+                'weight' => array_sum(array_column($items, 'weight')),
+                'length' => 25,
+                'width' => 20,
+                'height' => 10,
+                'service_type_id' => 2,
+                'items' => $items
+            ];
+
+            Log::info("Dữ liệu gửi GHN:", $orderData);
+
+            $response = Http::withHeaders([
+                'Token' => $this->ghnToken,
+                'ShopId' => $this->ghnShopId,
+                'Content-Type' => 'application/json'
+            ])->post($this->ghnApiUrl . '/shipping-order/create', $orderData);
+
+            Log::info("Phản hồi từ GHN", [
+                'status' => $response->status(),
+                'body' => $response->body()
+            ]);
+
+            if ($response->successful()) {
+                $responseData = $response->json();
+                if ($responseData['code'] == 200) {
+                    return [
+                        'success' => true,
+                        'data' => $responseData['data']
+                    ];
+                } else {
+                    return [
+                        'success' => false,
+                        'message' => $responseData['message'] ?? 'Lỗi từ GHN'
+                    ];
+                }
             } else {
                 return [
                     'success' => false,
-                    'message' => $responseData['message'] ?? 'Lỗi từ GHN'
+                    'message' => 'Không thể kết nối đến GHN: ' . $response->body()
                 ];
             }
-        } else {
+
+        } catch (\Exception $e) {
+            Log::error("Lỗi exception GHN: " . $e->getMessage());
             return [
                 'success' => false,
-                'message' => 'Không thể kết nối đến GHN: ' . $response->body()
+                'message' => $e->getMessage()
             ];
         }
-
-    } catch (\Exception $e) {
-        Log::error("Lỗi exception GHN: " . $e->getMessage());
-        return [
-            'success' => false,
-            'message' => $e->getMessage()
-        ];
     }
-}
 
 
     public function index(Request $request): JsonResponse
@@ -323,12 +325,14 @@ protected function createGHNShippingOrder($order, $request = null)
                     'total_price' => $order->total_price,
                     'address' => $order->address,
                     'sonha' => $order->sonha,
+                     'phone' => $order->phone,
                     'street' => $order->street,
                     'ward_name' => $order->ward_name,
                     'district_name' => $order->district_name,
                     'shipping_code' => $order->shipping_code,
                     'created_at' => $order->created_at,
                     'updated_at' => $order->updated_at,
+                   
                     'items' => $order->orderItems->map(function ($item) {
                         return [
                             'id' => $item->id,
@@ -569,7 +573,7 @@ protected function createGHNShippingOrder($order, $request = null)
             ], 500);
         }
     }
-    
+
     private function cancelGHNOrder($shippingCode)
     {
         try {
@@ -578,8 +582,8 @@ protected function createGHNShippingOrder($order, $request = null)
                 'ShopId' => $this->ghnShopId,
                 'Content-Type' => 'application/json'
             ])->post($this->ghnApiUrl . '/shipping-order/cancel', [
-                'order_codes' => [$shippingCode]
-            ]);
+                        'order_codes' => [$shippingCode]
+                    ]);
 
             return $response->successful();
         } catch (\Exception $e) {
@@ -628,7 +632,7 @@ protected function createGHNShippingOrder($order, $request = null)
         try {
             $shippingCode = $request->input('OrderCode');
             $status = $request->input('Status');
-            
+
             // Map status GHN sang status của bạn
             $statusMap = [
                 'ready_to_pick' => 'ready_to_pick',
@@ -655,7 +659,7 @@ protected function createGHNShippingOrder($order, $request = null)
             ];
 
             $order = Order::where('shipping_code', $shippingCode)->first();
-            
+
             if (!$order) {
                 return response()->json([
                     'success' => false,
@@ -683,7 +687,7 @@ protected function createGHNShippingOrder($order, $request = null)
     {
         try {
             $order = Order::find($orderId);
-            
+
             if (!$order || !$order->shipping_code) {
                 return response()->json([
                     'success' => false,
@@ -695,8 +699,8 @@ protected function createGHNShippingOrder($order, $request = null)
                 'Token' => $this->ghnToken,
                 'Content-Type' => 'application/json'
             ])->post($this->ghnApiUrl . '/shipping-order/detail', [
-                'order_code' => $order->shipping_code
-            ]);
+                        'order_code' => $order->shipping_code
+                    ]);
 
             if ($response->successful()) {
                 $responseData = $response->json();
@@ -718,7 +722,7 @@ protected function createGHNShippingOrder($order, $request = null)
         }
     }
 
-     public function getAllOrders(Request $request): JsonResponse
+    public function getAllOrders(Request $request): JsonResponse
     {
         try {
             $user = Auth::user();
@@ -753,6 +757,7 @@ protected function createGHNShippingOrder($order, $request = null)
                     'address' => $order->address,
                     'sonha' => $order->sonha,
                     'street' => $order->street,
+                     'phone' => $order->phone,
                     'ward_name' => $order->ward_name,
                     'district_name' => $order->district_name,
                     'shipping_code' => $order->shipping_code,
@@ -800,118 +805,118 @@ protected function createGHNShippingOrder($order, $request = null)
         }
     }
     public function syncOrderStatusFromGHN($orderId): JsonResponse
-{
-    try {
-        $order = Order::find($orderId);
-        
-        if (!$order) {
+    {
+        try {
+            $order = Order::find($orderId);
+
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy đơn hàng'
+                ], 404);
+            }
+
+            if (!$order->shipping_code) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Đơn hàng chưa có mã vận đơn'
+                ], 400);
+            }
+
+            // Gọi API GHN để lấy chi tiết đơn hàng
+            $response = Http::withHeaders([
+                'Token' => $this->ghnToken,
+                'Content-Type' => 'application/json'
+            ])->post($this->ghnApiUrl . '/shipping-order/detail', [
+                        'order_code' => $order->shipping_code
+                    ]);
+
+            if (!$response->successful()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không thể kết nối đến GHN API'
+                ], 400);
+            }
+
+            $responseData = $response->json();
+
+            if ($responseData['code'] !== 200) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Lỗi từ GHN: ' . ($responseData['message'] ?? 'Unknown error')
+                ], 400);
+            }
+
+            $ghnData = $responseData['data'];
+            $ghnStatus = $ghnData['status'] ?? null;
+
+            if (!$ghnStatus) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không lấy được status từ GHN'
+                ], 400);
+            }
+
+            // Map status từ GHN sang status của hệ thống
+            $newStatus = $this->mapGHNStatusToSystemStatus($ghnStatus);
+            $oldStatus = $order->status;
+
+            // Cập nhật status nếu có thay đổi
+            if ($newStatus !== $oldStatus) {
+                $order->update(['status' => $newStatus]);
+
+                Log::info("Đã cập nhật status đơn hàng {$orderId} từ {$oldStatus} thành {$newStatus}");
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đồng bộ status thành công',
+                'data' => [
+                    'order_id' => $order->id,
+                    'shipping_code' => $order->shipping_code,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'ghn_status' => $ghnStatus,
+                    'updated' => $newStatus !== $oldStatus,
+                    'ghn_data' => $ghnData
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Lỗi khi đồng bộ status từ GHN cho đơn hàng {$orderId}: " . $e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Không tìm thấy đơn hàng'
-            ], 404);
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
         }
-
-        if (!$order->shipping_code) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Đơn hàng chưa có mã vận đơn'
-            ], 400);
-        }
-
-        // Gọi API GHN để lấy chi tiết đơn hàng
-        $response = Http::withHeaders([
-            'Token' => $this->ghnToken,
-            'Content-Type' => 'application/json'
-        ])->post($this->ghnApiUrl . '/shipping-order/detail', [
-            'order_code' => $order->shipping_code
-        ]);
-
-        if (!$response->successful()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Không thể kết nối đến GHN API'
-            ], 400);
-        }
-
-        $responseData = $response->json();
-        
-        if ($responseData['code'] !== 200) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Lỗi từ GHN: ' . ($responseData['message'] ?? 'Unknown error')
-            ], 400);
-        }
-
-        $ghnData = $responseData['data'];
-        $ghnStatus = $ghnData['status'] ?? null;
-
-        if (!$ghnStatus) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Không lấy được status từ GHN'
-            ], 400);
-        }
-
-        // Map status từ GHN sang status của hệ thống
-        $newStatus = $this->mapGHNStatusToSystemStatus($ghnStatus);
-        $oldStatus = $order->status;
-
-        // Cập nhật status nếu có thay đổi
-        if ($newStatus !== $oldStatus) {
-            $order->update(['status' => $newStatus]);
-            
-            Log::info("Đã cập nhật status đơn hàng {$orderId} từ {$oldStatus} thành {$newStatus}");
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Đồng bộ status thành công',
-            'data' => [
-                'order_id' => $order->id,
-                'shipping_code' => $order->shipping_code,
-                'old_status' => $oldStatus,
-                'new_status' => $newStatus,
-                'ghn_status' => $ghnStatus,
-                'updated' => $newStatus !== $oldStatus,
-                'ghn_data' => $ghnData
-            ]
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error("Lỗi khi đồng bộ status từ GHN cho đơn hàng {$orderId}: " . $e->getMessage());
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
-        ], 500);
     }
-}
-private function mapGHNStatusToSystemStatus($ghnStatus): string
-{
-    $statusMap = [
-        'ready_to_pick' => 'ready_to_pick',
-        'picking' => 'picking',
-        'money_collect_picking' => 'money_collect_picking',
-        'picked' => 'picked',
-        'storing' => 'storing',
-        'transporting' => 'transporting',
-        'sorting' => 'sorting',
-        'delivering' => 'delivering',
-        'delivered' => 'delivered',
-        'delivery_fail' => 'delivery_fail',
-        'waiting_to_return' => 'waiting_to_return',
-        'return' => 'return',
-        'return_transporting' => 'return_transporting',
-        'return_sorting' => 'return_sorting',
-        'returning' => 'returning',
-        'return_fail' => 'return_fail',
-        'returned' => 'returned',
-        'exception' => 'exception',
-        'damage' => 'damage',
-        'lost' => 'lost',
-        'cancel' => 'cancelled', // Map 'cancel' của GHN thành 'cancelled' của hệ thống
-    ];
+    private function mapGHNStatusToSystemStatus($ghnStatus): string
+    {
+        $statusMap = [
+            'ready_to_pick' => 'ready_to_pick',
+            'picking' => 'picking',
+            'money_collect_picking' => 'money_collect_picking',
+            'picked' => 'picked',
+            'storing' => 'storing',
+            'transporting' => 'transporting',
+            'sorting' => 'sorting',
+            'delivering' => 'delivering',
+            'delivered' => 'delivered',
+            'delivery_fail' => 'delivery_fail',
+            'waiting_to_return' => 'waiting_to_return',
+            'return' => 'return',
+            'return_transporting' => 'return_transporting',
+            'return_sorting' => 'return_sorting',
+            'returning' => 'returning',
+            'return_fail' => 'return_fail',
+            'returned' => 'returned',
+            'exception' => 'exception',
+            'damage' => 'damage',
+            'lost' => 'lost',
+            'cancel' => 'cancelled', // Map 'cancel' của GHN thành 'cancelled' của hệ thống
+        ];
 
-    return $statusMap[$ghnStatus] ?? $ghnStatus;
-}
+        return $statusMap[$ghnStatus] ?? $ghnStatus;
+    }
 }
