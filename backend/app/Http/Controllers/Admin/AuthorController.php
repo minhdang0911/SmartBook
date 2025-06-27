@@ -3,8 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreAuthorRequest;
+use App\Http\Requests\Admin\UpdateAuthorRequest;
 use App\Models\Author;
+use App\Models\Book;
 use Illuminate\Http\Request;
+
 
 class AuthorController extends Controller
 {
@@ -16,51 +20,47 @@ class AuthorController extends Controller
             return $query->where('name', 'like', "%$search%");
         })->orderBy('id', 'desc')->paginate(10);
 
-        return view('admin.authors.index', compact('authors'));
+        return view('admin.authors.index', compact('authors', 'search'));
     }
-
 
     public function create()
     {
         return view('admin.authors.create');
     }
 
-    public function store(Request $request)
+    public function store(StoreAuthorRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-        ]);
+        Author::create($request->validated());
 
-        Author::create([
-            'name' => $request->name,
-        ]);
-
-        return redirect()->route('admin.authors.index')->with('success', 'Tác giả đã được thêm thành công!');
+        return redirect()->route('admin.authors.index')
+            ->with('success', '✅ Tác giả đã được thêm thành công!');
     }
-
 
     public function edit(Author $author)
     {
         return view('admin.authors.edit', compact('author'));
     }
 
-    public function update(Request $request, Author $author)
+    public function update(UpdateAuthorRequest $request, Author $author)
     {
-        $request->validate([
-            'name' => 'required|max:100'
-        ]);
+        $author->update($request->validated());
 
-        $author->update([
-            'name' => $request->name
-        ]);
-
-        return redirect()->route('admin.authors.index')->with('success', '✅ Tác giả đã được cập nhật.');
+        return redirect()->route('admin.authors.index')
+            ->with('success', '✅ Tác giả đã được cập nhật.');
     }
 
     public function destroy(Author $author)
     {
+        $hasBooks = Book::where('author_id', $author->id)->exists();
+
+        if ($hasBooks) {
+            return redirect()->route('admin.authors.index')
+                ->with('error', '❌ Không thể xóa tác giả vì đang có sách thuộc tác giả này.');
+        }
+
         $author->delete();
 
-        return redirect()->route('admin.authors.index')->with('success', '🗑️ Tác giả đã bị xóa.');
+        return redirect()->route('admin.authors.index')
+            ->with('success', '🗑️ Tác giả đã bị xóa thành công.');
     }
 }

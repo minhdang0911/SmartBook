@@ -4,38 +4,35 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Publisher;
+use App\Models\Book;
 use Illuminate\Http\Request;
+use App\Http\Requests\Admin\StorePublisherRequest;
+use App\Http\Requests\Admin\UpdatePublisherRequest;
 
 class PublisherController extends Controller
 {
     public function index(Request $request)
-{
-    $query = Publisher::query();
+    {
+        $search = $request->query('search');
 
-    if ($request->has('search')) {
-        $query->where('name', 'like', '%' . $request->search . '%');
+        $publishers = Publisher::when($search, function ($query, $search) {
+            return $query->where('name', 'like', "%$search%");
+        })->orderBy('name')->paginate(10);
+
+        return view('admin.publishers.index', compact('publishers', 'search'));
     }
-
-    $publishers = $query->orderBy('name')->paginate(10); // dùng paginate, không phải get()
-
-    return view('admin.publishers.index', compact('publishers'));
-}
-
 
     public function create()
     {
         return view('admin.publishers.create');
     }
 
-    public function store(Request $request)
+    public function store(StorePublisherRequest $request)
     {
-        $request->validate([
-            'name' => 'required|max:100'
-        ]);
+        Publisher::create($request->validated());
 
-        Publisher::create($request->only('name'));
-
-        return redirect()->route('admin.publishers.index')->with('success', 'Nhà xuất bản đã được thêm.');
+        return redirect()->route('admin.publishers.index')
+            ->with('success', '✅ Nhà xuất bản đã được thêm thành công!');
     }
 
     public function edit(Publisher $publisher)
@@ -43,21 +40,26 @@ class PublisherController extends Controller
         return view('admin.publishers.edit', compact('publisher'));
     }
 
-    public function update(Request $request, Publisher $publisher)
+    public function update(UpdatePublisherRequest $request, Publisher $publisher)
     {
-        $request->validate([
-            'name' => 'required|max:100'
-        ]);
+        $publisher->update($request->validated());
 
-        $publisher->update($request->only('name'));
-
-        return redirect()->route('admin.publishers.index')->with('success', 'Nhà xuất bản đã được cập nhật.');
+        return redirect()->route('admin.publishers.index')
+            ->with('success', '✅ Nhà xuất bản đã được cập nhật.');
     }
 
     public function destroy(Publisher $publisher)
     {
+        $hasBooks = Book::where('publisher_id', $publisher->id)->exists();
+
+        if ($hasBooks) {
+            return redirect()->route('admin.publishers.index')
+                ->with('error', '❌ Không thể xóa nhà xuất bản vì đang có sách thuộc nhà xuất bản này.');
+        }
+
         $publisher->delete();
 
-        return redirect()->route('admin.publishers.index')->with('success', 'Nhà xuất bản đã bị xóa.');
+        return redirect()->route('admin.publishers.index')
+            ->with('success', '🗑️ Nhà xuất bản đã bị xóa thành công.');
     }
 }

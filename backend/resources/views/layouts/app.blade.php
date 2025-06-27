@@ -108,7 +108,7 @@
             <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">Dashboard</a>
             <a class="nav-link" href="{{ route('admin.books.index') }}">Sách</a>
             <a class="nav-link" href="{{ route('admin.authors.index') }}">Tác giả</a>
-            <a class="nav-link" href="{{ route('admin.publishers.index') }}">NXB</a>
+            <a class="nav-link" href="{{ route('admin.publishers.index') }}">Nhà xuất bản</a>
             <a class="nav-link" href="{{ route('admin.categories.index') }}">Danh mục</a>
             <a class="nav-link" href="{{ route('admin.banners.index') }}">Banner</a>
             <a class="nav-link" href="{{ route('admin.orders.index') }}">Đơn hàng</a>
