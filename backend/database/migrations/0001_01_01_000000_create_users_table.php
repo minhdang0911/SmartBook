@@ -19,6 +19,8 @@ return new class extends Migration {
             $table->string('avatar', 255)->nullable();      // Thêm ảnh đại diện
             $table->string('otp_secret', 100)->nullable();  // Thêm mã OTP bí mật
             $table->timestamp('email_verified_at')->nullable();
+            $table->string('address')->nullable();           // Địa chỉ
+            $table->enum('role', ['user', 'admin'])->default('user'); // Vai trò
             $table->rememberToken();
             $table->timestamps();
         });

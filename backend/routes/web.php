@@ -12,7 +12,7 @@ use App\Http\Controllers\Admin\BookController as AdminBookController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PublisherController;
-
+use App\Http\Controllers\Admin\UserController;
 // Home Controllers
 use App\Http\Controllers\Home\BookController as HomeBookController;
 
@@ -30,6 +30,9 @@ Route::resource('books', HomeBookController::class);
 
 // ===================== Admin Routes (GIỮ CSRF) =====================
 Route::prefix('admin')->name('admin.')->group(function () {
+    Route::resource('users', UserController::class);
+    Route::get('users/{user}', [UserController::class, 'show'])->name('users.show');
+    Route::patch('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggleStatus');
     Route::resource('authors', AuthorController::class);
     Route::resource('publishers', PublisherController::class);
     Route::resource('categories', CategoryController::class);

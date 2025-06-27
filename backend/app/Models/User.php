@@ -12,12 +12,18 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     use HasFactory, Notifiable;
 
     protected $fillable = [
-        'name',
-        'email',
-        'password',
-        'phone',
-        'email_verified_at', // Thêm field này
-    ];
+    'name',
+    'email',
+    'phone',
+    'password',
+    'avatar',
+    'otp_secret',
+    'address',
+    'role',
+    'email_verified_at',
+];
+
+
 
     protected $hidden = [
         'password',
