@@ -113,6 +113,7 @@
             <a class="nav-link" href="{{ route('admin.users.index') }}">Người dùng</a>
             <a class="nav-link" href="{{ route('admin.banners.index') }}">Banner</a>
             <a class="nav-link" href="{{ route('admin.orders.index') }}">Đơn hàng</a>
+            <a class="nav-link" href="{{ route('admin.Coupons.index') }}">Mã giảm giá</a>
             <a class="nav-link" href="#" id="logout-btn">Đăng xuất</a>
         </nav>
     </div>

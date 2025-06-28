@@ -26,7 +26,8 @@ class Order extends Model
         'address',
         'created_at',
         'note',
-        'shipping_code'
+        'shipping_code',
+        'phone'
     ];
 
     public $timestamps = false; // Vì bạn đang dùng $table->timestamp('created_at')->useCurrent();

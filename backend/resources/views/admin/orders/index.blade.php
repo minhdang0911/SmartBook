@@ -140,6 +140,7 @@
             cursor: pointer;
             font-size: 12px;
             transition: all 0.3s ease;
+            margin-right: 4px;
         }
 
         .btn-primary {
@@ -149,6 +150,21 @@
 
         .btn-primary:hover {
             background-color: #40a9ff;
+        }
+
+        .btn-success {
+            background-color: #52c41a;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #73d13d;
+        }
+
+        .btn-success:disabled {
+            background-color: #d9d9d9;
+            color: #bfbfbf;
+            cursor: not-allowed;
         }
 
         .modal {
@@ -202,6 +218,14 @@
 
         .modal-body {
             padding: 24px;
+        }
+
+        .modal-actions {
+            padding: 16px 24px;
+            border-top: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
         }
 
         .info-grid {
@@ -310,6 +334,42 @@
             cursor: not-allowed;
         }
 
+        .shipping-status {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 6px;
+            background-color: #f6ffed;
+            border: 1px solid #b7eb8f;
+        }
+
+        .shipping-status.created {
+            background-color: #f6ffed;
+            border-color: #b7eb8f;
+            color: #52c41a;
+        }
+
+        .shipping-status.error {
+            background-color: #fff2f0;
+            border-color: #ffccc7;
+            color: #ff4d4f;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #1890ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 12px;
@@ -334,6 +394,16 @@
             
             th, td {
                 padding: 8px 4px;
+            }
+
+            .modal-actions {
+                flex-direction: column;
+            }
+
+            .modal-actions .btn {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 8px;
             }
         }
     </style>
@@ -454,12 +524,28 @@
                         <div class="info-label">Tổng thanh toán</div>
                         <div class="info-value" id="modal-total-price" style="color: #1890ff; font-size: 16px;"></div>
                     </div>
+                     <div class="info-item">
+                        <div class="info-label">Mã đơn hàng</div>
+                        <div class="info-value" id="modal-shipping-code" style="color: #1890ff; font-size: 16px;"></div>
+                    </div>
+                </div>
+
+                <!-- Shipping Status -->
+                <div id="shipping-status-container" style="display: none;">
                 </div>
 
                 <div class="items-section">
                     <h3 class="section-title">Sản Phẩm Đã Đặt</h3>
                     <div id="modal-items"></div>
                 </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-success" id="create-shipping-btn" onclick="createShippingOrder()">
+                    <i class="fas fa-truck"></i> Tạo đơn ship
+                </button>
+                <button class="btn btn-primary" onclick="closeModal()">
+                    <i class="fas fa-times"></i> Đóng
+                </button>
             </div>
         </div>
     </div>
@@ -469,6 +555,9 @@
     let currentPage = 1;
     let ordersData = [];
     let paginationData = {};
+    let currentOrderDetail = null;
+
+   
 
     document.addEventListener('DOMContentLoaded', function() {
         loadStats();
@@ -629,6 +718,8 @@
                 }
             }
 
+            currentOrderDetail = order;
+
             document.getElementById('modal-order-id').textContent = '#' + order.id;
             document.getElementById('modal-customer-name').textContent = order.user.name;
             document.getElementById('modal-customer-email').textContent = order.user.email;
@@ -639,6 +730,10 @@
             document.getElementById('modal-price').textContent = formatPrice(order.price) + 'đ';
             document.getElementById('modal-shipping-fee').textContent = formatPrice(order.shipping_fee) + 'đ';
             document.getElementById('modal-total-price').textContent = formatPrice(order.total_price) + 'đ';
+ document.getElementById('modal-shipping-code').textContent = order.shipping_code   ;
+            // Check if shipping order already exists
+            updateShippingButton(order);
+            hideShippingStatus();
 
             const itemsContainer = document.getElementById('modal-items');
             itemsContainer.innerHTML = '';
@@ -668,8 +763,100 @@
         }
     }
 
+    function updateShippingButton(order) {
+        const btn = document.getElementById('create-shipping-btn');
+        
+        // Check if order can have shipping created (you can add your own logic here)
+        const canCreateShipping = ['ready_to_pick', 'picking', 'picked'].includes(order.status);
+        
+        if (canCreateShipping) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-truck"></i> Tạo đơn ship';
+        } else {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-truck"></i> Không thể tạo đơn ship';
+        }
+    }
+
+    
+    async function createShippingOrder() {
+        if (!currentOrderDetail) {
+            alert('Không có thông tin đơn hàng');
+            return;
+        }
+
+        const btn = document.getElementById('create-shipping-btn');
+        const originalText = btn.innerHTML;
+        
+        try {
+            // Show loading state
+            btn.disabled = true;
+            btn.innerHTML = '<div class="loading-spinner"></div> Đang tạo đơn ship...';
+
+            const token = localStorage.getItem('access_token');
+            const shippingData = {
+                customer_name: currentOrderDetail.user.name,
+                customer_phone: currentOrderDetail?.phone || '0000000000' // fallback if no phone
+            };
+
+            const response = await fetch(`${API_BASE_URL}/orders/${currentOrderDetail.id}/shipping`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(shippingData)
+            });
+
+            const data = await response.json();
+
+            if (data.success || response.ok) {
+                showShippingStatus('Đơn ship đã được tạo thành công!', 'created');
+                btn.innerHTML = '<i class="fas fa-check"></i> Đã tạo đơn ship';
+                
+                // Refresh order data to get updated status
+                setTimeout(() => {
+                    loadOrders(currentPage);
+                }, 1000);
+            } else {
+                throw new Error(data.message || 'Không thể tạo đơn ship');
+            }
+
+        } catch (error) {
+            console.error('Error creating shipping order:', error);
+            showShippingStatus(`Lỗi tạo đơn ship: ${error.message}`, 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+
+    function showShippingStatus(message, type) {
+        const container = document.getElementById('shipping-status-container');
+        container.style.display = 'block';
+        container.className = `shipping-status ${type}`;
+        container.innerHTML = `
+            <i class="fas ${type === 'created' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
+            ${message}
+        `;
+        
+        // Auto-hide success message after 5 seconds
+        if (type === 'created') {
+            setTimeout(() => {
+                hideShippingStatus();
+            }, 5000);
+        }
+    }
+
+    function hideShippingStatus() {
+        const container = document.getElementById('shipping-status-container');
+        container.style.display = 'none';
+    }
+
     function closeModal() {
         document.getElementById('orderModal').style.display = 'none';
+        currentOrderDetail = null;
+        hideShippingStatus();
     }
 
     function formatPrice(price) {
@@ -748,10 +935,6 @@
         }
     });
 
-    setInterval(() => {
-        loadStats();
-        loadOrders(currentPage);
-    }, 30000);
 </script>
 
 </body>

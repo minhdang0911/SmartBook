@@ -17,7 +17,7 @@ public function Ebooks(Request $request)
     $limit = $request->query('limit', default: 10); // Mặc định là 10 nếu không truyền
     $page = $request->query('page', 1);
 
-    $query = Book::where('is_physical', 1)
+    $query = Book::where('is_physical', 0)
         ->select('id', 'title', 'cover_image');
 
     $total = $query->count();
