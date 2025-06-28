@@ -1,5 +1,6 @@
-<!DOCTYPE html>
-<html lang="vi">
+@extends('layouts.app')
+
+@section('content')
 
 <head>
     <meta charset="UTF-8">
@@ -180,23 +181,7 @@
 </head>
 
 <body>
-    {{-- Navbar - Thêm navbar từ layout chính --}}
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="{{ route('admin.dashboard') }}">Admin1</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbar">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="adminNavbar">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.dashboard') }}">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.books.index') }}">Sách</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.authors.index') }}">Tác giả</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.publishers.index') }}">NXB</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.categories.index') }}">Danh mục</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="{{ route('admin.banners.index') }}">Banner</a></li>
-                </ul>
-
+   
                 {{-- Dropdown người dùng --}}
                 <div class="ms-auto text-white d-flex align-items-center">
                     <div class="dropdown">
