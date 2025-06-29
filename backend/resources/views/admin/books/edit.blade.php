@@ -1,129 +1,196 @@
+
 @extends('layouts.app')
 
+@section('title', 'Chỉnh sửa Sách')
+
 @section('content')
-<div class="container mt-5">
-    <h1 class="mb-4">✏️ Chỉnh sửa sách</h1>
+    <div class="container mt-4 mt-md-5">
+        <h1 class="mb-4 text-center text-md-start">✏️ Chỉnh sửa sách</h1>
 
-    {{-- Hiển thị lỗi --}}
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul class="mb-0">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
-    <form action="{{ route('admin.books.update', $book) }}" method="POST" enctype="multipart/form-data">
-        @csrf
-        @method('PUT')
-
-        <!-- Tiêu đề -->
-        <div class="mb-3">
-            <label>Tiêu đề sách</label>
-            <input type="text" name="title" value="{{ old('title', $book->title) }}" class="form-control" required>
-        </div>
-
-        <!-- Tác giả -->
-        <div class="mb-3">
-            <label>Tác giả</label>
-            <select name="author_id" class="form-control" required>
-                @foreach ($authors as $author)
-                    <option value="{{ $author->id }}" {{ old('author_id', $book->author_id) == $author->id ? 'selected' : '' }}>
-                        {{ $author->name }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-
-        <!-- Nhà xuất bản -->
-        <div class="mb-3">
-            <label>Nhà xuất bản</label>
-            <select name="publisher_id" class="form-control" required>
-                @foreach ($publishers as $publisher)
-                    <option value="{{ $publisher->id }}" {{ old('publisher_id', $book->publisher_id) == $publisher->id ? 'selected' : '' }}>
-                        {{ $publisher->name }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-
-        <!-- Danh mục -->
-        <div class="mb-3">
-            <label>Danh mục</label>
-            <select name="category_id" class="form-control" required>
-                @foreach ($categories as $category)
-                    <option value="{{ $category->id }}" {{ old('category_id', $book->category_id) == $category->id ? 'selected' : '' }}>
-                        {{ $category->name }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-
-        <!-- Giá -->
-        <div class="mb-3">
-            <label>Giá</label>
-            <input type="number" name="price" step="1000" min="0" value="{{ old('price', $book->price) }}" class="form-control" required>
-        </div>
-
-        <!-- Tồn kho -->
-        <div class="mb-3">
-            <label>Số lượng tồn kho</label>
-            <input type="number" name="stock" min="0" value="{{ old('stock', $book->stock) }}" class="form-control" required>
-        </div>
-
-        <!-- Mô tả -->
-        <div class="mb-3">
-            <label>Mô tả</label>
-            <textarea name="description" class="form-control my-editor">{{ old('description', $book->description) }}</textarea>
-        </div>
-
-        <!-- Ảnh bìa hiện tại -->
-        @if ($book->cover_image)
-            <div class="mb-3">
-                <label>Ảnh bìa hiện tại:</label><br>
-                <img src="{{ $book->cover_image }}" alt="Ảnh bìa" style="height: 200px;" class="rounded">
+        {{-- Hiển thị lỗi --}}
+        @if ($errors->any())
+            <div class="alert alert-danger">
+                <ul class="mb-0">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
             </div>
         @endif
 
-        <!-- Thay ảnh bìa -->
-        <div class="mb-3">
-            <label>Thay ảnh bìa (không bắt buộc)</label>
-            <input type="file" name="cover_image" class="form-control" accept="image/*">
-        </div>
+        <form action="{{ route('admin.books.update', $book) }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            @method('PUT')
+            <div class="row g-3">
+                <!-- Tiêu đề -->
+                <div class="col-12">
+                    <label for="title" class="form-label">Tiêu đề sách</label>
+                    <input type="text" name="title" id="title" value="{{ old('title', $book->title) }}"
+                        class="form-control" required>
+                </div>
 
-        <!-- Ảnh phụ hiện tại -->
-        @if ($book->images && $book->images->count())
-            <div class="mb-3">
-                <label>Ảnh phụ hiện tại:</label><br>
-                <div class="d-flex flex-wrap gap-2">
-                    @foreach ($book->images as $img)
-                        <img src="{{ $img->image_url }}" alt="Ảnh phụ" style="height: 100px;" class="rounded">
-                    @endforeach
+                <!-- Tác giả -->
+                <div class="col-12 col-md-6">
+                    <label for="author_id" class="form-label">Tác giả</label>
+                    <select name="author_id" id="author_id" class="form-control" required>
+                        <option disabled {{ old('author_id', $book->author_id) ? '' : 'selected' }}>-- Chọn tác giả --</option>
+                        @foreach ($authors as $author)
+                            <option value="{{ $author->id }}"
+                                {{ old('author_id', $book->author_id) == $author->id ? 'selected' : '' }}>
+                                {{ $author->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Nhà xuất bản -->
+                <div class="col-12 col-md-6">
+                    <label for="publisher_id" class="form-label">Nhà xuất bản</label>
+                    <select name="publisher_id" id="publisher_id" class="form-control" required>
+                        <option disabled {{ old('publisher_id', $book->publisher_id) ? '' : 'selected' }}>-- Chọn NXB --</option>
+                        @foreach ($publishers as $publisher)
+                            <option value="{{ $publisher->id }}"
+                                {{ old('publisher_id', $book->publisher_id) == $publisher->id ? 'selected' : '' }}>
+                                {{ $publisher->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Danh mục -->
+                <div class="col-12">
+                    <label for="category_id" class="form-label">Danh mục</label>
+                    <select name="category_id" id="category_id" class="form-control" required>
+                        <option disabled {{ old('category_id', $book->category_id) ? '' : 'selected' }}>-- Chọn danh mục --</option>
+                        @foreach ($categories as $category)
+                            <option value="{{ $category->id }}"
+                                {{ old('category_id', $book->category_id) == $category->id ? 'selected' : '' }}>
+                                {{ $category->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Giá và Tồn kho -->
+                <div class="col-12 col-md-6">
+                    <label for="price" class="form-label">Giá (VNĐ)</label>
+                    <input type="number" name="price" id="price" step="1000" min="0"
+                        value="{{ old('price', $book->price) }}" class="form-control" required>
+                </div>
+                <div class="col-12 col-md-6">
+                    <label for="stock" class="form-label">Số lượng tồn kho</label>
+                    <input type="number" name="stock" id="stock" min="0" value="{{ old('stock', $book->stock) }}"
+                        class="form-control" required>
+                </div>
+
+                <!-- Mô tả -->
+                <div class="col-12">
+                    <label for="description" class="form-label">Mô tả</label>
+                    <textarea name="description" id="description" class="form-control my-editor" rows="5">{{ old('description', $book->description) }}</textarea>
+                </div>
+
+                <!-- Ảnh bìa hiện tại -->
+                @if ($book->cover_image)
+                    <div class="col-12">
+                        <label class="form-label">Ảnh bìa hiện tại:</label>
+                        <img src="{{ $book->cover_image }}" alt="Ảnh bìa" class="rounded img-fluid"
+                            style="max-height: 200px;">
+                    </div>
+                @endif
+
+                <!-- Thay ảnh bìa -->
+                <div class="col-12">
+                    <label for="cover_image" class="form-label">Thay ảnh bìa (không bắt buộc)</label>
+                    <input type="file" name="cover_image" id="cover_image" class="form-control" accept="image/*">
+                    <img id="previewCover" class="mt-2 rounded img-fluid" style="max-height: 200px; display: none;"
+                        alt="Ảnh bìa mới" />
+                </div>
+
+                <!-- Ảnh phụ hiện tại -->
+                @if ($book->images && $book->images->count())
+                    <div class="col-12">
+                        <label class="form-label">Ảnh phụ hiện tại:</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach ($book->images as $img)
+                                <img src="{{ $img->image_url }}" alt="Ảnh phụ" class="rounded img-fluid"
+                                    style="height: 100px; max-width: 100%;">
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Thêm ảnh phụ mới -->
+                <div class="col-12">
+                    <label for="images" class="form-label">Thêm ảnh phụ mới (có thể chọn nhiều)</label>
+                    <input type="file" name="images[]" id="images" class="form-control" multiple accept="image/*">
+                    <div id="previewImages" class="d-flex flex-wrap mt-2 gap-2"></div>
+                </div>
+
+                <!-- Nút điều khiển -->
+                <div class="col-12 d-flex gap-2 justify-content-center justify-content-md-start">
+                    <button class="btn btn-primary">💾 Cập nhật</button>
+                    <a href="{{ route('admin.books.index') }}" class="btn btn-secondary">⬅️ Quay lại</a>
                 </div>
             </div>
-        @endif
-
-        <!-- Thêm ảnh phụ mới -->
-        <div class="mb-3">
-            <label>Thêm ảnh phụ mới (có thể chọn nhiều)</label>
-            <input type="file" name="images[]" class="form-control" multiple accept="image/*">
-        </div>
-
-        <button class="btn btn-primary">💾 Cập nhật</button>
-        <a href="{{ route('admin.books.index') }}" class="btn btn-secondary">⬅️ Quay lại</a>
-    </form>
-</div>
+        </form>
+    </div>
 @endsection
 
-@push('scripts')
-<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
-<script>
-    ClassicEditor
-        .create(document.querySelector('.my-editor'))
-        .catch(error => {
-            console.error(error);
-        });
-</script>
+@push('styles')
+    <style>
+        @media (max-width: 576px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+            .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+            #previewImages img,
+            .d-flex img {
+                height: 80px;
+                max-width: 100%;
+            }
+        }
+    </style>
 @endpush
+
+@push('scripts')
+    <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+    <script>
+        ClassicEditor
+            .create(document.querySelector('.my-editor'), {
+                toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|', 'undo', 'redo']
+            })
+            .catch(error => {
+                console.error(error);
+            });
+
+        // Preview ảnh bìa mới
+        document.getElementById('cover_image').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('previewCover');
+            if (file) {
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+        });
+
+        // Preview ảnh phụ mới
+        document.getElementById('images').addEventListener('change', function(e) {
+            const previewContainer = document.getElementById('previewImages');
+            previewContainer.innerHTML = '';
+            Array.from(e.target.files).forEach(file => {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                img.style.height = '100px';
+                img.style.maxWidth = '100%';
+                img.classList.add('rounded', 'img-fluid');
+                previewContainer.appendChild(img);
+            });
+        });
+    </script>
+@endpush
+

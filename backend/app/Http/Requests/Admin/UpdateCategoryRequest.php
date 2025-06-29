@@ -13,7 +13,16 @@ class UpdateCategoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:100',
+            'name' => 'required|string|max:100|unique:categories,name',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'Tên danh mục không được để trống.',
+            'name.max' => 'Tên danh mục không được vượt quá 100 ký tự.',
+            'name.unique' => 'Tên danh mục đã tồn tại.',
         ];
     }
 }

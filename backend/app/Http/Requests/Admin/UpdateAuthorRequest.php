@@ -14,15 +14,16 @@ class UpdateAuthorRequest extends FormRequest
     public function rules()
     {
         return [
-            'name' => 'required|string|max:100',
+            'name' => 'required|string|max:100|unique:authors,name',
         ];
     }
-    
+
     public function messages(): array
     {
         return [
             'name.required' => 'Tên tác giả không được để trống.',
             'name.max' => 'Tên tác giả không được vượt quá 100 ký tự.',
+            'name.unique' => 'Tên tác giả đã tồn tại.',
         ];
     }
 }

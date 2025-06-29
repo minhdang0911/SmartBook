@@ -3,36 +3,110 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Book;
-use App\Models\Author;
-use App\Models\Publisher;
-use App\Models\Category;
-use App\Models\BookImage;
+use App\Models\{Book, Author, Publisher, Category, BookImage};
+use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
-use Cloudinary\Cloudinary;
 
 class BookController extends Controller
 {
-    public function index()
+    protected $cloudinary;
+
+    public function __construct(CloudinaryService $cloudinary)
     {
-        $books = Book::with(['author', 'publisher', 'category'])->paginate(10);
-        return view('admin.books.index', compact('books'));
+        $this->cloudinary = $cloudinary;
+    }
+
+    public function index(Request $request)
+    {
+        $query = Book::with(['author', 'publisher', 'category']);
+
+        if ($request->filled('search')) {
+            $query->where('title', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('author_id')) {
+            $query->where('author_id', $request->author_id);
+        }
+
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        if ($request->filled('publisher_id')) {
+            $query->where('publisher_id', $request->publisher_id);
+        }
+
+        if ($request->filled('price_min')) {
+            $query->where('price', '>=', $request->price_min);
+        }
+
+        if ($request->filled('price_max')) {
+            $query->where('price', '<=', $request->price_max);
+        }
+
+        if ($request->filled('stock_status')) {
+            if ($request->stock_status === 'in_stock') {
+                $query->where('stock', '>', 0);
+            } elseif ($request->stock_status === 'out_of_stock') {
+                $query->where('stock', '=', 0);
+            }
+        }
+
+        if ($request->filled('is_physical')) {
+            $query->where('is_physical', $request->is_physical);
+        }
+
+        if ($request->filled('sort_by')) {
+            switch ($request->sort_by) {
+                case 'views':
+                    $query->orderByDesc('views');
+                    break;
+                case 'likes':
+                    $query->orderByDesc('likes');
+                    break;
+                case 'rating':
+                    $query->orderByDesc('rating_avg');
+                    break;
+                case 'price_asc':
+                    $query->orderBy('price');
+                    break;
+                case 'price_desc':
+                    $query->orderByDesc('price');
+                    break;
+                case 'latest':
+                default:
+                    $query->orderByDesc('created_at');
+                    break;
+            }
+        } else {
+            $query->orderByDesc('created_at');
+        }
+
+        $books = $query->paginate(10)->withQueryString();
+
+        return view('admin.books.index', [
+            'books' => $books,
+            'authors' => Author::all(),
+            'categories' => Category::all(),
+            'publishers' => Publisher::all(),
+        ]);
     }
 
     public function create()
     {
-        $authors = Author::all();
-        $publishers = Publisher::all();
-        $categories = Category::all();
-        return view('admin.books.create', compact('authors', 'publishers', 'categories'));
+        return view('admin.books.create', [
+            'authors' => Author::all(),
+            'publishers' => Publisher::all(),
+            'categories' => Category::all(),
+        ]);
     }
 
     public function store(Request $request)
     {
         $request->validate([
             'title' => 'required|max:255',
-            'cover_image' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'cover_image' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
             'author_id' => 'required|exists:authors,id',
             'publisher_id' => 'required|exists:publishers,id',
             'category_id' => 'required|exists:categories,id',
@@ -40,23 +114,7 @@ class BookController extends Controller
             'stock' => 'required|integer|min:0',
         ]);
 
-        $cloudinary = new Cloudinary([
-            'cloud' => [
-                'cloud_name' => 'dz7y2yufu',
-                'api_key'    => '155772835832488',
-                'api_secret' => 'Ho_6ApwWCE5s1dYtBzHAbPlSSD0',
-            ],
-            'url' => ['secure' => true]
-        ]);
-
-        $coverUrl = null;
-        if ($request->hasFile('cover_image')) {
-            $coverUpload = $cloudinary->uploadApi()->upload(
-                $request->file('cover_image')->getRealPath(),
-                ['folder' => 'book_covers']
-            );
-            $coverUrl = $coverUpload['secure_url'] ?? null;
-        }
+        $coverUrl = $this->cloudinary->uploadImage($request->file('cover_image'), 'book_covers');
 
         $book = Book::create([
             'title' => $request->title,
@@ -69,98 +127,95 @@ class BookController extends Controller
             'cover_image' => $coverUrl,
         ]);
 
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $index => $image) {
-                $uploaded = $cloudinary->uploadApi()->upload(
-                    $image->getRealPath(),
-                    ['folder' => 'book_images']
-                );
+        BookImage::create([
+            'book_id' => $book->id,
+            'image_url' => $coverUrl,
+            'is_main' => 1,
+        ]);
 
-                if (isset($uploaded['secure_url'])) {
-                    BookImage::create([
-                        'book_id' => $book->id,
-                        'image_url' => $uploaded['secure_url'],
-                        'is_main' => $index === 0 ? 1 : 0,
-                    ]);
-                }
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $imageUrl = $this->cloudinary->uploadImage($image, 'book_images');
+                BookImage::create([
+                    'book_id' => $book->id,
+                    'image_url' => $imageUrl,
+                    'is_main' => 0,
+                ]);
             }
         }
 
         return redirect()->route('admin.books.index')->with('success', 'Đã thêm sách và ảnh.');
     }
 
-   public function edit(Book $book)
-{
-    $book->load('images'); // Nạp luôn quan hệ
-
-    $authors = Author::all();
-    $publishers = Publisher::all();
-    $categories = Category::all();
-
-    return view('admin.books.edit', compact('book', 'authors', 'publishers', 'categories'));
-}
-
-
-
-public function update(Request $request, Book $book)
-{
-    $request->validate([
-        'title' => 'required|max:255',
-        'author_id' => 'required|exists:authors,id',
-        'publisher_id' => 'required|exists:publishers,id',
-        'category_id' => 'required|exists:categories,id',
-        'price' => 'required|numeric|min:0',
-        'stock' => 'required|integer|min:0',
-        'cover_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-        'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-    ]);
-
-    // ✅ Khởi tạo Cloudinary
-    $cloudinary = new Cloudinary([
-        'cloud' => [
-            'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
-            'api_key'    => env('CLOUDINARY_API_KEY'),
-            'api_secret' => env('CLOUDINARY_API_SECRET'),
-        ],
-        'url' => ['secure' => true]
-    ]);
-
-    // ✅ Cập nhật thông tin cơ bản
-    $book->update($request->only([
-        'title', 'author_id', 'publisher_id', 'category_id', 'price', 'stock', 'description'
-    ]));
-
-    // ✅ Nếu có ảnh bìa mới
-    if ($request->hasFile('cover_image')) {
-        $upload = $cloudinary->uploadApi()->upload(
-            $request->file('cover_image')->getRealPath(),
-            ['folder' => 'book_covers']
-        );
-        $book->update(['cover_image' => $upload['secure_url']]);
+    public function edit(Book $book)
+    {
+        $book->load('images');
+        return view('admin.books.edit', [
+            'book' => $book,
+            'authors' => Author::all(),
+            'publishers' => Publisher::all(),
+            'categories' => Category::all(),
+        ]);
     }
 
-    // ✅ Nếu có ảnh phụ mới
-    if ($request->hasFile('images')) {
-        foreach ($request->file('images') as $image) {
-            $uploaded = $cloudinary->uploadApi()->upload(
-                $image->getRealPath(),
-                ['folder' => 'book_images']
-            );
-            \App\Models\BookImage::create([
+    public function update(Request $request, Book $book)
+    {
+        $request->validate([
+            'title' => 'required|max:255',
+            'author_id' => 'required|exists:authors,id',
+            'publisher_id' => 'required|exists:publishers,id',
+            'category_id' => 'required|exists:categories,id',
+            'price' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'cover_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+        ]);
+
+        $book->update($request->only([
+            'title', 'author_id', 'publisher_id', 'category_id', 'price', 'stock', 'description'
+        ]));
+
+        if ($request->hasFile('cover_image')) {
+            if ($book->cover_image) {
+                $this->cloudinary->deleteImageByPublicId($book->cover_image);
+                BookImage::where('book_id', $book->id)->where('is_main', 1)->delete();
+            }
+
+            $newCover = $this->cloudinary->uploadImage($request->file('cover_image'), 'book_covers');
+            $book->update(['cover_image' => $newCover]);
+
+            BookImage::create([
                 'book_id' => $book->id,
-                'image_url' => $uploaded['secure_url'],
-                'is_main' => 0,
+                'image_url' => $newCover,
+                'is_main' => 1,
             ]);
         }
+
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $imageUrl = $this->cloudinary->uploadImage($image, 'book_images');
+                BookImage::create([
+                    'book_id' => $book->id,
+                    'image_url' => $imageUrl,
+                    'is_main' => 0,
+                ]);
+            }
+        }
+
+        return redirect()->route('admin.books.index')->with('success', 'Cập nhật sách thành công.');
     }
-
-    return redirect()->route('admin.books.index')->with('success', 'Cập nhật sách thành công.');
-}
-
-
 
     public function destroy(Book $book)
     {
+        if ($book->cover_image) {
+            $this->cloudinary->deleteImageByPublicId($book->cover_image);
+        }
+
+        foreach ($book->images as $img) {
+            $this->cloudinary->deleteImageByPublicId($img->image_url);
+            $img->delete();
+        }
+
         $book->delete();
         return redirect()->route('admin.books.index')->with('success', 'Đã xóa sách.');
     }

@@ -69,7 +69,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::resource('books', AdminBookController::class);
     Route::resource('banners', BannerController::class);
     Route::resource('orders', OrderController::class);
-      Route::resource('Coupons', CouponController::class);
+    Route::resource('Coupons', CouponController::class);
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
