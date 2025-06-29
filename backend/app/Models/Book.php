@@ -24,17 +24,25 @@ class Book extends Model
     {
         return $this->belongsTo(Author::class);
     }
+
     public function publisher()
     {
         return $this->belongsTo(Publisher::class);
     }
+
     public function category()
     {
         return $this->belongsTo(Category::class);
     }
+
     public function ratings()
     {
         return $this->hasMany(Rating::class);
+    }
+
+    public function images()
+    {
+        return $this->hasMany(BookImage::class);
     }
 
     public function updateRatingAvg()
@@ -43,5 +51,4 @@ class Book extends Model
         $this->rating_avg = round($avg, 1);
         $this->save();
     }
-
 }

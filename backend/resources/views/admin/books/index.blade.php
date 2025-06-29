@@ -25,8 +25,15 @@
         </thead>
         <tbody>
             @foreach ($books as $index => $book)
-            <tr>
-                <td>{{ $index + 1 }}</td>
+            <tr>  
+                 <td>{{ $index + 1 }}</td>
+                <td>
+                    @if ($book->cover_image)
+                        <center><img src="{{ $book->cover_image }}" alt="Ảnh bìa" style="height: 60px;" class="rounded"></center>
+                    @else
+                        <span class="text-muted">Không có</span>
+                    @endif
+                </td>
                 <td>{{ $book->title }}</td>
                 <td>{{ $book->author->name }}</td>
                 <td>{{ $book->publisher->name }}</td>

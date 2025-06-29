@@ -16,15 +16,44 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\CouponController;
 // Home Controllers
 use App\Http\Controllers\Home\BookController as HomeBookController;
+use Cloudinary\Configuration\Configuration;
 
 // Auth
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\ProfileController;
+use Illuminate\Http\Request;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
+Route::get('/upload-form', function () {
+    return '
+    <form method="POST" enctype="multipart/form-data" action="/upload-test">
+        ' . csrf_field() . '
+        <input type="file" name="image" required>
+        <button>Upload</button>
+    </form>';
+});
+
+Route::post('/upload-test', function (Request $request) {
+    $url = Cloudinary::upload($request->file('image')->getRealPath(), [
+        'folder' => 'test'
+    ])->getSecurePath();
+
+    return "Uploaded to: <a href='$url' target='_blank'>$url</a>";
+});
 // ===================== Public Routes =====================
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/check-cloud', function () {
+    return Configuration::instance()->cloud;
+});
+
+
+Route::get('/debug-cloudinary', function () {
+    return Configuration::instance()->cloud;
+});
+
 
 // Resource route cho books (web interface)
 Route::resource('books', HomeBookController::class);

@@ -128,3 +128,4 @@ Route::prefix('banners')->group(function () {
 Route::apiResource('coupons', CouponController::class);
 Route::post('/coupons/check', [CouponController::class, 'check']);
 Route::get('/coupons/get', [CouponController::class, 'show']);
+// Route lấy danh sách mã giảm giá cho người dùng

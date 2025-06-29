@@ -21,15 +21,15 @@ class AppServiceProvider extends ServiceProvider
       public function boot()
     {
         // Configure Cloudinary
-        Configuration::instance([
-            'cloud' => [
-                'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
-                'api_key' => env('CLOUDINARY_API_KEY'),
-                'api_secret' => env('CLOUDINARY_API_SECRET'),
-            ],
-            'url' => [
-                'secure' => true
-            ]
-        ]);
+       Configuration::instance([
+        'cloud' => [
+            'cloud_name' => 'dz7y2yufu',
+            'api_key'    => '155772835832488',
+            'api_secret' => 'Ho_6ApwWCE5s1dYtBzHAbPlSSD0',
+        ],
+        'url' => [
+            'secure' => true
+        ]
+    ]);
     }
 }
