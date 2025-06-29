@@ -1,400 +1,304 @@
-<!DOCTYPE html>
-<html lang="vi">
+@extends('layouts.app')
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Quản lý Banner</title>
+@section('title', 'Quản lý Banner')
 
-    {{-- Bootstrap CSS --}}
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    {{-- Bootstrap Icons --}}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+@push('styles')
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2.5rem 1.5rem;
+        text-align: center;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        margin-top: 0;
+    }
 
-    <!-- Ant Design CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/antd/5.12.8/reset.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/antd/5.12.8/antd.min.css" rel="stylesheet">
+    .page-header h1 {
+        margin: 0;
+        font-size: clamp(1.5rem, 5vw, 2rem);
+        font-weight: 700;
+    }
 
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #f5f5f5; /* Đổi background để không xung đột với navbar */
-            min-height: 100vh;
+    .page-header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+        font-size: clamp(0.875rem, 3vw, 1rem);
+    }
+
+    .banner-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1.5rem;
+    }
+
+    .banner-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: clamp(0.75rem, 2.5vw, 0.875rem);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #333;
+        font-size: clamp(0.75rem, 2.5vw, 0.875rem);
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: clamp(0.75rem, 2.5vw, 0.875rem);
+        transition: border-color 0.3s ease;
+        box-sizing: border-box;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .upload-area {
+        border: 2px dashed #d9d9d9;
+        border-radius: 12px;
+        padding: 2rem 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: #fafafa;
+    }
+
+    .upload-area:hover {
+        border-color: #667eea;
+        background: #f0f4ff;
+    }
+
+    .banner-image {
+        width: 100%;
+        max-width: 100px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .banner-table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 600px;
+    }
+
+    th, td {
+        padding: 1rem;
+        text-align: left;
+    }
+
+    .action-btn-container {
+        display: flex;
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+
+    .action-btn {
+        transition: all 0.3s ease;
+        min-width: 60px;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    @media (max-width: 768px) {
+        .action-btn-container {
+            flex-direction: column;
+            align-items: stretch;
         }
+    }
 
-        /* Header Styles */
-        .page-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px 24px;
-            text-align: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            margin-top: 0; /* Đảm bảo không có margin top */
-        }
-
+    @media (max-width: 576px) {
         .page-header h1 {
-            margin: 0;
-            font-size: 32px;
-            font-weight: 700;
+            font-size: clamp(1.25rem, 4vw, 1.5rem);
         }
 
         .page-header p {
-            margin: 8px 0 0 0;
-            opacity: 0.9;
-            font-size: 16px;
+            font-size: clamp(0.75rem, 3vw, 0.875rem);
         }
 
-        /* Container */
-        .banner-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 24px;
+        th, td {
+            padding: 0.75rem;
+            font-size: clamp(0.7rem, 2.5vw, 0.8rem);
         }
 
-        /* Card Styles */
-        .banner-card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            overflow: hidden;
-            margin-bottom: 24px;
-        }
-
-        /* Button Styles */
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 14px;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-        }
-
-        .ant-btn {
-            background: #f5f5f5;
-            border: 1px solid #d9d9d9;
-            color: #333;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        /* Form Styles */
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-            font-size: 14px;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s ease;
-            box-sizing: border-box;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        /* Upload Area */
-        .upload-area {
-            border: 2px dashed #d9d9d9;
-            border-radius: 12px;
-            padding: 40px 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: #fafafa;
-        }
-
-        .upload-area:hover {
-            border-color: #667eea;
-            background: #f0f4ff;
-        }
-
-        /* Modal Styles */
-        .modal-header {
-            padding: 24px 24px 0 24px;
-            border-bottom: 1px solid #f0f0f0;
-            margin-bottom: 24px;
-        }
-
-        .ant-modal-body {
-            padding: 0 24px 24px 24px;
-            max-height: 60vh;
-            overflow-y: auto;
-        }
-
-        .ant-modal-footer {
-            padding: 16px 24px;
-            border-top: 1px solid #f0f0f0;
-            text-align: right;
-            background: #fafafa;
-        }
-
-        /* Table Styles */
         .banner-image {
-            width: 100px;
-            height: 60px;
-            object-fit: cover;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 60px;
+            height: 36px;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .btn-primary,
+        .btn-secondary {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.75rem;
         }
 
-        .status-tag {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 500;
+        .modal-dialog {
+            margin: 0.25rem;
         }
+    }
+</style>
+@endpush
 
-        .action-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-    </style>
-</head>
+@section('content')
+<div class="page-header">
+    <h1>Quản lý Banner</h1>
+    <p>Quản lý các banner quảng cáo trên hệ thống SmartBook</p>
+</div>
 
-<body>
-    {{-- Navbar - Thêm navbar từ layout chính --}}
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="{{ route('admin.dashboard') }}">Admin1</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbar">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="adminNavbar">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.dashboard') }}">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.books.index') }}">Sách</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.authors.index') }}">Tác giả</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.publishers.index') }}">NXB</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.categories.index') }}">Danh mục</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="{{ route('admin.banners.index') }}">Banner</a></li>
-                </ul>
-
-                {{-- Dropdown người dùng --}}
-                <div class="ms-auto text-white d-flex align-items-center">
-                    <div class="dropdown">
-                        <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            👤 <span id="user-name">Loading...</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li><a class="dropdown-item" href="#">Hồ sơ</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" id="logout-btn">Đăng xuất</a></li>
-                        </ul>
-                    </div>
-                </div>
+<div class="banner-container">
+    <div class="banner-card" style="padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h3 style="margin: 0; color: #333;">Danh sách Banner</h3>
+                <p style="margin: 4px 0 0 0; color: #666;">Tổng cộng: <strong id="total-banners">0</strong> banner</p>
             </div>
-        </div>
-    </nav>
-
-    <!-- Header trên đầu trang -->
-  
-
-    <div class="banner-container">
-        <!-- Action Bar -->
-        <div class="banner-card" style="padding: 24px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <h3 style="margin: 0; color: #333;">Danh sách Banner</h3>
-                    <p style="margin: 4px 0 0 0; color: #666;">Tổng cộng: <strong id="total-banners">0</strong> banner
-                    </p>
-                </div>
-                <button class="btn-primary" onclick="openCreateModal()">
-                    ➕ Thêm Banner Mới
-                </button>
-            </div>
-        </div>
-
-        <!-- Banner Table -->
-        <div class="banner-card">
-            <div id="banner-table"></div>
+            <button class="btn-primary" data-bs-toggle="modal" data-bs-target="#bannerModal">➕ Thêm Banner Mới</button>
         </div>
     </div>
 
-    <!-- Modal -->
-    <div id="banner-modal"
-    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
-    <div
-        style="display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px;">
-        <div
-            style="width: 600px; max-width: 90vw; position: relative; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 12px 48px rgba(0,0,0,0.2); max-height: 90vh; display: flex; flex-direction: column;">
-            <!-- Header -->
-            <div
-                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px 24px;">
-                <h3 id="modal-title" style="margin: 0; font-size: 20px;">Thêm Banner Mới</h3>
-            </div>
+    <div class="banner-card banner-table-responsive">
+        <div id="banner-table">Loading...</div>
+    </div>
+</div>
 
-            <!-- Body -->
-            <div style="padding: 24px; overflow-y: auto;">
+<div class="modal fade" id="bannerModal" tabindex="-1" aria-labelledby="modalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Thêm Banner Mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
                 <form id="banner-form">
                     <input type="hidden" id="banner-id">
 
-                    <div style="margin-bottom: 20px;">
-                        <label style="font-weight: 600; color: #333; margin-bottom: 8px; display: block;">📝 Tiêu đề</label>
-                        <input type="text" id="title"
-                            style="width: 100%; padding: 10px 12px; border: 2px solid #e8e8e8; border-radius: 8px; font-size: 14px;"
-                            placeholder="Nhập tiêu đề banner...">
+                    <div class="form-group">
+                        <label class="form-label">📝 Tiêu đề</label>
+                        <input type="text" id="title" class="form-control" placeholder="Nhập tiêu đề banner..." required>
                     </div>
 
-                    <div style="margin-bottom: 20px;">
-                        <label style="font-weight: 600; color: #333; margin-bottom: 8px; display: block;">📄 Mô tả</label>
-                        <textarea id="description" rows="3"
-                            style="width: 100%; padding: 10px 12px; border: 2px solid #e8e8e8; border-radius: 8px; font-size: 14px;"
-                            placeholder="Nhập mô tả chi tiết..."></textarea>
+                    <div class="form-group">
+                        <label class="form-label">📄 Mô tả</label>
+                        <textarea id="description" rows="3" class="form-control" placeholder="Nhập mô tả chi tiết..."></textarea>
                     </div>
 
-                    <div style="margin-bottom: 20px;">
-                        <label style="font-weight: 600; color: #333; margin-bottom: 8px; display: block;">🔗 Liên kết (URL)</label>
-                        <input type="url" id="link"
-                            style="width: 100%; padding: 10px 12px; border: 2px solid #e8e8e8; border-radius: 8px; font-size: 14px;"
-                            placeholder="https://example.com">
+                    <div class="form-group">
+                        <label class="form-label">🔗 Liên kết (URL)</label>
+                        <input type="url" id="link" class="form-control" placeholder="https://example.com">
                     </div>
 
-                    <div style="margin-bottom: 20px;">
-                        <label style="font-weight: 600; color: #333; margin-bottom: 8px; display: block;">📚 ID Sách (tùy chọn)</label>
-                        <input type="number" id="book_id"
-                            style="width: 100%; padding: 10px 12px; border: 2px solid #e8e8e8; border-radius: 8px; font-size: 14px;"
-                            placeholder="Nhập ID sách...">
+                    <div class="form-group">
+                        <label class="form-label">📚 ID Sách (tùy chọn)</label>
+                        <input type="number" id="book_id" class="form-control" placeholder="Nhập ID sách...">
                     </div>
 
-                    <div style="margin-bottom: 20px;">
-                        <label style="font-weight: 600; color: #333; margin-bottom: 8px; display: block;">🖼️ Hình ảnh Banner</label>
-                        <div onclick="document.getElementById('image-input').click()"
-                            style="border: 2px dashed #d9d9d9; border-radius: 8px; padding: 40px; text-align: center; background: #fafafa; cursor: pointer;">
+                    <div class="form-group">
+                        <label class="form-label">🖼️ Hình ảnh Banner</label>
+                        <div class="upload-area" onclick="document.getElementById('image-input').click()">
                             <div id="upload-content">
-                                <div style="font-size: 48px; color: #999; margin-bottom: 16px;">📁</div>
-                                <p style="margin: 0; color: #666; font-size: 16px;">Nhấp để chọn hoặc kéo thả hình ảnh</p>
-                                <p style="margin: 8px 0 0 0; color: #999; font-size: 12px;">Hỗ trợ: JPG, PNG, GIF (tối đa 5MB)</p>
+                                <div style="font-size: clamp(2rem, 5vw, 3rem); color: #999; margin-bottom: 16px;">📁</div>
+                                <p style="margin: 0; color: #666; font-size: clamp(0.875rem, 2.5vw, 1rem);">Nhấp để chọn hoặc kéo thả hình ảnh</p>
+                                <p style="margin: 8px 0 0 0; color: #999; font-size: clamp(0.625rem, 2vw, 0.75rem);">Hỗ trợ: JPG, PNG, GIF (tối đa 5MB)</p>
                             </div>
                             <div id="image-preview" style="display: none;">
-                                <img id="preview-img"
-                                    style="max-width: 200px; max-height: 120px; border-radius: 8px;">
-                                <p style="margin: 8px 0 0 0; color: #666;">Nhấp để thay đổi hình ảnh</p>
+                                <img id="preview-img" style="max-width: 200px; max-height: 120px; border-radius: 8px;">
+                                <p style="margin: 8px 0 0 0; color: #666; font-size: clamp(0.75rem, 2.5vw, 0.875rem);">Nhấp để thay đổi hình ảnh</p>
                             </div>
                         </div>
-                        <input type="file" id="image-input" accept="image/*" style="display: none;"
-                            onchange="previewImage(this)">
+                        <input type="file" id="image-input" accept="image/*" style="display: none;" onchange="previewImage(this)">
                     </div>
                 </form>
             </div>
-
-            <!-- Footer -->
-            <div
-                style="padding: 16px 24px; border-top: 1px solid #f0f0f0; text-align: right; background: #fafafa;">
-                <button type="button" onclick="closeModal()"
-                    style="padding: 8px 16px; border-radius: 6px; border: 1px solid #d9d9d9; background: white; color: #333; cursor: pointer; margin-right: 8px;">
-                    Hủy
-                </button>
-                <button type="button" onclick="saveBanner()"
-                    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; padding: 10px 24px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">
-                    💾 Lưu Banner
-                </button>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="saveBanner()">💾 Lưu Banner</button>
             </div>
         </div>
     </div>
 </div>
+@endsection
 
 
-    {{-- Bootstrap JS --}}
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Scripts -->
+@push('scripts')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
-
-    {{-- Script gọi API /api/me cho navbar --}}
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const userNameEl = document.getElementById('user-name');
-            const token = localStorage.getItem('access_token');
+        // Định nghĩa API_BASE_URL (cần được cấu hình trong môi trường thực tế)
 
-            if (!token) {
-                userNameEl.innerText = 'Khách';
-                return;
-            }
-
-            fetch('/api/me', {
-                headers: {
-                    'Authorization': 'Bearer ' + token,
-                    'Accept': 'application/json'
-                }
-            })
-            .then(res => {
-                if (!res.ok) throw new Error('Unauthorized');
-                return res.json();
-            })
-            .then(user => {
-                userNameEl.innerText = user?.user?.name || 'Người dùng';
-            })
-            .catch(err => {
-                console.error('Lỗi khi gọi /api/me:', err);
-                userNameEl.innerText = 'Khách';
-            });
-
-            // Bắt sự kiện logout
-            const logoutBtn = document.getElementById('logout-btn');
-            logoutBtn.addEventListener('click', function (e) {
-                e.preventDefault();
-                localStorage.removeItem('access_token');
-                window.location.href = '/login';
-            });
-        });
-    </script>
-
-    <script>
-        // Setup CSRF token for axios
         axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
         let banners = [];
         let editingBannerId = null;
 
-        // Load banners on page load
         document.addEventListener('DOMContentLoaded', function () {
             loadBanners();
+            setupUploadArea();
         });
 
-        // Load banners from API
         async function loadBanners() {
+            document.getElementById('banner-table').innerHTML = '<div>Loading...</div>';
             try {
-                const response = await axios.get('/api/banners');
+                console.log('Calling API:', `${API_BASE_URL}/banners`);
+                const response = await axios.get(`${API_BASE_URL}/banners`);
+                console.log('Response:', response.data);
                 if (response.data.success) {
                     banners = response.data.data;
                     renderBannerTable();
                     updateTotalCount();
+                } else {
+                    showNotification('Lỗi khi tải danh sách banner', 'error');
                 }
             } catch (error) {
                 console.error('Error loading banners:', error);
-                showNotification('Lỗi khi tải danh sách banner', 'error');
+                showNotification(error.response?.data?.message || 'Lỗi khi tải danh sách banner', 'error');
             }
         }
 
-        // Render banner table
         function renderBannerTable() {
+            console.log('Banners:', banners);
             const tableHtml = `
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
@@ -415,7 +319,7 @@
                                     ${banner.image ? `
                                         <img src="${getImageUrl(banner.image)}" class="banner-image" alt="Banner ${banner.id}">
                                     ` : `
-                                        <div style="width: 100px; height: 60px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px;">
+                                        <div style="width: 100%; max-width: 100px; height: 60px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999; font-size: clamp(0.625rem, 2vw, 0.75rem);">
                                             Không có ảnh
                                         </div>
                                     `}
@@ -424,17 +328,17 @@
                                     <div style="font-weight: 600; color: #333; margin-bottom: 4px;">
                                         ${banner.title || '<em style="color: #999;">Chưa có tiêu đề</em>'}
                                     </div>
-                                    <div style="color: #666; font-size: 13px; line-height: 1.4;">
+                                    <div style="color: #666; font-size: clamp(0.75rem, 2.5vw, 0.8125rem); line-height: 1.4;">
                                         ${banner.description || '<em style="color: #999;">Chưa có mô tả</em>'}
                                     </div>
                                 </td>
                                 <td style="padding: 16px;">
                                     ${banner.link ? `
-                                        <a href="${banner.link}" target="_blank" style="color: #667eea; text-decoration: none; font-size: 13px;">
+                                        <a href="${banner.link}" target="_blank" style="color: #667eea; text-decoration: none; font-size: clamp(0.75rem, 2.5vw, 0.8125rem);">
                                             🔗 ${banner.link.length > 30 ? banner.link.substring(0, 30) + '...' : banner.link}
                                         </a>
                                     ` : `
-                                        <span style="color: #999; font-style: italic; font-size: 13px;">Không có liên kết</span>
+                                        <span style="color: #999; font-style: italic; font-size: clamp(0.75rem, 2.5vw, 0.8125rem);">Không có liên kết</span>
                                     `}
                                 </td>
                                 <td style="padding: 16px;">
@@ -443,30 +347,30 @@
                                             📚 Sách #${banner.book_id}
                                         </span>
                                     ` : `
-                                        <span style="color: #999; font-style: italic; font-size: 13px;">Không liên kết</span>
+                                        <span style="color: #999; font-style: italic; font-size: clamp(0.75rem, 2.5vw, 0.8125rem);">Không liên kết</span>
                                     `}
                                 </td>
                                 <td style="padding: 16px; text-align: center;">
-                                    <button class="action-btn" onclick="viewBanner(${banner.id})" style="background: #52c41a; color: white; border: none; padding: 6px 12px; border-radius: 4px; margin: 0 2px; cursor: pointer; font-size: 12px;">
-                                        👁️ Xem
-                                    </button>
-                                    <button class="action-btn" onclick="editBanner(${banner.id})" style="background: #1890ff; color: white; border: none; padding: 6px 12px; border-radius: 4px; margin: 0 2px; cursor: pointer; font-size: 12px;">
-                                        ✏️ Sửa
-                                    </button>
-                                    <button class="action-btn" onclick="deleteBanner(${banner.id})" style="background: #ff4d4f; color: white; border: none; padding: 6px 12px; border-radius: 4px; margin: 0 2px; cursor: pointer; font-size: 12px;">
-                                        🗑️ Xóa
-                                    </button>
+                                    <div class="action-btn-container">
+                                        <button class="action-btn" onclick="viewBanner(${banner.id})" style="background: #52c41a; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: clamp(0.625rem, 2vw, 0.75rem);" aria-label="Xem banner ${banner.id}">
+                                            👁️ Xem
+                                        </button>
+                                        <button class="action-btn" onclick="editBanner(${banner.id})" style="background: #1890ff; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: clamp(0.625rem, 2vw, 0.75rem);" aria-label="Sửa banner ${banner.id}">
+                                            ✏️ Sửa
+                                        </button>
+                                        <button class="action-btn" onclick="deleteBanner(${banner.id})" style="background: #ff4d4f; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: clamp(0.625rem, 2vw, 0.75rem);" aria-label="Xóa banner ${banner.id}">
+                                            🗑️ Xóa
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         `).join('')}
                     </tbody>
                 </table>
             `;
-
             document.getElementById('banner-table').innerHTML = tableHtml;
         }
 
-        // Get correct image URL
         function getImageUrl(imagePath) {
             if (imagePath.startsWith('http')) {
                 return imagePath;
@@ -474,31 +378,31 @@
             return `/storage/${imagePath}`;
         }
 
-        // Update total count
         function updateTotalCount() {
             document.getElementById('total-banners').textContent = banners.length;
         }
 
-        // Open create modal
         function openCreateModal() {
-        window.location.href=
-        "http://localhost:8000/admin/banners/create"
+            editingBannerId = null;
+            document.getElementById('modalTitle').textContent = 'Thêm Banner Mới';
+            document.getElementById('banner-form').reset();
+            document.getElementById('image-preview').style.display = 'none';
+            document.getElementById('upload-content').style.display = 'block';
+            new bootstrap.Modal(document.getElementById('bannerModal')).show();
         }
 
-        // Edit banner
         function editBanner(id) {
             const banner = banners.find(b => b.id === id);
             if (!banner) return;
 
             editingBannerId = id;
-            document.getElementById('modal-title').textContent = '✏️ Chỉnh sửa Banner';
+            document.getElementById('modalTitle').textContent = '✏️ Chỉnh sửa Banner';
             document.getElementById('banner-id').value = banner.id;
             document.getElementById('title').value = banner.title || '';
             document.getElementById('description').value = banner.description || '';
             document.getElementById('link').value = banner.link || '';
             document.getElementById('book_id').value = banner.book_id || '';
- 
-            // Show current image if exists
+
             if (banner.image) {
                 document.getElementById('preview-img').src = getImageUrl(banner.image);
                 document.getElementById('image-preview').style.display = 'block';
@@ -508,10 +412,9 @@
                 document.getElementById('upload-content').style.display = 'block';
             }
 
-            document.getElementById('banner-modal').style.display = 'block';
+            new bootstrap.Modal(document.getElementById('bannerModal')).show();
         }
 
-        // View banner
         function viewBanner(id) {
             const banner = banners.find(b => b.id === id);
             if (!banner) return;
@@ -519,135 +422,150 @@
             alert(`Banner #${banner.id}\nTiêu đề: ${banner.title || 'Không có'}\nMô tả: ${banner.description || 'Không có'}\nLiên kết: ${banner.link || 'Không có'}\nID Sách: ${banner.book_id || 'Không có'}`);
         }
 
-        // Delete banner
         async function deleteBanner(id) {
             if (!confirm('Bạn có chắc chắn muốn xóa banner này?')) return;
 
             try {
-                const response = await axios.delete(`/api/banners/${id}`);
+                const response = await axios.delete(`${API_BASE_URL}/banners/${id}`);
                 if (response.data.success) {
                     showNotification('Xóa banner thành công!', 'success');
                     loadBanners();
+                } else {
+                    showNotification('Lỗi khi xóa banner', 'error');
                 }
             } catch (error) {
                 console.error('Error deleting banner:', error);
-                showNotification('Lỗi khi xóa banner', 'error');
+                showNotification(error.response?.data?.message || 'Lỗi khi xóa banner', 'error');
             }
         }
 
-        // Close modal
-        function closeModal() {
-            document.getElementById('banner-modal').style.display = 'none';
-        }
-
-        // Preview image
         function previewImage(input) {
             if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const maxSize = 5 * 1024 * 1024; // 5MB
+                if (!file.type.startsWith('image/')) {
+                    showNotification('Vui lòng chọn file hình ảnh!', 'error');
+                    return;
+                }
+                if (file.size > maxSize) {
+                    showNotification('File quá lớn! Tối đa 5MB.', 'error');
+                    return;
+                }
                 const reader = new FileReader();
                 reader.onload = function (e) {
                     document.getElementById('preview-img').src = e.target.result;
                     document.getElementById('image-preview').style.display = 'block';
                     document.getElementById('upload-content').style.display = 'none';
                 };
-                reader.readAsDataURL(input.files[0]);
+                reader.readAsDataURL(file);
             }
         }
 
-        // Save banner
         async function saveBanner() {
-            const formData = new FormData();
-
             const title = document.getElementById('title').value;
-            const description = document.getElementById('description').value;
             const link = document.getElementById('link').value;
-            const book_id = document.getElementById('book_id').value;
-            const imageInput = document.getElementById('image-input');
+            if (!title) {
+                showNotification('Vui lòng nhập tiêu đề banner!', 'error');
+                return;
+            }
+            if (link && !isValidUrl(link)) {
+                showNotification('URL không hợp lệ!', 'error');
+                return;
+            }
 
+            const formData = new FormData();
             formData.append('title', title);
-            formData.append('description', description);
+            formData.append('description', document.getElementById('description').value);
             formData.append('link', link);
+            const book_id = document.getElementById('book_id').value;
             if (book_id) formData.append('book_id', book_id);
+            const imageInput = document.getElementById('image-input');
             if (imageInput.files[0]) formData.append('image', imageInput.files[0]);
 
             try {
                 let response;
                 if (editingBannerId) {
-                    // Update existing banner
                     formData.append('_method', 'PUT');
-                    response = await axios.post(`/api/banners/${editingBannerId}`, formData, {
+                    response = await axios.post(`${API_BASE_URL}/banners/${editingBannerId}`, formData, {
                         headers: { 'Content-Type': 'multipart/form-data' }
                     });
                 } else {
-                    // Create new banner
-                    response = await axios.post('/api/banners', formData, {
+                    response = await axios.post(`${API_BASE_URL}/banners`, formData, {
                         headers: { 'Content-Type': 'multipart/form-data' }
                     });
                 }
 
                 if (response.data.success) {
                     showNotification(editingBannerId ? 'Cập nhật banner thành công!' : 'Thêm banner thành công!', 'success');
-                    closeModal();
+                    bootstrap.Modal.getInstance(document.getElementById('bannerModal')).hide();
                     loadBanners();
+                } else {
+                    showNotification('Lỗi khi lưu banner', 'error');
                 }
             } catch (error) {
                 console.error('Error saving banner:', error);
-                showNotification('Lỗi khi lưu banner', 'error');
+                showNotification(error.response?.data?.message || 'Lỗi khi lưu banner', 'error');
             }
         }
 
-        // Show notification
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
         function showNotification(message, type) {
             const notification = document.createElement('div');
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 16px 24px;
-                border-radius: 8px;
-                color: white;
-                font-weight: 600;
-                z-index: 9999;
-                background: ${type === 'success' ? '#52c41a' : type === 'error' ? '#ff4d4f' : '#1890ff'};
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                transform: translateX(100%);
-                transition: transform 0.3s ease;
-            `;
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.padding = '10px 20px';
+            notification.style.borderRadius = '8px';
+            notification.style.color = 'white';
+            notification.style.zIndex = '1000';
+            notification.style.maxWidth = '90%';
+            notification.style.fontSize = 'clamp(0.8rem, 2.5vw, 0.9rem)';
+            notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
             notification.textContent = message;
 
+            if (type === 'success') {
+                notification.style.background = '#52c41a';
+            } else {
+                notification.style.background = '#ff4d4f';
+            }
+
             document.body.appendChild(notification);
-
             setTimeout(() => {
-                notification.style.transform = 'translateX(0)';
-            }, 100);
-
-            setTimeout(() => {
-                notification.style.transform = 'translateX(100%)';
-                setTimeout(() => {
-                    document.body.removeChild(notification);
-                }, 300);
+                notification.style.transition = 'opacity 0.5s ease';
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 500);
             }, 3000);
         }
 
-        // Close modal when clicking outside
-        document.getElementById('banner-modal').addEventListener('click', function (e) {
-            if (e.target === this || e.target.classList.contains('ant-modal-wrap')) {
-                closeModal();
-            }
-        });
-
-        // Prevent modal from closing when clicking inside modal content
-        document.addEventListener('click', function (e) {
-            const modal = document.getElementById('banner-modal');
-            const modalContent = modal.querySelector('.ant-modal-content');
-
-            if (modal.style.display === 'block' && modalContent && !modalContent.contains(e.target) && e.target !== modal) {
-                // Only close if clicking outside modal content
-                if (e.target === modal || e.target.classList.contains('ant-modal-wrap')) {
-                    closeModal();
+        function setupUploadArea() {
+            const uploadArea = document.querySelector('.upload-area');
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#667eea';
+                uploadArea.style.background = '#f0f4ff';
+            });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = '#d9d9d9';
+                uploadArea.style.background = '#fafafa';
+            });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#d9d9d9';
+                uploadArea.style.background = '#fafafa';
+                const file = e.dataTransfer.files[0];
+                if (file) {
+                    document.getElementById('image-input').files = e.dataTransfer.files;
+                    previewImage(document.getElementById('image-input'));
                 }
-            }
-        });
+            });
+        }
     </script>
-</body>
-
-</html>
+@endpush

@@ -1,3 +1,4 @@
+
 @extends('layouts.app')
 
 @section('content')
@@ -65,6 +66,14 @@
                 align-items: center;
                 font-size: 12px;
             }
+
+            .scope-field {
+                transition: all 0.3s ease;
+            }
+
+            .scope-field.hidden {
+                display: none;
+            }
         </style>
     </head>
 
@@ -98,6 +107,8 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Mô tả</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Phạm vi</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Giảm giá</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Trạng thái</th>
@@ -110,7 +121,7 @@
                         <tbody id="couponTableBody" class="bg-white divide-y divide-gray-200">
                             <!-- Loading -->
                             <tr id="loadingRow">
-                                <td colspan="7" class="px-6 py-4 text-center">
+                                <td colspan="8" class="px-6 py-4 text-center">
                                     <div class="loader mx-auto"></div>
                                     <p class="mt-2 text-gray-500">Đang tải...</p>
                                 </td>
@@ -147,6 +158,17 @@
                                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 </div>
 
+                                <!-- Phạm vi áp dụng -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Phạm vi áp dụng</label>
+                                    <select id="scope" name="scope" onchange="toggleScopeFields()"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="order">Tất cả đơn hàng</option>
+                                        <option value="product">Sản phẩm cụ thể</option>
+                                        <option value="category">Danh mục cụ thể</option>
+                                    </select>
+                                </div>
+
                                 <!-- Loại giảm giá -->
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Loại giảm giá</label>
@@ -162,17 +184,6 @@
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Giá trị giảm</label>
                                     <input type="number" id="discount_value" name="discount_value" required
                                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                </div>
-
-                                <!-- Phạm vi áp dụng -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Phạm vi áp dụng</label>
-                                    <select id="scope" name="scope"
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                        <option value="product">Sản phẩm</option>
-                                        <option value="category">Danh mục</option>
-                                        <option value="order">Đơn hàng</option>
-                                    </select>
                                 </div>
 
                                 <!-- Giá trị đơn hàng tối thiểu -->
@@ -213,7 +224,7 @@
                             </div>
 
                             <!-- Sách áp dụng -->
-                            <div>
+                            <div id="bookScopeField" class="scope-field hidden">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Sách áp dụng</label>
                                 <div class="relative">
                                     <input type="text" id="bookSearch" placeholder="Tìm kiếm sách..."
@@ -224,7 +235,7 @@
                             </div>
 
                             <!-- Danh mục áp dụng -->
-                            <div>
+                            <div id="categoryScopeField" class="scope-field hidden">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Danh mục áp dụng</label>
                                 <div class="relative">
                                     <input type="text" id="categorySearch" placeholder="Tìm kiếm danh mục..."
@@ -305,6 +316,30 @@
                 });
             }
 
+            // Toggle scope fields based on selected scope
+            function toggleScopeFields() {
+                const scope = document.getElementById('scope').value;
+                const bookField = document.getElementById('bookScopeField');
+                const categoryField = document.getElementById('categoryScopeField');
+
+                // Hide all scope fields first
+                bookField.classList.add('hidden');
+                categoryField.classList.add('hidden');
+
+                // Show relevant field based on scope
+                switch (scope) {
+                    case 'product':
+                        bookField.classList.remove('hidden');
+                        break;
+                    case 'category':
+                        categoryField.classList.remove('hidden');
+                        break;
+                    case 'order':
+                        // No additional fields needed for order scope
+                        break;
+                }
+            }
+
             // Load all data
             async function loadData() {
                 try {
@@ -325,6 +360,20 @@
                 }
             }
 
+            // Get scope display text
+            function getScopeText(scope) {
+                switch (scope) {
+                    case 'order':
+                        return 'Tất cả đơn hàng';
+                    case 'product':
+                        return 'Sản phẩm cụ thể';
+                    case 'category':
+                        return 'Danh mục cụ thể';
+                    default:
+                        return scope;
+                }
+            }
+
             // Render coupons table
             function renderCoupons() {
                 const tbody = document.getElementById('couponTableBody');
@@ -332,7 +381,7 @@
                 if (coupons.length === 0) {
                     tbody.innerHTML = `
                                 <tr>
-                                    <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                                    <td colspan="8" class="px-6 py-4 text-center text-gray-500">
                                         Không có dữ liệu
                                     </td>
                                 </tr>
@@ -350,6 +399,11 @@
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
                                     ${coupon.description || '-'}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                        ${getScopeText(coupon.scope)}
+                                    </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     ${coupon.discount_type === 'percent' ? coupon.discount_value + '%' : formatCurrency(coupon.discount_value)}
@@ -390,7 +444,6 @@
                 bookSearchInput.addEventListener('input', function () {
                     const query = this.value.toLowerCase();
 
-                    // Chỉ ẩn dropdown khi input rỗng
                     if (query.length === 0) {
                         bookDropdown.classList.add('hidden');
                         return;
@@ -398,26 +451,21 @@
 
                     const filteredBooks = books.filter(book => {
                         const lowerTitle = book.title.toLowerCase();
-
-                        // Tách tiêu đề thành từng từ và kiểm tra nếu từ nào đó bắt đầu bằng query
                         return lowerTitle.split(' ').some(word => word.startsWith(query)) &&
                             !selectedBooks.some(selected => selected.id === book.id);
                     });
 
-                    console.log(filteredBooks);
-
                     if (filteredBooks.length > 0) {
                         bookDropdown.innerHTML = filteredBooks.map(book => `
-                <div class="autocomplete-item" onclick="selectBook(${book.id}, '${book.title.replace(/'/g, "\\'")}')">
-                    ${book.title}
-                </div>
-            `).join('');
+                            <div class="autocomplete-item" onclick="selectBook(${book.id}, '${book.title.replace(/'/g, "\\'")}')">
+                                ${book.title}
+                            </div>
+                        `).join('');
                         bookDropdown.classList.remove('hidden');
                     } else {
                         bookDropdown.classList.add('hidden');
                     }
                 });
-
 
                 // Category autocomplete
                 categorySearchInput.addEventListener('input', function () {
@@ -534,6 +582,8 @@
                     renderSelectedBooks();
                     renderSelectedCategories();
                     document.getElementById('is_active').checked = true;
+                    document.getElementById('scope').value = 'order'; // Default to order scope
+                    toggleScopeFields();
                 }
 
                 modal.classList.remove('hidden');
@@ -564,6 +614,9 @@
                 selectedCategories = coupon.categories || [];
                 renderSelectedBooks();
                 renderSelectedCategories();
+
+                // Toggle scope fields after setting the scope value
+                toggleScopeFields();
             }
 
             // Handle form submission
@@ -571,6 +624,7 @@
                 e.preventDefault();
 
                 const formData = new FormData(e.target);
+                const scope = formData.get('scope');
                 const data = {
                     name: formData.get('name'),
                     description: formData.get('description'),
