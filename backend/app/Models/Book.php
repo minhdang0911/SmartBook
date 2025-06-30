@@ -21,8 +21,7 @@ class Book extends Model
     ];
 
     protected $casts = [
-      
-        'book_images' => 'array', // ✅ thêm dòng này để cast JSON -> array
+        'book_images' => 'array',
     ];
 
     public function author() { return $this->belongsTo(Author::class); }

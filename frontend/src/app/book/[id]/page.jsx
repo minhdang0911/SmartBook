@@ -805,6 +805,7 @@ const BookDetailPage = () => {
               toast.success(`✅ Đã thêm "${book.name}" vào giỏ hàng!`);
               toast.info('🛒 Chuyển đến trang đặt đơn...');
 
+
               localStorage.setItem('buyNowData', JSON.stringify({
                 isBuyNow: true,
                 bookId: book.id,
@@ -816,6 +817,7 @@ const BookDetailPage = () => {
               setTimeout(() => {
                 router.push('/cart');
               }, 800);
+
             }}
           >
             Mua ngay
