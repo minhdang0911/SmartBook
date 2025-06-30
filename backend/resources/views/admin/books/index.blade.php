@@ -24,85 +24,6 @@
         gap: 10px;
     }
 
-    .search-form {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        max-width: 100%;
-        margin-bottom: 24px;
-        flex-wrap: wrap;
-    }
-
-    .search-form .form-control {
-        border: 2px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 10px 16px;
-        font-size: 0.95rem;
-        flex: 1;
-        min-width: 200px;
-        transition: 0.3s ease;
-    }
-
-    .search-form .form-control:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        outline: none;
-    }
-
-    .search-form .btn-primary {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 8px;
-        font-weight: 600;
-        transition: 0.3s ease;
-    }
-
-    .search-form .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    }
-
-    .search-form .btn-success {
-        background: linear-gradient(135deg, #28a745, #34c759);
-        border: none;
-        padding: 10px 20px;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 0.95rem;
-        transition: all 0.3s ease;
-    }
-
-    .search-form .btn-success:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
-    }
-
-    .table th,
-    .table td {
-        vertical-align: middle;
-        font-size: 0.9rem;
-    }
-
-    .btn-sm {
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-size: 0.85rem;
-    }
-
-    .empty-state {
-        text-align: center;
-        color: #666;
-        padding: 32px 0;
-        font-size: 1rem;
-    }
-
-    .pagination {
-        justify-content: center;
-        margin-top: 24px;
-    }
-
     .book-card {
         border: 1px solid #e0e0e0;
         border-radius: 12px;
@@ -119,9 +40,9 @@
     }
 
     .book-cover {
-        width: 80px;
-        height: auto;
-        border-radius: 8px;
+        width: 60px;
+        height: 80px;
+        border-radius: 6px;
         object-fit: cover;
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
     }
@@ -152,42 +73,33 @@
         border-radius: 6px;
     }
 
-    @media (min-width: 768px) {
-        .book-card {
-            display: none;
-        }
+    .empty-state {
+        text-align: center;
+        color: #666;
+        padding: 32px 0;
+        font-size: 1rem;
     }
 
+    .table th, .table td {
+        vertical-align: middle;
+        font-size: 0.9rem;
+    }
+
+    .pagination {
+        justify-content: center;
+        margin-top: 24px;
+    }
+
+    /* Responsive: ẩn table khi màn nhỏ */
     @media (max-width: 767.98px) {
         .table-responsive {
             display: none;
         }
     }
 
-    @media (max-width: 576px) {
-        .page-header {
-            padding: 16px;
-        }
-
-        .page-header h1 {
-            font-size: 1.2rem;
-        }
-
-        .btn-sm {
-            padding: 4px 8px;
-            font-size: 0.75rem;
-        }
-
-        .book-cover {
-            width: 60px;
-        }
-
-        .book-info h5 {
-            font-size: 0.95rem;
-        }
-
-        .book-meta {
-            font-size: 0.8rem;
+    @media (min-width: 768px) {
+        .book-card {
+            display: none;
         }
     }
 </style>
@@ -200,9 +112,9 @@
     </div>
 
     @include('components.alert')
-
     @include('admin.books.partials.filters')
 
+    {{-- Bảng trên desktop --}}
     <div class="table-responsive">
         <table class="table table-bordered table-hover align-middle">
             <thead class="table-light text-center">
@@ -223,7 +135,10 @@
                     <tr>
                         <td class="text-center">{{ $books->firstItem() + $index }}</td>
                         <td class="text-center">
-                            <img src="{{ $book->cover_image ?? 'https://via.placeholder.com/60x80?text=No+Image' }}" alt="Ảnh bìa" style="height: 60px;" class="rounded shadow-sm">
+                            <img src="{{ $book->cover_image ?? 'https://via.placeholder.com/60x80?text=No+Image' }}"
+                                 alt="Ảnh bìa"
+                                 style="height: 60px;"
+                                 class="rounded shadow-sm">
                         </td>
                         <td>{{ $book->title }}</td>
                         <td>{{ $book->author->name ?? '—' }}</td>
@@ -248,6 +163,7 @@
         </table>
     </div>
 
+    {{-- Mobile view bằng card --}}
     @foreach ($books as $book)
         <div class="book-card">
             <div class="book-header">
@@ -273,6 +189,7 @@
         </div>
     @endforeach
 
+    {{-- Empty state --}}
     @if ($books->isEmpty())
         <div class="empty-state">
             😕 Không tìm thấy sách nào.
@@ -282,6 +199,7 @@
         </div>
     @endif
 
+    {{-- Phân trang --}}
     <div class="pagination">
         {{ $books->appends(request()->except('page'))->links('pagination::bootstrap-5') }}
     </div>

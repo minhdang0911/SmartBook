@@ -18,6 +18,8 @@ use App\Http\Controllers\CouponController;
 use App\Http\Controllers\Home\BookController as HomeBookController;
 use Cloudinary\Configuration\Configuration;
 
+use App\Http\Controllers\Admin\BookController;
+
 // Auth
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\ProfileController;
@@ -90,6 +92,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+Route::post('/admin/books/upload', [BookController::class, 'upload'])->name('admin.books.upload');
+Route::post('/ckeditor/upload', [App\Http\Controllers\CKEditorController::class, 'upload'])->name('ckeditor.upload');
 
 
 
