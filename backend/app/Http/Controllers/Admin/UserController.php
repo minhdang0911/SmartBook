@@ -12,17 +12,17 @@ class UserController extends Controller
     {
         $search = $request->query('search');
 
-        $users = User::when($search, function ($query, $search) {
-            return $query->where('name', 'like', "%$search%")
-                ->orWhere('email', 'like', "%$search%");
-        })->orderBy('id', 'desc')->paginate(10);
+        $users = User::withTrashed()
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%$search%")
+                      ->orWhere('email', 'like', "%$search%");
+                });
+            })
+            ->orderBy('id', 'desc')
+            ->paginate(10);
 
         return view('admin.users.index', compact('users', 'search'));
-    }
-
-    public function show(User $user)
-    {
-        return view('admin.users.show', compact('user'));
     }
 
     public function edit(User $user)
@@ -31,18 +31,22 @@ class UserController extends Controller
     }
 
     public function update(Request $request, User $user)
-    {
-        $request->validate([
-            'name' => 'required|string|max:100',
-            'phone' => 'nullable|string|max:20',
-            'address' => 'nullable|string|max:255',
-            'role' => 'required|in:user,admin'
-        ]);
+{
+    $request->validate([
+        'name' => 'required|string|max:100',
+        'phone' => 'nullable|string|max:20|regex:/^[0-9]+$/',
+        'role' => 'required|in:user,admin',
+    ], [
+        'phone.max' => '📱 Số điện thoại không được vượt quá 20 ký tự.',
+        'phone.regex' => '📵 Số điện thoại chỉ được chứa các chữ số (0-9).',
+        'name.required' => '⚠️ Vui lòng nhập tên người dùng.',
+    ]);
 
-        $user->update($request->only('name', 'phone', 'address', 'role'));
+    $user->update($request->only('name', 'phone', 'role'));
 
-        return redirect()->route('admin.users.index')->with('success', '👤 Thông tin người dùng đã được cập nhật!');
-    }
+    return redirect()->route('admin.users.index')->with('success', '✅ Đã cập nhật thông tin người dùng!');
+}
+
 
     public function toggleStatus(User $user)
     {
@@ -50,17 +54,28 @@ class UserController extends Controller
             'email_verified_at' => $user->email_verified_at ? null : now()
         ]);
 
-        return redirect()->back()->with('success', '⚙️ Trạng thái người dùng đã được cập nhật!');
+        return back()->with('success', '⚙️ Đã cập nhật trạng thái xác thực email!');
     }
 
-    public function destroy(User $user)
+    public function lock(User $user)
     {
         if ($user->role === 'admin') {
-            return redirect()->back()->with('error', '❌ Không thể xóa quản trị viên.');
+            return back()->with('error', '❌ Không thể khóa tài khoản admin.');
         }
 
-        $user->delete();
+        $user->delete(); // Soft delete
+        return back()->with('success', '🔒 Tài khoản đã bị khóa.');
+    }
 
-        return redirect()->route('admin.users.index')->with('success', '🗑️ Người dùng đã bị xóa.');
+    public function unlock($id)
+    {
+        $user = User::withTrashed()->findOrFail($id);
+
+        if ($user->trashed()) {
+            $user->restore();
+            return back()->with('success', '🔓 Tài khoản đã được mở khóa.');
+        }
+
+        return back()->with('info', '⚠️ Tài khoản này không bị khóa.');
     }
 }

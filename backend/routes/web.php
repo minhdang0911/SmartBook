@@ -19,7 +19,7 @@ use App\Http\Controllers\Home\BookController as HomeBookController;
 use Cloudinary\Configuration\Configuration;
 
 use App\Http\Controllers\Admin\BookController;
-
+use App\Http\Controllers\Admin\BookImageController;
 // Auth
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\ProfileController;
@@ -60,18 +60,36 @@ Route::get('/debug-cloudinary', function () {
 // Resource route cho books (web interface)
 Route::resource('books', HomeBookController::class);
 
-// ===================== Admin Routes (GIỮ CSRF) =====================
+// ===================== Admin Routes =====================
+
+// =====================Admin authentication=====================
+Route::prefix('admin/users')->name('admin.users.')->group(function () {
+    Route::get('/', [UserController::class, 'index'])->name('index');
+    Route::get('/{user}/edit', [UserController::class, 'edit'])->name('edit');
+    Route::put('/{user}', [UserController::class, 'update'])->name('update');
+    Route::put('/{user}/status', [UserController::class, 'toggleStatus'])->name('toggleStatus');
+    Route::put('/{user}/lock', [UserController::class, 'lock'])->name('lock');
+    Route::put('/{user}/unlock', [UserController::class, 'unlock'])->name('unlock');
+});
+
+// =====================Admin book images=====================
+Route::prefix('admin/book-images')->name('admin.book_images.')->group(function () {
+    Route::get('/', [BookImageController::class, 'index'])->name('index');
+    Route::get('/create', [BookImageController::class, 'create'])->name('create');
+    Route::post('/', [BookImageController::class, 'store'])->name('store');
+    Route::get('/{book_image}/edit', [BookImageController::class, 'edit'])->name('edit');
+    Route::put('/{book_image}', [BookImageController::class, 'update'])->name('update');
+    Route::delete('/{book_image}', [BookImageController::class, 'destroy'])->name('destroy');
+});
+
 Route::prefix('admin')->name('admin.')->group(function () {
-    Route::resource('users', UserController::class);
-    Route::get('users/{user}', [UserController::class, 'show'])->name('users.show');
-    Route::patch('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggleStatus');
     Route::resource('authors', AuthorController::class);
     Route::resource('publishers', PublisherController::class);
     Route::resource('categories', CategoryController::class);
     Route::resource('books', AdminBookController::class);
     Route::resource('banners', BannerController::class);
     Route::resource('orders', OrderController::class);
-    Route::resource('Coupons', CouponController::class);
+    Route::resource('coupons', CouponController::class);
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 

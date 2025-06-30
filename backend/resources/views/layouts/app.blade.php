@@ -93,34 +93,57 @@
                     href="{{ route('admin.dashboard') }}">
                     <i class="bi bi-house-door"></i> Dashboard
                 </a>
-                <a class="nav-link" href="{{ route('admin.books.index') }}">
+
+                <a class="nav-link {{ request()->routeIs('admin.books.*') ? 'active' : '' }}"
+                    href="{{ route('admin.books.index') }}">
                     <i class="bi bi-book"></i> Sách
                 </a>
-                <a class="nav-link" href="{{ route('admin.authors.index') }}">
+
+                <a class="nav-link {{ request()->routeIs('admin.authors.*') ? 'active' : '' }}"
+                    href="{{ route('admin.authors.index') }}">
                     <i class="bi bi-person"></i> Tác giả
                 </a>
-                <a class="nav-link" href="{{ route('admin.publishers.index') }}">
-                    <i class="bi bi-building"></i> Nhà xuất bản
+
+                <a class="nav-link {{ request()->routeIs('admin.publishers.*') ? 'active' : '' }}"
+                    href="{{ route('admin.publishers.index') }}">
+                    <i class="bi bi-buildings"></i> Nhà xuất bản
                 </a>
-                <a class="nav-link" href="{{ route('admin.categories.index') }}">
+
+                <a class="nav-link {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}"
+                    href="{{ route('admin.categories.index') }}">
                     <i class="bi bi-tags"></i> Danh mục
                 </a>
-                <a class="nav-link" href="{{ route('admin.users.index') }}">
+
+                <a class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}"
+                    href="{{ route('admin.users.index') }}">
                     <i class="bi bi-people"></i> Người dùng
                 </a>
-                <a class="nav-link" href="{{ route('admin.banners.index') }}">
-                    <i class="bi bi-image"></i> Banner
+
+                <a class="nav-link {{ request()->routeIs('admin.book_images.*') ? 'active' : '' }}"
+                    href="{{ route('admin.book_images.index') }}">
+                    <i class="bi bi-images"></i> Ảnh sách
                 </a>
-                <a class="nav-link" href="{{ route('admin.orders.index') }}">
-                    <i class="bi bi-cart"></i> Đơn hàng
+
+                <a class="nav-link {{ request()->routeIs('admin.banners.*') ? 'active' : '' }}"
+                    href="{{ route('admin.banners.index') }}">
+                    <i class="bi bi-easel"></i> Banner
                 </a>
-                <a class="nav-link" href="{{ route('admin.Coupons.index') }}">
+
+                <a class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}"
+                    href="{{ route('admin.orders.index') }}">
+                    <i class="bi bi-cart-check"></i> Đơn hàng
+                </a>
+
+                <a class="nav-link {{ request()->routeIs('admin.Coupons.*') ? 'active' : '' }}"
+                    href="{{ route('admin.coupons.index') }}">
                     <i class="bi bi-ticket-perforated"></i> Mã giảm giá
                 </a>
+
                 <a class="nav-link logout-btn" href="#">
                     <i class="bi bi-box-arrow-right"></i> Đăng xuất
                 </a>
             </nav>
+
         </div>
 
         <div class="content flex-grow-1">
@@ -157,8 +180,9 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-   <script>
-    const API_BASE_URL = '{{ config('app.url') }}/api';
+    <script>
+        const API_BASE_URL = '{{ config('app.url') }}/api';
+
         function logout() {
             const token = localStorage.getItem('access_token');
             fetch(`${API_BASE_URL}/logout`, {
