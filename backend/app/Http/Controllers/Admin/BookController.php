@@ -219,4 +219,19 @@ class BookController extends Controller
         $book->delete();
         return redirect()->route('admin.books.index')->with('success', 'Đã xóa sách.');
     }
+
+    // ✅ Thêm hàm upload CKEditor
+    public function upload(Request $request)
+    {
+        if ($request->hasFile('upload')) {
+            $uploadedFile = $request->file('upload');
+            $url = $this->cloudinary->uploadImage($uploadedFile, 'ckeditor_uploads');
+
+            return response()->json([
+                'url' => $url
+            ]);
+        }
+
+        return response()->json(['error' => 'No file uploaded'], 400);
+    }
 }
