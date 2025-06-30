@@ -21,7 +21,7 @@ class Book extends Model
     ];
 
     protected $casts = [
-        'cover_image' => 'array',
+      
         'book_images' => 'array', // ✅ thêm dòng này để cast JSON -> array
     ];
 
