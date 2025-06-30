@@ -9,9 +9,12 @@ use Illuminate\Support\Facades\Storage;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Log;
 use Cloudinary\Api\Upload\UploadApi;
+use Cloudinary\Api\Admin\AdminApi;
+
 
 class BannerController extends Controller
 {
+    // Lấy danh sách banner
     public function index(): JsonResponse
     {
         $banners = Banner::all();
@@ -27,6 +30,7 @@ class BannerController extends Controller
     {
         $banner = Banner::orderBy('id', 'desc')->limit(4)->get();
 
+
         return response()->json([
             'success' => true,
             'message' => 'Lấy danh sách banner thành công',
@@ -34,6 +38,8 @@ class BannerController extends Controller
         ]);
     }
 
+
+    // Tạo banner
     public function store(Request $request): JsonResponse
     {
         $request->validate([
@@ -42,8 +48,6 @@ class BannerController extends Controller
             'title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'book_id' => 'nullable|integer',
-            'priority' => 'nullable|integer|min:0',
-            'status' => 'nullable|boolean',
         ]);
 
         $imageUrl = null;
@@ -60,6 +64,7 @@ class BannerController extends Controller
             }
 
             try {
+                // Upload to Cloudinary - Cách đúng
                 $uploadApi = new UploadApi();
                 $uploadResult = $uploadApi->upload(
                     $file->getRealPath(),
@@ -82,6 +87,7 @@ class BannerController extends Controller
                     'trace' => $e->getTraceAsString()
                 ]);
 
+                // Fallback to local storage
                 $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
                 $path = $file->storeAs('banners', $fileName, 'public');
                 $imageUrl = asset('storage/' . $path);
@@ -90,6 +96,7 @@ class BannerController extends Controller
             }
         } elseif ($request->filled('link')) {
             $link = $request->link;
+            $imageUrl = null;
         }
 
         try {
@@ -99,8 +106,6 @@ class BannerController extends Controller
                 'title' => $request->title,
                 'description' => $request->description,
                 'book_id' => $request->book_id,
-                'priority' => $request->input('priority', 0),
-                'status' => $request->input('status', 1),
             ]);
 
             return response()->json([
@@ -119,7 +124,7 @@ class BannerController extends Controller
             ], 500);
         }
     }
-
+    // Lấy chi tiết banner
     public function show($id): JsonResponse
     {
         $banner = Banner::find($id);
@@ -154,8 +159,6 @@ class BannerController extends Controller
             'title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'book_id' => 'nullable|integer',
-            'priority' => 'nullable|integer|min:0',
-            'status' => 'nullable|boolean',
         ]);
 
         if ($request->hasFile('image')) {
@@ -168,11 +171,13 @@ class BannerController extends Controller
                 ], 400);
             }
 
+            // Xóa ảnh cũ trên Cloudinary nếu có
             if ($banner->image) {
                 $this->deleteOldImage($banner->image);
             }
 
             try {
+                // Upload to Cloudinary - Cách đúng (giống hàm store)
                 $uploadApi = new UploadApi();
                 $uploadResult = $uploadApi->upload(
                     $file->getRealPath(),
@@ -196,6 +201,7 @@ class BannerController extends Controller
                     'trace' => $e->getTraceAsString()
                 ]);
 
+                // Fallback to local storage
                 $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
                 $path = $file->storeAs('banners', $fileName, 'public');
                 $banner->image = asset('storage/' . $path);
@@ -204,6 +210,7 @@ class BannerController extends Controller
                 Log::info('Fallback to local storage: ' . $banner->image);
             }
         } elseif ($request->filled('link')) {
+            // Xóa ảnh cũ trên Cloudinary nếu có khi chuyển sang dùng link
             if ($banner->image) {
                 $this->deleteOldImage($banner->image);
             }
@@ -212,11 +219,10 @@ class BannerController extends Controller
             $banner->image = null;
         }
 
-        $banner->title = $request->input('title', $banner->title);
-        $banner->description = $request->input('description', $banner->description);
-        $banner->book_id = $request->input('book_id', $banner->book_id);
-        $banner->priority = $request->input('priority', $banner->priority);
-        $banner->status = $request->input('status', $banner->status);
+        // Cập nhật các trường khác
+        $banner->title = $request->title ?? $banner->title;
+        $banner->description = $request->description ?? $banner->description;
+        $banner->book_id = $request->book_id ?? $banner->book_id;
 
         try {
             $banner->save();
@@ -238,6 +244,29 @@ class BannerController extends Controller
         }
     }
 
+
+    private function deleteOldImage(string $imageUrl): void
+    {
+        try {
+            // Lấy public_id từ URL
+            $publicId = $this->getPublicIdFromUrl($imageUrl);
+            if ($publicId) {
+                Cloudinary::destroy($publicId);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Không thể xóa ảnh cũ trên Cloudinary: ' . $e->getMessage());
+        }
+    }
+
+    private function getPublicIdFromUrl(string $url): ?string
+    {
+        $pattern = '/\/v\d+\/(.+)\./';
+        if (preg_match($pattern, $url, $matches)) {
+            return $matches[1];
+        }
+        return null;
+    }
+    // Xoá banner
     public function destroy($id): JsonResponse
     {
         $banner = Banner::find($id);
@@ -259,26 +288,5 @@ class BannerController extends Controller
             'success' => true,
             'message' => 'Xóa banner thành công'
         ]);
-    }
-
-    private function deleteOldImage(string $imageUrl): void
-    {
-        try {
-            $publicId = $this->getPublicIdFromUrl($imageUrl);
-            if ($publicId) {
-                Cloudinary::destroy($publicId);
-            }
-        } catch (\Exception $e) {
-            Log::warning('Không thể xóa ảnh cũ trên Cloudinary: ' . $e->getMessage());
-        }
-    }
-
-    private function getPublicIdFromUrl(string $url): ?string
-    {
-        $pattern = '/\/v\d+\/(.+)\./';
-        if (preg_match($pattern, $url, $matches)) {
-            return $matches[1];
-        }
-        return null;
     }
 }
