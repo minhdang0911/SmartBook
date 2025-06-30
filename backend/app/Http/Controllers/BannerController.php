@@ -34,6 +34,18 @@ class BannerController extends Controller
         ]);
     }
 
+<<<<<<< Updated upstream
+=======
+        return response()->json([
+            'success' => true,
+            'message' => 'Lấy danh sách banner thành công',
+            'data' => $banner
+        ]);
+    }
+
+
+    // Tạo banner
+>>>>>>> Stashed changes
     public function store(Request $request): JsonResponse
     {
         $request->validate([
@@ -139,6 +151,111 @@ class BannerController extends Controller
     }
 
     public function update(Request $request, $id): JsonResponse
+<<<<<<< Updated upstream
+=======
+    {
+        $banner = Banner::find($id);
+        if (!$banner) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy banner'
+            ], 404);
+        }
+
+        $request->validate([
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'link' => 'nullable|url',
+            'title' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'book_id' => 'nullable|integer',
+        ]);
+
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+
+            if (!$file->isValid()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File upload không hợp lệ'
+                ], 400);
+            }
+
+            // Xóa ảnh cũ trên Cloudinary nếu có
+            if ($banner->image) {
+                $this->deleteOldImage($banner->image);
+            }
+
+            try {
+                // Upload to Cloudinary - Cách đúng (giống hàm store)
+                $uploadApi = new UploadApi();
+                $uploadResult = $uploadApi->upload(
+                    $file->getRealPath(),
+                    [
+                        'folder' => 'banners',
+                        'use_filename' => true,
+                        'unique_filename' => true,
+                    ]
+                );
+
+                $banner->image = $uploadResult['secure_url'];
+                $banner->link = null;
+
+                Log::info('Cloudinary upload success: ', [
+                    'url' => $banner->image,
+                    'public_id' => $uploadResult['public_id']
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Cloudinary upload failed: ', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+
+                // Fallback to local storage
+                $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs('banners', $fileName, 'public');
+                $banner->image = asset('storage/' . $path);
+                $banner->link = null;
+
+                Log::info('Fallback to local storage: ' . $banner->image);
+            }
+        } elseif ($request->filled('link')) {
+            // Xóa ảnh cũ trên Cloudinary nếu có khi chuyển sang dùng link
+            if ($banner->image) {
+                $this->deleteOldImage($banner->image);
+            }
+
+            $banner->link = $request->link;
+            $banner->image = null;
+        }
+
+        // Cập nhật các trường khác
+        $banner->title = $request->title ?? $banner->title;
+        $banner->description = $request->description ?? $banner->description;
+        $banner->book_id = $request->book_id ?? $banner->book_id;
+
+        try {
+            $banner->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật banner thành công',
+                'data' => $banner
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Database update failed: ', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi cập nhật banner: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    private function deleteOldImage(string $imageUrl): void
+>>>>>>> Stashed changes
     {
         $banner = Banner::find($id);
         if (!$banner) {
@@ -227,6 +344,7 @@ class BannerController extends Controller
                 'data' => $banner
             ]);
         } catch (\Exception $e) {
+<<<<<<< Updated upstream
             Log::error('Database update failed: ', [
                 'error' => $e->getMessage()
             ]);
@@ -235,6 +353,9 @@ class BannerController extends Controller
                 'success' => false,
                 'message' => 'Lỗi khi cập nhật banner: ' . $e->getMessage()
             ], 500);
+=======
+            Log::warning('Không thể xóa ảnh cũ trên Cloudinary: ' . $e->getMessage());
+>>>>>>> Stashed changes
         }
     }
 
