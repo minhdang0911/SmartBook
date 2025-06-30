@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -17,33 +16,24 @@ class Book extends Model
         'price',
         'stock',
         'views',
-        'likes'
+        'likes',
+        'book_images'
     ];
 
-    public function author()
-    {
-        return $this->belongsTo(Author::class);
-    }
+    protected $casts = [
+        'cover_image' => 'array',
+        'book_images' => 'array', // ✅ thêm dòng này để cast JSON -> array
+    ];
 
-    public function publisher()
-    {
-        return $this->belongsTo(Publisher::class);
-    }
+    public function author() { return $this->belongsTo(Author::class); }
 
-    public function category()
-    {
-        return $this->belongsTo(Category::class);
-    }
+    public function publisher() { return $this->belongsTo(Publisher::class); }
 
-    public function ratings()
-    {
-        return $this->hasMany(Rating::class);
-    }
+    public function category() { return $this->belongsTo(Category::class); }
 
-    public function images()
-    {
-        return $this->hasMany(BookImage::class);
-    }
+    public function ratings() { return $this->hasMany(Rating::class); }
+
+    public function images() { return $this->hasMany(BookImage::class); }
 
     public function updateRatingAvg()
     {
@@ -52,3 +42,4 @@ class Book extends Model
         $this->save();
     }
 }
+

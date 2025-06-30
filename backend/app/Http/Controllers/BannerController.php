@@ -40,93 +40,97 @@ class BannerController extends Controller
 
 
     // Tạo banner
-    public function store(Request $request): JsonResponse
-    {
-        $request->validate([
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'link' => 'nullable|url',
-            'title' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'book_id' => 'nullable|integer',
-        ]);
+public function store(Request $request): JsonResponse
+{
+    $request->validate([
+        'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        'link' => 'nullable|url',
+        'title' => 'nullable|string|max:255',
+        'description' => 'nullable|string',
+        'book_id' => 'nullable|integer',
+        'priority' => 'nullable|integer|min:0',
+        'status' => 'nullable|boolean',
+    ]);
 
-        $imageUrl = null;
-        $link = null;
+    $imageUrl = null;
+    $link = null;
 
-        if ($request->hasFile('image')) {
-            $file = $request->file('image');
+    if ($request->hasFile('image')) {
+        $file = $request->file('image');
 
-            if (!$file->isValid()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'File upload không hợp lệ'
-                ], 400);
-            }
-
-            try {
-                // Upload to Cloudinary - Cách đúng
-                $uploadApi = new UploadApi();
-                $uploadResult = $uploadApi->upload(
-                    $file->getRealPath(),
-                    [
-                        'folder' => 'banners',
-                        'use_filename' => true,
-                        'unique_filename' => true,
-                    ]
-                );
-
-                $imageUrl = $uploadResult['secure_url'];
-
-                \Log::info('Cloudinary upload success: ', [
-                    'url' => $imageUrl,
-                    'public_id' => $uploadResult['public_id']
-                ]);
-
-            } catch (\Exception $e) {
-                \Log::error('Cloudinary upload failed: ', [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
-                ]);
-
-                // Fallback to local storage
-                $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs('banners', $fileName, 'public');
-                $imageUrl = asset('storage/' . $path);
-
-                \Log::info('Fallback to local storage: ' . $imageUrl);
-            }
-
-        } elseif ($request->filled('link')) {
-            $link = $request->link;
-            $imageUrl = null;
+        if (!$file->isValid()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File upload không hợp lệ'
+            ], 400);
         }
 
         try {
-            $banner = Banner::create([
-                'image' => $imageUrl,
-                'link' => $link,
-                'title' => $request->title,
-                'description' => $request->description,
-                'book_id' => $request->book_id,
-            ]);
+            $uploadApi = new UploadApi();
+            $uploadResult = $uploadApi->upload(
+                $file->getRealPath(),
+                [
+                    'folder' => 'banners',
+                    'use_filename' => true,
+                    'unique_filename' => true,
+                ]
+            );
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Tạo banner thành công',
-                'data' => $banner
-            ], 201);
+            $imageUrl = $uploadResult['secure_url'];
+
+            \Log::info('Cloudinary upload success: ', [
+                'url' => $imageUrl,
+                'public_id' => $uploadResult['public_id']
+            ]);
 
         } catch (\Exception $e) {
-            \Log::error('Database save failed: ', [
-                'error' => $e->getMessage()
+            \Log::error('Cloudinary upload failed: ', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Lỗi khi lưu banner: ' . $e->getMessage()
-            ], 500);
+            $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('banners', $fileName, 'public');
+            $imageUrl = asset('storage/' . $path);
+
+            \Log::info('Fallback to local storage: ' . $imageUrl);
         }
+
+    } elseif ($request->filled('link')) {
+        $link = $request->link;
+        $imageUrl = null;
     }
+
+    try {
+        $banner = Banner::create([
+            'image' => $imageUrl,
+            'link' => $link,
+            'title' => $request->title,
+            'description' => $request->description,
+            'book_id' => $request->book_id,
+            'priority' => $request->input('priority', 0),
+            'status' => $request->input('status', 1),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tạo banner thành công',
+            'data' => $banner
+        ], 201);
+
+    } catch (\Exception $e) {
+        \Log::error('Database save failed: ', [
+            'error' => $e->getMessage()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Lỗi khi lưu banner: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
     // Lấy chi tiết banner
     public function show($id): JsonResponse
     {
@@ -148,107 +152,107 @@ class BannerController extends Controller
 
 public function update(Request $request, $id): JsonResponse
 {
-   $banner = Banner::find($id);
-   if (!$banner) {
-       return response()->json([
-           'success' => false,
-           'message' => 'Không tìm thấy banner'
-       ], 404);
-   }
+    $banner = Banner::find($id);
+    if (!$banner) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Không tìm thấy banner'
+        ], 404);
+    }
 
-   $request->validate([
-       'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-       'link' => 'nullable|url',
-       'title' => 'nullable|string|max:255',
-       'description' => 'nullable|string',
-       'book_id' => 'nullable|integer',
-   ]);
+    $request->validate([
+        'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        'link' => 'nullable|url',
+        'title' => 'nullable|string|max:255',
+        'description' => 'nullable|string',
+        'book_id' => 'nullable|integer',
+        'priority' => 'nullable|integer|min:0',
+        'status' => 'nullable|boolean',
+    ]);
 
-   if ($request->hasFile('image')) {
-       $file = $request->file('image');
+    if ($request->hasFile('image')) {
+        $file = $request->file('image');
 
-       if (!$file->isValid()) {
-           return response()->json([
-               'success' => false,
-               'message' => 'File upload không hợp lệ'
-           ], 400);
-       }
+        if (!$file->isValid()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File upload không hợp lệ'
+            ], 400);
+        }
 
-       // Xóa ảnh cũ trên Cloudinary nếu có
-       if ($banner->image) {
-           $this->deleteOldImage($banner->image);
-       }
+        if ($banner->image) {
+            $this->deleteOldImage($banner->image);
+        }
 
-       try {
-           // Upload to Cloudinary - Cách đúng (giống hàm store)
-           $uploadApi = new UploadApi();
-           $uploadResult = $uploadApi->upload(
-               $file->getRealPath(),
-               [
-                   'folder' => 'banners',
-                   'use_filename' => true,
-                   'unique_filename' => true,
-               ]
-           );
+        try {
+            $uploadApi = new UploadApi();
+            $uploadResult = $uploadApi->upload(
+                $file->getRealPath(),
+                [
+                    'folder' => 'banners',
+                    'use_filename' => true,
+                    'unique_filename' => true,
+                ]
+            );
 
-           $banner->image = $uploadResult['secure_url'];
-           $banner->link = null;
+            $banner->image = $uploadResult['secure_url'];
+            $banner->link = null;
 
-           \Log::info('Cloudinary upload success: ', [
-               'url' => $banner->image,
-               'public_id' => $uploadResult['public_id']
-           ]);
+            \Log::info('Cloudinary upload success: ', [
+                'url' => $banner->image,
+                'public_id' => $uploadResult['public_id']
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Cloudinary upload failed: ', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
-       } catch (\Exception $e) {
-           \Log::error('Cloudinary upload failed: ', [
-               'error' => $e->getMessage(),
-               'trace' => $e->getTraceAsString()
-           ]);
+            $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('banners', $fileName, 'public');
+            $banner->image = asset('storage/' . $path);
+            $banner->link = null;
 
-           // Fallback to local storage
-           $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-           $path = $file->storeAs('banners', $fileName, 'public');
-           $banner->image = asset('storage/' . $path);
-           $banner->link = null;
+            \Log::info('Fallback to local storage: ' . $banner->image);
+        }
 
-           \Log::info('Fallback to local storage: ' . $banner->image);
-       }
+    } elseif ($request->filled('link')) {
+        if ($banner->image) {
+            $this->deleteOldImage($banner->image);
+        }
 
-   } elseif ($request->filled('link')) {
-       // Xóa ảnh cũ trên Cloudinary nếu có khi chuyển sang dùng link
-       if ($banner->image) {
-           $this->deleteOldImage($banner->image);
-       }
+        $banner->link = $request->link;
+        $banner->image = null;
+    }
 
-       $banner->link = $request->link;
-       $banner->image = null;
-   }
+    // Cập nhật các trường khác
+    $banner->title = $request->input('title', $banner->title);
+    $banner->description = $request->input('description', $banner->description);
+    $banner->book_id = $request->input('book_id', $banner->book_id);
+    $banner->priority = $request->input('priority', $banner->priority);
+    $banner->status = $request->input('status', $banner->status);
 
-   // Cập nhật các trường khác
-   $banner->title = $request->title ?? $banner->title;
-   $banner->description = $request->description ?? $banner->description;
-   $banner->book_id = $request->book_id ?? $banner->book_id;
+    try {
+        $banner->save();
 
-   try {
-       $banner->save();
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật banner thành công',
+            'data' => $banner
+        ]);
 
-       return response()->json([
-           'success' => true,
-           'message' => 'Cập nhật banner thành công',
-           'data' => $banner
-       ]);
+    } catch (\Exception $e) {
+        \Log::error('Database update failed: ', [
+            'error' => $e->getMessage()
+        ]);
 
-   } catch (\Exception $e) {
-       \Log::error('Database update failed: ', [
-           'error' => $e->getMessage()
-       ]);
-
-       return response()->json([
-           'success' => false,
-           'message' => 'Lỗi khi cập nhật banner: ' . $e->getMessage()
-       ], 500);
-   }
+        return response()->json([
+            'success' => false,
+            'message' => 'Lỗi khi cập nhật banner: ' . $e->getMessage()
+        ], 500);
+    }
 }
+
 
 
     private function deleteOldImage(string $imageUrl): void
