@@ -19,12 +19,11 @@ class BookImageController extends Controller
 
     public function index()
     {
-        $images = BookImage::with('book')->latest()->paginate(10); // hoặc cái m đang dùng
-        $books = Book::select('id', 'title')->get(); // LẤY TOÀN BỘ SÁCH
+        $images = BookImage::with('book')->latest()->paginate(10);
+        $books = Book::select('id', 'title')->get();
 
         return view('admin.book_images.index', compact('images', 'books'));
     }
-
 
     public function create()
     {
@@ -36,17 +35,21 @@ class BookImageController extends Controller
     {
         $request->validate([
             'book_id' => 'required|exists:books,id',
-            'image_url' => 'required|image|max:5120',
+            'images.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
-        $imageUrl = $this->cloudinary->uploadImage($request->file('image_url'), 'book_images');
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $imageUrl = $this->cloudinary->uploadImage($image, 'book_images');
 
-        BookImage::create([
-            'book_id' => $request->book_id,
-            'image_url' => $imageUrl,
-        ]);
+                BookImage::create([
+                    'book_id' => $request->book_id,
+                    'image_url' => $imageUrl,
+                ]);
+            }
+        }
 
-        return redirect()->route('admin.book_images.index')->with('success', '🖼️ Đã thêm ảnh phụ thành công!');
+        return redirect()->route('admin.book_images.index')->with('success', '🖼️ Đã thêm nhiều ảnh phụ thành công!');
     }
 
     public function edit(BookImage $book_image)

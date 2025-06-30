@@ -121,7 +121,7 @@
 
                 <a class="nav-link {{ request()->routeIs('admin.book_images.*') ? 'active' : '' }}"
                     href="{{ route('admin.book_images.index') }}">
-                    <i class="bi bi-images"></i> Ảnh sách
+                    <i class="bi bi-images"></i> Ảnh phụ
                 </a>
 
                 <a class="nav-link {{ request()->routeIs('admin.banners.*') ? 'active' : '' }}"
