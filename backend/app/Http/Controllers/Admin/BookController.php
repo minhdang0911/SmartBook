@@ -158,52 +158,70 @@ class BookController extends Controller
         ]);
     }
 
-    public function update(Request $request, Book $book)
-    {
-        $request->validate([
-            'title' => 'required|max:255',
-            'author_id' => 'required|exists:authors,id',
-            'publisher_id' => 'required|exists:publishers,id',
-            'category_id' => 'required|exists:categories,id',
-            'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-            'cover_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
-            'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+public function update(Request $request, Book $book)
+{
+    $request->validate([
+        'title' => 'required|max:255',
+        'author_id' => 'required|exists:authors,id',
+        'publisher_id' => 'required|exists:publishers,id',
+        'category_id' => 'required|exists:categories,id',
+        'price' => 'required|numeric|min:0',
+        'stock' => 'required|integer|min:0',
+        'cover_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+        'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+    ]);
+
+    $data = $request->only([
+        'title',
+        'author_id',
+        'publisher_id',
+        'category_id',
+        'price',
+        'stock',
+        'description'
+    ]);
+
+    // Nếu có ảnh mới thì upload, xóa ảnh cũ, rồi cập nhật
+    if ($request->hasFile('cover_image')) {
+        // Xóa ảnh cũ trên Cloudinary và bảng BookImage
+        if ($book->cover_image) {
+            $this->cloudinary->deleteImageByPublicId($book->cover_image);
+            BookImage::where('book_id', $book->id)->where('is_main', 1)->delete();
+        }
+
+        // Upload ảnh mới
+        $newCover = $this->cloudinary->uploadImage($request->file('cover_image'), 'book_covers');
+        $data['cover_image'] = $newCover;
+
+        // Lưu vào bảng book_images
+        BookImage::create([
+            'book_id' => $book->id,
+            'image_url' => $newCover,
+            'is_main' => 1,
         ]);
+    } else {
+        // Nếu không upload ảnh mới, giữ nguyên ảnh cũ
+        $data['cover_image'] = $book->cover_image;
+    }
 
-        $book->update($request->only([
-            'title', 'author_id', 'publisher_id', 'category_id', 'price', 'stock', 'description'
-        ]));
+    // Cập nhật book 1 lần duy nhất
+    $book->update($data);
 
-        if ($request->hasFile('cover_image')) {
-            if ($book->cover_image) {
-                $this->cloudinary->deleteImageByPublicId($book->cover_image);
-                BookImage::where('book_id', $book->id)->where('is_main', 1)->delete();
-            }
-
-            $newCover = $this->cloudinary->uploadImage($request->file('cover_image'), 'book_covers');
-            $book->update(['cover_image' => $newCover]);
-
+    // Xử lý ảnh phụ
+    if ($request->hasFile('images')) {
+        foreach ($request->file('images') as $image) {
+            $imageUrl = $this->cloudinary->uploadImage($image, 'book_images');
             BookImage::create([
                 'book_id' => $book->id,
-                'image_url' => $newCover,
-                'is_main' => 1,
+                'image_url' => $imageUrl,
+                'is_main' => 0,
             ]);
         }
-
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $imageUrl = $this->cloudinary->uploadImage($image, 'book_images');
-                BookImage::create([
-                    'book_id' => $book->id,
-                    'image_url' => $imageUrl,
-                    'is_main' => 0,
-                ]);
-            }
-        }
-
-        return redirect()->route('admin.books.index')->with('success', 'Cập nhật sách thành công.');
     }
+
+    return redirect()->route('admin.books.index')->with('success', 'Cập nhật sách thành công.');
+}
+
 
     public function destroy(Book $book)
     {
