@@ -802,7 +802,7 @@ const BookDetailPage = () => {
               router.push(`/payment?data=${encodedData}`);
 
               // Hoặc nếu không dùng Next.js router:
-              // window.location.href = `/checkout?data=${encodedData}`;
+              //window.location.href = `/checkout?data=${encodedData}`;
             }}
           >
             Mua ngay
