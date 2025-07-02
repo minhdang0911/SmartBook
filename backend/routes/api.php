@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\BookImageController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\BannerController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Home\EbookController;
 use App\Http\Controllers\Home\BuybookController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\AuthorController;
+use App\Http\Controllers\BookImageController as ControllersBookImageController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\RatingController;
 
@@ -129,3 +131,5 @@ Route::apiResource('coupons', CouponController::class);
 Route::post('/coupons/check', [CouponController::class, 'check']);
 Route::get('/coupons/get', [CouponController::class, 'show']);
 // Route lấy danh sách mã giảm giá cho người dùng
+//
+Route::get('/books/{book_id}/images', [ControllersBookImageController::class, 'getImagesByBookId']);
