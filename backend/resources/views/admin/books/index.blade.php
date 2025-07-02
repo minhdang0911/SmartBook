@@ -90,7 +90,12 @@
         margin-top: 24px;
     }
 
-    /* Responsive: ẩn table khi màn nhỏ */
+    .btn-group-action {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+    }
+
     @media (max-width: 767.98px) {
         .table-responsive {
             display: none;
@@ -114,7 +119,7 @@
     @include('components.alert')
     @include('admin.books.partials.filters')
 
-    {{-- Bảng trên desktop --}}
+    {{-- Bảng desktop --}}
     <div class="table-responsive">
         <table class="table table-bordered table-hover align-middle">
             <thead class="table-light text-center">
@@ -125,6 +130,7 @@
                     <th>Tác giả</th>
                     <th>NXB</th>
                     <th>Danh mục</th>
+                    <th>Loại sách</th>
                     <th>Giá</th>
                     <th>Tồn kho</th>
                     <th>Hành động</th>
@@ -144,26 +150,35 @@
                         <td>{{ $book->author->name ?? '—' }}</td>
                         <td>{{ $book->publisher->name ?? '—' }}</td>
                         <td>{{ $book->category->name ?? '—' }}</td>
-                        <td class="text-end">{{ number_format($book->price, 0, ',', '.') }}đ</td>
-                        <td class="text-center">{{ $book->stock }}</td>
                         <td class="text-center">
-                            <a href="{{ route('admin.books.edit', $book) }}" class="btn btn-warning btn-sm me-1">✏️</a>
-                            <form action="{{ route('admin.books.destroy', $book) }}" method="POST" class="d-inline" onsubmit="return confirm('Xóa sách này?')">
-                                @csrf @method('DELETE')
-                                <button class="btn btn-danger btn-sm">🗑️</button>
-                            </form>
+                            {{ $book->is_physical ? 'Sách giấy' : 'Sách điện tử' }}
+                        </td>
+                        <td class="text-end">
+                            {{ $book->is_physical ? number_format($book->price, 0, ',', '.') . 'đ' : 'Miễn phí' }}
+                        </td>
+                        <td class="text-center">
+                            {{ $book->is_physical ? $book->stock : '—' }}
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group-action">
+                                <a href="{{ route('admin.books.edit', $book) }}" class="btn btn-warning btn-sm" title="Sửa">✏️</a>
+                                <form action="{{ route('admin.books.destroy', $book) }}" method="POST" onsubmit="return confirm('Xóa sách này?')">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="btn btn-danger btn-sm" title="Xóa">🗑️</button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9" class="text-center text-muted">Không có sách nào.</td>
+                        <td colspan="10" class="text-center text-muted">Không có sách nào.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
 
-    {{-- Mobile view bằng card --}}
+    {{-- Mobile: card view --}}
     @foreach ($books as $book)
         <div class="book-card">
             <div class="book-header">
@@ -174,8 +189,9 @@
                         📖 Tác giả: {{ $book->author->name ?? '—' }}<br>
                         🏢 NXB: {{ $book->publisher->name ?? '—' }}<br>
                         🗂️ Danh mục: {{ $book->category->name ?? '—' }}<br>
-                        💰 Giá: {{ number_format($book->price, 0, ',', '.') }}đ<br>
-                        📦 Tồn kho: {{ $book->stock }}
+                        🏷️ Loại: {{ $book->is_physical ? 'Sách giấy' : 'Sách điện tử' }}<br>
+                        💰 Giá: {{ $book->is_physical ? number_format($book->price, 0, ',', '.') . 'đ' : 'Miễn phí' }}<br>
+                        📦 Tồn kho: {{ $book->is_physical ? $book->stock : '—' }}
                     </div>
                 </div>
             </div>
@@ -199,7 +215,7 @@
         </div>
     @endif
 
-    {{-- Phân trang --}}
+    {{-- Pagination --}}
     <div class="pagination">
         {{ $books->appends(request()->except('page'))->links('pagination::bootstrap-5') }}
     </div>

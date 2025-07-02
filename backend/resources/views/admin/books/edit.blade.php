@@ -65,15 +65,36 @@
                 </select>
             </div>
 
-            <!-- Giá và tồn kho -->
-            <div class="col-md-6">
-                <label for="price" class="form-label">Giá (VNĐ)</label>
-                <input type="number" name="price" id="price" value="{{ old('price', $book->price) }}" class="form-control" required>
+            <!-- Loại sách -->
+            @php $selectedType = old('is_physical', $book->is_physical); @endphp
+            <div class="col-12">
+                <label class="form-label d-block">Loại sách</label>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="is_physical" id="ebook" value="0"
+                        {{ (string)$selectedType === '0' ? 'checked' : '' }}>
+                    <label class="form-check-label" for="ebook">📱 Ebook</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="is_physical" id="physical" value="1"
+                        {{ (string)$selectedType === '1' ? 'checked' : '' }}>
+                    <label class="form-check-label" for="physical">📚 Sách giấy</label>
+                </div>
             </div>
 
+            <!-- Giá -->
+            <div class="col-md-6">
+                <label for="price" class="form-label">Giá (VNĐ)</label>
+                <input type="number" name="price" id="price" class="form-control"
+                       value="{{ old('price', $book->price) }}"
+                       {{ (string)$selectedType === '0' ? 'disabled' : 'required' }}>
+            </div>
+
+            <!-- Tồn kho -->
             <div class="col-md-6">
                 <label for="stock" class="form-label">Tồn kho</label>
-                <input type="number" name="stock" id="stock" value="{{ old('stock', $book->stock) }}" class="form-control" required>
+                <input type="number" name="stock" id="stock" class="form-control"
+                       value="{{ old('stock', $book->stock) }}"
+                       {{ (string)$selectedType === '0' ? 'disabled' : 'required' }}>
             </div>
 
             <!-- Mô tả -->
@@ -127,19 +148,7 @@
 <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 <script>
     ClassicEditor
-        .create(document.querySelector('.my-editor'), {
-            ckfinder: {
-            uploadUrl: `{{ route('ckeditor.upload') }}?_token={{ csrf_token() }}`
-            },
-            toolbar: [
-                'heading', '|', 'bold', 'italic', 'link', '|',
-                'bulletedList', 'numberedList', '|',
-                'insertTable', 'undo', 'redo', 'imageUpload'
-            ],
-            table: {
-                contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells']
-            }
-        })
+        .create(document.querySelector('.my-editor'))
         .catch(error => console.error(error));
 
     // Preview ảnh bìa
@@ -166,5 +175,18 @@
             container.appendChild(img);
         });
     });
+
+    // Toggle field
+    function toggleFields() {
+        const isPhysical = document.querySelector('input[name="is_physical"]:checked').value === '1';
+        document.getElementById('price').disabled = !isPhysical;
+        document.getElementById('stock').disabled = !isPhysical;
+    }
+
+    document.querySelectorAll('input[name="is_physical"]').forEach(input => {
+        input.addEventListener('change', toggleFields);
+    });
+
+    toggleFields();
 </script>
 @endpush

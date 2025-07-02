@@ -110,8 +110,10 @@ class BookController extends Controller
             'author_id' => 'required|exists:authors,id',
             'publisher_id' => 'required|exists:publishers,id',
             'category_id' => 'required|exists:categories,id',
-            'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
+            'is_physical' => 'required|boolean',
+            'description' => 'nullable|string',
+            'price' => $request->is_physical ? 'required|numeric|min:0' : 'nullable',
+            'stock' => $request->is_physical ? 'required|integer|min:0' : 'nullable',
         ]);
 
         $coverUrl = $this->cloudinary->uploadImage($request->file('cover_image'), 'book_covers');
@@ -121,11 +123,12 @@ class BookController extends Controller
             'author_id' => $request->author_id,
             'publisher_id' => $request->publisher_id,
             'category_id' => $request->category_id,
+            'is_physical' => $request->input('is_physical'), // ✅ thêm dòng này
             'price' => $request->price,
             'stock' => $request->stock,
             'description' => $request->description,
             'cover_image' => $coverUrl,
-        ]);
+            ]);
 
         BookImage::create([
             'book_id' => $book->id,
@@ -160,13 +163,16 @@ class BookController extends Controller
 
 public function update(Request $request, Book $book)
 {
+    $isPhysical = $request->input('is_physical') == 1;
+
     $request->validate([
         'title' => 'required|max:255',
         'author_id' => 'required|exists:authors,id',
         'publisher_id' => 'required|exists:publishers,id',
         'category_id' => 'required|exists:categories,id',
-        'price' => 'required|numeric|min:0',
-        'stock' => 'required|integer|min:0',
+        'is_physical' => 'required|boolean',
+        'price' => $isPhysical ? 'required|numeric|min:0' : 'nullable',
+        'stock' => $isPhysical ? 'required|integer|min:0' : 'nullable',
         'cover_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
     ]);
@@ -178,36 +184,33 @@ public function update(Request $request, Book $book)
         'category_id',
         'price',
         'stock',
-        'description'
+        'description',
     ]);
 
-    // Nếu có ảnh mới thì upload, xóa ảnh cũ, rồi cập nhật
+    // ⚠️ Thêm dòng này để cập nhật đúng loại sách
+    $data['is_physical'] = $request->input('is_physical');
+
+    // Xử lý ảnh bìa
     if ($request->hasFile('cover_image')) {
-        // Xóa ảnh cũ trên Cloudinary và bảng BookImage
         if ($book->cover_image) {
             $this->cloudinary->deleteImageByPublicId($book->cover_image);
             BookImage::where('book_id', $book->id)->where('is_main', 1)->delete();
         }
 
-        // Upload ảnh mới
         $newCover = $this->cloudinary->uploadImage($request->file('cover_image'), 'book_covers');
         $data['cover_image'] = $newCover;
 
-        // Lưu vào bảng book_images
         BookImage::create([
             'book_id' => $book->id,
             'image_url' => $newCover,
             'is_main' => 1,
         ]);
     } else {
-        // Nếu không upload ảnh mới, giữ nguyên ảnh cũ
         $data['cover_image'] = $book->cover_image;
     }
 
-    // Cập nhật book 1 lần duy nhất
     $book->update($data);
 
-    // Xử lý ảnh phụ
     if ($request->hasFile('images')) {
         foreach ($request->file('images') as $image) {
             $imageUrl = $this->cloudinary->uploadImage($image, 'book_images');
@@ -221,6 +224,7 @@ public function update(Request $request, Book $book)
 
     return redirect()->route('admin.books.index')->with('success', 'Cập nhật sách thành công.');
 }
+
 
 
     public function destroy(Book $book)
