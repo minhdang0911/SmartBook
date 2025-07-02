@@ -34,14 +34,14 @@ class BookController extends Controller
         $latestPaperBooks = Book::with(['author', 'category', 'publisher'])
             ->where('is_physical', 0)
             ->orderByDesc('created_at')
-            ->take(10)
+            ->take(20)
             ->get();
 
         // 10 sách ebook mới nhất
         $latestEbooks = Book::with(['author', 'category', 'publisher'])
             ->where('is_physical', 1)
             ->orderByDesc('created_at')
-            ->take(10)
+            ->take(20)
             ->get();
 
         return response()->json([

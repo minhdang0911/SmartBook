@@ -10,7 +10,7 @@ class BuybookController extends Controller
 {
     public function buyBooks(Request $request)
     {
-        $limit = $request->query('limit', 10);
+        $limit = $request->query('limit', 12);
         $page = $request->query('page', 1);
 
         $query = Book::where('is_physical', 1)
