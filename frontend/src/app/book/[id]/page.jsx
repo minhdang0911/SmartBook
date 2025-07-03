@@ -1257,10 +1257,12 @@ const BookDetailPage = () => {
         className="description-card"
         bordered={false}
       >
+      {book?.description &&
+      
         <div
         className="book-description"
-        dangerouslySetInnerHTML={{ __html: marked(book.description) }}
-      />
+        dangerouslySetInnerHTML={{ __html: marked(book?.description || '') }}
+      />}
       </Card>
 
       {/* Reviews Section */}
