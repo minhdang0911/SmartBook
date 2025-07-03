@@ -13,6 +13,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
+use Carbon\Carbon;
+
 
 class OrderController extends Controller
 {
@@ -919,4 +921,316 @@ class OrderController extends Controller
 
         return $statusMap[$ghnStatus] ?? $ghnStatus;
     }
+
+    private $zaloPayConfig;
+
+    public function __construct()
+    {
+        $this->zaloPayConfig = [
+            'app_id' => 554,
+            'key1' => '8NdU5pG5R2spGHGhyO99HN1OhD8IQJBn', // key1 sandbox
+            'key2' => 'uUfsWgfLkRLzq6W2uNXTCxrfxs51auny', // key2 cho callback
+            'endpoint' => 'https://sb-openapi.zalopay.vn/v2/create'
+        ];
+    }
+
+    /**
+     * Tạo đơn hàng ZaloPay
+     */
+  public function createZaloPayOrder(Request $request)
+{
+    // Validate request
+    $request->validate([
+        'amount' => 'required|integer|min:1000',
+        'description' => 'nullable|string|max:255',
+        'items' => 'nullable|array',
+        'items.*.itemid' => 'required_with:items|string',
+        'items.*.itemname' => 'required_with:items|string',
+        'items.*.itemprice' => 'required_with:items|integer|min:1',
+        'items.*.itemquantity' => 'required_with:items|integer|min:1'
+    ]);
+
+    try {
+        $amount = $request->input('amount');
+        $description = $request->input('description', 'Thanh toán đơn hàng');
+        $items = $request->input('items', []);
+
+        // Kiểm tra cấu hình ZaloPay trước khi sử dụng
+        if (!isset($this->zaloPayConfig['app_id']) || !isset($this->zaloPayConfig['key1']) || !isset($this->zaloPayConfig['endpoint'])) {
+            throw new \Exception('ZaloPay configuration is missing or incomplete');
+        }
+
+        // Tạo app_trans_id theo format YYMMDD_XXXXXX
+        $today = Carbon::now();
+        $yymmdd = $today->format('ymd');
+        $app_trans_id = $yymmdd . '_' . rand(100000, 999999);
+        
+        // Đảm bảo app_trans_id là duy nhất (tùy chọn)
+        // Có thể thêm check database nếu cần
+
+        $app_time = time() * 1000; // milliseconds
+
+        $embed_data = [
+            'redirecturl' => 'https://sandbox.zalopay.vn/thankyou'
+        ];
+
+        // Mặc định items nếu không có
+        $orderItems = !empty($items) ? $items : [
+            [
+                'itemid' => 'default',
+                'itemname' => 'Sản phẩm mặc định',
+                'itemprice' => $amount,
+                'itemquantity' => 1,
+            ]
+        ];
+
+        // Validate tổng giá trị items với amount
+        if (!empty($items)) {
+            $totalItemsAmount = 0;
+            foreach ($items as $item) {
+                $totalItemsAmount += $item['itemprice'] * $item['itemquantity'];
+            }
+            
+            if ($totalItemsAmount !== $amount) {
+                Log::warning('Amount mismatch:', [
+                    'request_amount' => $amount,
+                    'calculated_amount' => $totalItemsAmount
+                ]);
+                // Có thể throw exception hoặc warning tùy business logic
+            }
+        }
+
+        // Tạo MAC theo đúng format của ZaloPay
+        // Format: app_id|app_trans_id|app_user|amount|app_time|embed_data|item
+        $embed_data_json = json_encode($embed_data);
+        $item_json = json_encode($orderItems);
+        
+        // Kiểm tra JSON encoding
+        if ($embed_data_json === false || $item_json === false) {
+            throw new \Exception('Failed to encode JSON data');
+        }
+
+        $data = $this->zaloPayConfig['app_id'] . '|' . $app_trans_id . '|demo|' . $amount . '|' . $app_time . '|' . $embed_data_json . '|' . $item_json;
+        $mac = hash_hmac('sha256', $data, $this->zaloPayConfig['key1']);
+
+        $order = [
+            'app_id' => $this->zaloPayConfig['app_id'],
+            'app_trans_id' => $app_trans_id,
+            'app_user' => 'demo',
+            'app_time' => $app_time,
+            'amount' => $amount,
+            'item' => $item_json,
+            'embed_data' => $embed_data_json,
+            'description' => $description ?: "Demo - Thanh toan don hang #$app_trans_id",
+            'callback_url' => url('/api/orders/zalopay/callback'),
+            'mac' => $mac,
+        ];
+
+        Log::info('Data để tạo MAC:', ['data' => $data]);
+        Log::info('MAC generated:', ['mac' => $mac]);
+        Log::info('Order data:', $order);
+
+        // Thêm timeout và retry logic với headers cụ thể
+        $response = Http::timeout(30)
+            ->retry(3, 1000)
+            ->asForm()
+            ->withHeaders([
+                'Content-Type' => 'application/x-www-form-urlencoded',
+                'Accept' => 'application/json',
+                'User-Agent' => 'SmartBook/1.0'
+            ])
+            ->post($this->zaloPayConfig['endpoint'], $order);
+
+        // Log full response để debug
+        Log::info('ZaloPay Full Response:', [
+            'status' => $response->status(),
+            'headers' => $response->headers(),
+            'body' => $response->body(),
+            'content_type' => $response->header('Content-Type')
+        ]);
+
+        if ($response->successful()) {
+            $responseBody = $response->body();
+            
+            // Kiểm tra xem response có phải là HTML không
+            if (str_contains($responseBody, '<html>') || str_contains($responseBody, '<!DOCTYPE')) {
+                Log::error('ZaloPay returned HTML instead of JSON:', [
+                    'body' => $responseBody,
+                    'endpoint' => $this->zaloPayConfig['endpoint']
+                ]);
+                
+                return response()->json([
+                    'success' => false,
+                    'error' => 'ZaloPay API returned HTML instead of JSON',
+                    'details' => 'Invalid endpoint or server error'
+                ], 500);
+            }
+            
+            // Thử parse JSON
+            try {
+                $responseData = $response->json();
+            } catch (\Exception $e) {
+                Log::error('Failed to parse ZaloPay response as JSON:', [
+                    'body' => $responseBody,
+                    'error' => $e->getMessage()
+                ]);
+                
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Invalid JSON response from ZaloPay',
+                    'details' => $responseBody
+                ], 500);
+            }
+            
+            // Kiểm tra response từ ZaloPay
+            if (isset($responseData['return_code']) && $responseData['return_code'] == 1) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $responseData,
+                    'app_trans_id' => $app_trans_id
+                ]);
+            } else {
+                // ZaloPay trả về lỗi
+                $errorMessage = isset($responseData['return_message']) ? $responseData['return_message'] : 'Unknown ZaloPay error';
+                Log::error('ZaloPay Error Response:', $responseData);
+                
+                return response()->json([
+                    'success' => false,
+                    'error' => 'ZaloPay Error: ' . $errorMessage,
+                    'details' => $responseData
+                ], 400);
+            }
+        } else {
+            $errorBody = $response->body();
+            Log::error('ZaloPay HTTP Error:', [
+                'status' => $response->status(),
+                'body' => $errorBody,
+                'headers' => $response->headers()
+            ]);
+            
+            throw new \Exception('ZaloPay API HTTP Error: ' . $response->status() . ' - ' . $errorBody);
+        }
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        Log::error('Validation Error:', $e->errors());
+        return response()->json([
+            'success' => false,
+            'error' => 'Validation failed',
+            'details' => $e->errors()
+        ], 422);
+        
+    } catch (\Exception $e) {
+        Log::error('Lỗi khi tạo đơn hàng ZaloPay:', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'error' => 'Không tạo được đơn hàng ZaloPay',
+            'details' => $e->getMessage()
+        ], 500);
+    }
+}
+    /**
+     * Callback endpoint để nhận thông báo từ ZaloPay
+     */
+    public function zaloPayCallback(Request $request)
+    {
+        Log::info('ZaloPay Callback received:', $request->all());
+        
+        try {
+            $callbackData = $request->input('data');
+            $receivedMac = $request->input('mac');
+            
+            // Verify MAC từ callback
+            $computedMac = hash_hmac('sha256', $callbackData, $this->zaloPayConfig['key2']);
+            
+            if ($computedMac === $receivedMac) {
+                Log::info('Callback MAC hợp lệ');
+                
+                // Parse callback data để lấy thông tin
+                $parsedData = json_decode($callbackData, true);
+                Log::info('Parsed callback data:', $parsedData);
+                
+                // TODO: Xử lý logic cập nhật trạng thái đơn hàng trong database
+                // Ví dụ: $this->updateOrderStatus($parsedData['app_trans_id'], 'paid');
+                
+                return response()->json([
+                    'return_code' => 1,
+                    'return_message' => 'success'
+                ]);
+            } else {
+                Log::warning('Callback MAC không hợp lệ');
+                return response()->json([
+                    'return_code' => -1,
+                    'return_message' => 'mac not equal'
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Lỗi xử lý callback:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'return_code' => 0,
+                'return_message' => 'exception'
+            ]);
+        }
+    }
+
+    /**
+     * Check trạng thái đơn hàng ZaloPay
+     */
+    public function checkZaloPayStatus(Request $request)
+    {
+        try {
+            $app_trans_id = $request->input('app_trans_id');
+            
+            if (!$app_trans_id) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'app_trans_id là bắt buộc'
+                ], 400);
+            }
+            
+            $data = $this->zaloPayConfig['app_id'] . '|' . $app_trans_id . '|' . $this->zaloPayConfig['key1'];
+            $mac = hash_hmac('sha256', $data, $this->zaloPayConfig['key1']);
+            
+            $checkData = [
+                'app_id' => $this->zaloPayConfig['app_id'],
+                'app_trans_id' => $app_trans_id,
+                'mac' => $mac
+            ];
+            
+            $response = Http::asForm()->post('https://sb-openapi.zalopay.vn/v2/query', $checkData);
+            
+            if ($response->successful()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $response->json()
+                ]);
+            } else {
+                throw new \Exception('ZaloPay Query API Error: ' . $response->body());
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('Lỗi check status:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => 'Không check được status',
+                'details' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Cập nhật trạng thái đơn hàng (có thể customize theo nhu cầu)
+     */
+  
 }
