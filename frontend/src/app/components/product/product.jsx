@@ -20,6 +20,7 @@ const BookStore = () => {
   const [token, setToken] = useState(null);
   const [showQuickView, setShowQuickView] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
+  const [user,setUser] = useState([])
   const router = useRouter();
 
   // Lấy token khi component mount
@@ -101,9 +102,30 @@ const BookStore = () => {
     }
   };
 
+
+ useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      const getUserInfo = async () => {
+        try {
+          const response = await apiGetMe(token);
+          if (response?.status === true) {
+            setUser(response?.user);
+            // Fetch cart count when user is logged in
+            fetchCartCount();
+          }
+        } catch (error) {
+          console.error('Error getting user info:', error);
+        }
+      };
+      getUserInfo();
+    }
+  }, []);
+
+  console.log(user)
   // Handle Buy Now functionality
   const handleBuyNow = async (book) => {
-    if (!token) {
+    if (user.length === 0) {
       toast.error('🔒 Vui lòng đăng nhập để mua sách!');
       router.push('/login');
       return;
@@ -202,6 +224,11 @@ const BookStore = () => {
   // Handle Add to Cart functionality
 const handleAddToCart = async (book) => {
   try {
+       if (user.length === 0) {
+      toast.error('🔒 Vui lòng đăng nhập để mua sách!');
+      router.push('/login');
+      return;
+    }
     setIsAddingToCart(true);
     const result = await addToCart(book.id, 1);
     if (result.success) {
@@ -225,8 +252,8 @@ const handleAddToCart = async (book) => {
 
   // Handle Read Now for online books
   const handleReadNow = (book) => {
-    if (!token) {
-      toast.error('🔒 Vui lòng đăng nhập để đọc sách!');
+     if (user.length === 0) {
+      toast.error('🔒 Vui lòng đăng nhập để mua sách!');
       router.push('/login');
       return;
     }
