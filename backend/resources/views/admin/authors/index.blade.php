@@ -2,305 +2,201 @@
 
 @section('title', 'Danh sách Tác giả')
 
-@push('styles')
-    <style>
-        .container {
-            max-width: 1200px;
-            padding: 24px;
-        }
+<!-- Ant Design CDN -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/antd/4.16.13/antd.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 
-        .page-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 32px 24px;
-            text-align: center;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            margin-bottom: 24px;
-        }
+<style>
+    .ant-container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 0 20px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    }
 
-        .page-header h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
+    .ant-page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
 
-        .search-form {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            max-width: 100%;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-        }
+    .ant-page-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: #1677ff;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
 
-        .search-form .form-control {
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 10px 16px;
-            font-size: 0.95rem;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-            flex: 1;
-            min-width: 200px;
-        }
+    .ant-table {
+        border: 1px solid #f0f0f0;
+        border-radius: 6px;
+        overflow: hidden;
+    }
 
-        .search-form .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            outline: none;
-        }
+    .ant-table th,
+    .ant-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #f0f0f0;
+    }
 
-        .search-form .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
+    .ant-table th {
+        background-color: #fafafa;
+        font-weight: 600;
+        color: #595959;
+    }
 
-        .search-form .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
+    .ant-table tr:hover {
+        background-color: #f5f5f5;
+    }
 
-        .search-form .btn-success {
-            background: linear-gradient(135deg, #28a745, #34c759);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-        }
+    .ant-search-form {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+    }
 
-        .search-form .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
-        }
+    .ant-search-form input {
+        padding: 8px 12px;
+        border: 1px solid #d9d9d9;
+        border-radius: 4px;
+        width: 280px;
+        transition: border 0.3s, box-shadow 0.3s;
+    }
 
-        .table {
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
+    .ant-search-form input:focus {
+        outline: none;
+        border-color: #1677ff;
+        box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.2);
+    }
 
-        .table thead {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-        }
+    .ant-btn {
+        padding: 6px 16px;
+        font-size: 14px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
 
-        .table th {
-            font-weight: 600;
-            color: #333;
-            padding: 16px;
-            font-size: 0.95rem;
-        }
+    .ant-btn-primary {
+        background-color: #1677ff;
+        color: white;
+    }
 
-        .table td {
-            padding: 16px;
-            vertical-align: middle;
-            font-size: 0.9rem;
-            color: #333;
-        }
+    .ant-btn-primary:hover {
+        background-color: #4096ff;
+    }
 
-        .table tr:hover {
-            background: #f0f4ff;
-        }
+    .ant-btn-warning {
+        background-color: #faad14;
+        color: white;
+    }
 
-        .btn-sm {
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
+    .ant-btn-danger {
+        background-color: #ff4d4f;
+        color: white;
+    }
 
-        .btn-warning {
-            background: #ffc107;
-            border: none;
-            color: #333;
-        }
+    .ant-btn-danger:hover {
+        background-color: #ff7875;
+    }
 
-        .btn-warning:hover {
-            background: #ffca2c;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
-        }
+    .ant-empty {
+        text-align: center;
+        color: #999;
+        padding: 30px;
+        font-size: 14px;
+    }
 
-        .btn-danger {
-            background: #dc3545;
-            border: none;
-        }
-
-        .btn-danger:hover {
-            background: #e4606d;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
-        }
-
-        .empty-state {
-            padding: 24px;
-            text-align: center;
-            color: #666;
-            font-size: 1rem;
-        }
-
-        .empty-state strong {
-            color: #333;
-        }
-
-        .empty-state .text-muted {
-            font-size: 0.85rem;
-            margin-top: 8px;
-        }
-
-        .pagination {
-            justify-content: center;
-            margin-top: 24px;
-        }
-
-        .pagination .page-link {
-            border-radius: 6px;
-            margin: 0 4px;
-            color: #667eea;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .pagination .page-link:hover {
-            background: #f0f4ff;
-            color: #764ba2;
-        }
-
-        .pagination .page-item.active .page-link {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-color: #667eea;
-            color: white;
-        }
-
-        @media (max-width: 768px) {
-            .page-header {
-                padding: 24px;
-            }
-
-            .page-header h1 {
-                font-size: 1.5rem;
-            }
-
-            .search-form {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .search-form .form-control,
-            .search-form .btn-primary,
-            .search-form .btn-success {
-                width: 100%;
-            }
-
-            .table th,
-            .table td {
-                font-size: 0.85rem;
-                padding: 12px;
-            }
-
-            .btn-sm {
-                padding: 5px 10px;
-                font-size: 0.8rem;
-            }
-        }
-
-        @media (max-width: 576px) {
-            .page-header {
-                padding: 16px;
-            }
-
-            .page-header h1 {
-                font-size: 1.2rem;
-            }
-
-            .table th,
-            .table td {
-                font-size: 0.8rem;
-                padding: 10px;
-            }
-
-            .btn-success {
-                padding: 10px 16px;
-                font-size: 0.9rem;
-            }
-
-            .empty-state {
-                font-size: 0.9rem;
-            }
-
-            .btn-sm {
-                padding: 4px 8px;
-                font-size: 0.75rem;
-            }
-        }
-    </style>
-@endpush
+    .ant-pagination {
+        margin-top: 24px;
+    }
+</style>
 
 @section('content')
-    <div class="container">
-        <div class="page-header">
-            <h1><i class="bi bi-person"></i> Danh sách Tác giả</h1>
-        </div>
+<div class="ant-container">
 
-        @include('components.alert')
+    <!-- Header -->
+    <div class="ant-page-header">
+        <h1 class="ant-page-title">
+            <i class="fas fa-user"></i> Danh sách Tác giả
+        </h1>
+        <x-admin.button.modal-button
+            target="addAuthorModal"
+            text="➕ Thêm mới"
+            class="ant-btn ant-btn-primary" />
+    </div>
 
-        <form method="GET" action="{{ route('admin.authors.index') }}" class="search-form" role="search">
-            <input type="text" name="search" class="form-control" placeholder="🔍 Tìm tác giả..." value="{{ request('search') }}">
-            <button type="submit" class="btn btn-primary">Tìm</button>
-            <x-admin.button.modal-button target="addAuthorModal" text="➕ Thêm mới" class="btn-success ms-auto" />
-        </form>
+    @include('components.alert')
 
-        <div class="table-responsive">
-            <x-admin.table :headers="['STT', 'Tên tác giả', 'Hành động']">
+    <!-- Form tìm kiếm -->
+    <form method="GET" action="{{ route('admin.authors.index') }}" class="ant-search-form">
+        <input
+            type="text"
+            name="search"
+            placeholder="🔍 Tìm tác giả..."
+            value="{{ request('search') }}">
+        <button type="submit" class="ant-btn ant-btn-primary">Tìm</button>
+    </form>
+
+    <!-- Bảng dữ liệu -->
+    <div class="ant-table">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th>STT</th>
+                    <th>Tên Tác giả</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
                 @forelse ($authors as $index => $author)
                     <tr>
                         <td>{{ $authors->firstItem() + $index }}</td>
                         <td>{{ $author->name }}</td>
                         <td>
-                            <div class="d-flex flex-wrap gap-2">
-                                <x-admin.button.modal-button target="editAuthorModal{{ $author->id }}" text="Sửa" class="btn-warning btn-sm" />
-                                <form action="{{ route('admin.authors.destroy', $author) }}" method="POST" onsubmit="return confirm('Bạn chắc chắn muốn xóa?')">
+                            <div style="display: flex; gap: 8px;">
+                                <x-admin.button.modal-button
+                                    target="editAuthorModal{{ $author->id }}"
+                                    text="Sửa"
+                                    class="ant-btn ant-btn-warning" />
+                                <form action="{{ route('admin.authors.destroy', $author) }}" method="POST"
+                                      onsubmit="return confirm('Bạn chắc chắn muốn xóa?')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-danger">Xóa</button>
+                                    <button type="submit" class="ant-btn ant-btn-danger">Xóa</button>
                                 </form>
                             </div>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="3" class="empty-state">
+                        <td colspan="3" class="ant-empty">
                             😕 Không tìm thấy tác giả nào
                             @if (request('search'))
                                 với từ khóa <strong>"{{ request('search') }}"</strong>.
                             @endif
-                            <p class="text-muted">Hãy thử tìm với tên khác hoặc kiểm tra lại chính tả!</p>
+                            <p>Hãy thử lại với từ khoá khác.</p>
                         </td>
                     </tr>
                 @endforelse
-            </x-admin.table>
-        </div>
-
-        <div class="pagination">
-            {{ $authors->appends(['search' => request('search')])->links('pagination::bootstrap-5') }}
-        </div>
-
-        @foreach ($authors as $author)
-            <x-admin.modal.edit-author :author="$author" />
-        @endforeach
-
-        <x-admin.modal.add-author />
+            </tbody>
+        </table>
     </div>
+
+    <!-- Pagination -->
+    <div class="ant-pagination">
+        {{ $authors->appends(['search' => request('search')])->links('pagination::bootstrap-5') }}
+    </div>
+
+    <!-- Modal -->
+    @foreach ($authors as $author)
+        <x-admin.modal.edit-author :author="$author" />
+    @endforeach
+
+    <x-admin.modal.add-author />
+</div>
 @endsection
