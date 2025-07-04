@@ -10,160 +10,256 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/antd/5.0.0/reset.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        * {
+         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: #f5f5f5;
-            color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 24px;
+            padding: 20px;
         }
 
         .page-header {
-            background: white;
-            padding: 24px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 24px;
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
         }
 
         .page-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: #262626;
-            margin-bottom: 8px;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
         .page-description {
-            color: #8c8c8c;
-            font-size: 14px;
+            font-size: 1.1rem;
+            opacity: 0.9;
         }
 
         .stats-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
         }
 
         .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
             text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
         }
 
         .stat-number {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 8px;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1890ff;
+            margin-bottom: 10px;
         }
 
         .stat-label {
-            color: #8c8c8c;
-            font-size: 14px;
+            font-size: 1rem;
+            color: #666;
+            font-weight: 500;
         }
 
         .orders-table {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
         }
 
         .table-header {
-            padding: 16px 24px;
-            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
         .table-title {
-            font-size: 16px;
+            font-size: 1.8rem;
             font-weight: 600;
-            color: #262626;
+            color: #333;
+        }
+
+        .filter-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .filter-label {
+            font-weight: 500;
+            color: #666;
+        }
+
+        .filter-select {
+            padding: 8px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #1890ff;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
         }
 
         th {
-            background-color: #fafafa;
-            padding: 12px;
-            text-align: left;
+            background: #f8f9fa;
             font-weight: 600;
-            color: #262626;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        td {
-            padding: 12px;
-            border-bottom: 1px solid #f0f0f0;
-            vertical-align: middle;
+            color: #333;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         tr:hover {
-            background-color: #fafafa;
+            background: #f8f9fa;
         }
 
         .status-tag {
-            padding: 4px 8px;
-            border-radius: 4px;
+            padding: 6px 12px;
+            border-radius: 20px;
             font-size: 12px;
             font-weight: 500;
-            text-align: center;
-            display: inline-block;
-            min-width: 80px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .status-ready_to_pick { background-color: #e6f7ff; color: #1890ff; }
-        .status-picking { background-color: #fff7e6; color: #fa8c16; }
-        .status-picked { background-color: #f6ffed; color: #52c41a; }
-        .status-delivering { background-color: #fff1f0; color: #ff4d4f; }
-        .status-delivered { background-color: #f6ffed; color: #52c41a; }
-        .status-cancelled { background-color: #fff2f0; color: #ff4d4f; }
+        .status-ready_to_pick { background: #fff2e8; color: #fa8c16; }
+        .status-picking { background: #e6f7ff; color: #1890ff; }
+        .status-picked { background: #f6ffed; color: #52c41a; }
+        .status-delivering { background: #e6f7ff; color: #1890ff; }
+        .status-delivered { background: #f6ffed; color: #52c41a; }
+        .status-cancelled { background: #fff2f0; color: #ff4d4f; }
+
+        .cod-tag {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .cod-collect {
+            background: #fff2e8;
+            color: #fa8c16;
+        }
+
+        .cod-none {
+            background: #f6ffed;
+            color: #52c41a;
+        }
 
         .btn {
-            padding: 6px 12px;
+            padding: 8px 16px;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
+            font-weight: 500;
             transition: all 0.3s ease;
-            margin-right: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .btn-primary {
-            background-color: #1890ff;
+            background: #1890ff;
             color: white;
         }
 
         .btn-primary:hover {
-            background-color: #40a9ff;
+            background: #40a9ff;
+            transform: translateY(-2px);
         }
 
         .btn-success {
-            background-color: #52c41a;
+            background: #52c41a;
             color: white;
         }
 
         .btn-success:hover {
-            background-color: #73d13d;
+            background: #73d13d;
         }
 
-        .btn-success:disabled {
-            background-color: #d9d9d9;
-            color: #bfbfbf;
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+
+        .pagination button.active {
+            background: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
             cursor: not-allowed;
         }
 
@@ -175,194 +271,171 @@
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.45);
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
         }
 
         .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            border-radius: 8px;
+            background: white;
+            margin: 2% auto;
+            padding: 0;
+            border-radius: 15px;
             width: 90%;
             max-width: 800px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             max-height: 90vh;
             overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
 
         .modal-header {
-            padding: 16px 24px;
-            border-bottom: 1px solid #f0f0f0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px 15px 0 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
         .modal-title {
-            font-size: 16px;
+            font-size: 1.5rem;
             font-weight: 600;
-            color: #262626;
         }
 
         .close {
-            color: #8c8c8c;
-            font-size: 24px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 28px;
             font-weight: bold;
             cursor: pointer;
-            border: none;
-            background: none;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.3s ease;
         }
 
         .close:hover {
-            color: #262626;
+            background: rgba(255,255,255,0.2);
         }
 
         .modal-body {
-            padding: 24px;
-        }
-
-        .modal-actions {
-            padding: 16px 24px;
-            border-top: 1px solid #f0f0f0;
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
+            padding: 30px;
         }
 
         .info-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
+            gap: 20px;
+            margin-bottom: 30px;
         }
 
         .info-item {
-            display: flex;
-            flex-direction: column;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #1890ff;
         }
 
         .info-label {
             font-size: 12px;
-            color: #8c8c8c;
-            margin-bottom: 4px;
+            color: #666;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
             font-weight: 500;
         }
 
         .info-value {
             font-size: 14px;
-            color: #262626;
+            color: #333;
             font-weight: 500;
         }
 
-        .items-section {
-            margin-top: 24px;
-        }
-
         .section-title {
-            font-size: 16px;
+            font-size: 1.3rem;
             font-weight: 600;
-            color: #262626;
-            margin-bottom: 16px;
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #1890ff;
+            padding-bottom: 10px;
         }
 
         .item-card {
-            border: 1px solid #f0f0f0;
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 12px;
-            background-color: #fafafa;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #52c41a;
         }
 
         .item-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 15px;
         }
 
         .item-title {
+            font-size: 16px;
             font-weight: 600;
-            color: #262626;
+            color: #333;
         }
 
         .item-price {
+            font-size: 16px;
             font-weight: 600;
             color: #1890ff;
         }
 
         .item-details {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 8px;
-            font-size: 12px;
-            color: #8c8c8c;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            font-size: 14px;
+            color: #666;
         }
 
-        .pagination {
+        .modal-actions {
+            padding: 20px 30px;
+            border-top: 1px solid #eee;
             display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 16px;
-            gap: 8px;
-        }
-
-        .pagination button {
-            padding: 6px 12px;
-            border: 1px solid #d9d9d9;
-            background: white;
-            color: #262626;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .pagination button:hover {
-            border-color: #1890ff;
-            color: #1890ff;
-        }
-
-        .pagination button.active {
-            background-color: #1890ff;
-            color: white;
-            border-color: #1890ff;
-        }
-
-        .pagination button:disabled {
-            background-color: #f5f5f5;
-            color: #bfbfbf;
-            border-color: #d9d9d9;
-            cursor: not-allowed;
+            justify-content: flex-end;
+            gap: 15px;
         }
 
         .shipping-status {
-            margin-top: 16px;
-            padding: 12px;
-            border-radius: 6px;
-            background-color: #f6ffed;
-            border: 1px solid #b7eb8f;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .shipping-status.created {
-            background-color: #f6ffed;
-            border-color: #b7eb8f;
+            background: #f6ffed;
             color: #52c41a;
+            border: 1px solid #b7eb8f;
         }
 
         .shipping-status.error {
-            background-color: #fff2f0;
-            border-color: #ffccc7;
+            background: #fff2f0;
             color: #ff4d4f;
+            border: 1px solid #ffccc7;
         }
 
         .loading-spinner {
-            display: inline-block;
             width: 16px;
             height: 16px;
             border: 2px solid #f3f3f3;
             border-top: 2px solid #1890ff;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-right: 8px;
         }
 
         @keyframes spin {
@@ -372,38 +445,33 @@
 
         @media (max-width: 768px) {
             .container {
-                padding: 12px;
+                padding: 10px;
+            }
+            
+            .page-title {
+                font-size: 2rem;
             }
             
             .stats-row {
                 grid-template-columns: 1fr;
             }
             
+            .orders-table {
+                padding: 15px;
+                overflow-x: auto;
+            }
+            
+            table {
+                min-width: 800px;
+            }
+            
             .modal-content {
                 width: 95%;
-                margin: 2% auto;
+                margin: 5% auto;
             }
             
             .info-grid {
                 grid-template-columns: 1fr;
-            }
-            
-            table {
-                font-size: 12px;
-            }
-            
-            th, td {
-                padding: 8px 4px;
-            }
-
-            .modal-actions {
-                flex-direction: column;
-            }
-
-            .modal-actions .btn {
-                width: 100%;
-                margin-right: 0;
-                margin-bottom: 8px;
             }
         }
     </style>
@@ -434,16 +502,20 @@
                 <div class="stat-number" id="delivered-orders">-</div>
                 <div class="stat-label">Đã giao</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-number" id="total-spent">-</div>
-                <div class="stat-label">Tổng doanh thu</div>
-            </div>
         </div>
 
         <!-- Orders Table -->
         <div class="orders-table">
             <div class="table-header">
                 <h2 class="table-title">Danh Sách Đơn Hàng</h2>
+                <div class="filter-section">
+                    <label for="payment-filter" class="filter-label">Lọc theo thanh toán:</label>
+                    <select id="payment-filter" class="filter-select" onchange="filterOrders()">
+                        <option value="">Tất cả</option>
+                        <option value="qr">QR Code</option>
+                        <option value="cod">COD</option>
+                    </select>
+                </div>
             </div>
             
             <table>
@@ -453,6 +525,7 @@
                         <th>Khách hàng</th>
                         <th>Trạng thái</th>
                         <th>Thanh toán</th>
+                        <th>COD</th>
                         <th>Tổng tiền</th>
                         <th>Số sản phẩm</th>
                         <th>Ngày tạo</th>
@@ -461,7 +534,7 @@
                 </thead>
                 <tbody id="orders-table-body">
                     <tr>
-                        <td colspan="8" style="text-align: center; padding: 40px; color: #8c8c8c;">
+                        <td colspan="9" style="text-align: center; padding: 40px; color: #8c8c8c;">
                             <i class="fas fa-spinner fa-spin" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
                             Đang tải dữ liệu...
                         </td>
@@ -524,8 +597,8 @@
                         <div class="info-label">Tổng thanh toán</div>
                         <div class="info-value" id="modal-total-price" style="color: #1890ff; font-size: 16px;"></div>
                     </div>
-                     <div class="info-item">
-                        <div class="info-label">Mã đơn hàng</div>
+                    <div class="info-item">
+                        <div class="info-label">Mã vận đơn</div>
                         <div class="info-value" id="modal-shipping-code" style="color: #1890ff; font-size: 16px;"></div>
                     </div>
                 </div>
@@ -550,393 +623,414 @@
         </div>
     </div>
 
-  <script>
-    const API_BASE_URL = 'http://localhost:8000/api';
-    let currentPage = 1;
-    let ordersData = [];
-    let paginationData = {};
-    let currentOrderDetail = null;
+    <script>
+        const API_BASE_URL = 'http://localhost:8000/api';
+        let currentPage = 1;
+        let ordersData = [];
+        let allOrdersData = []; // Store all orders for filtering
+        let paginationData = {};
+        let currentOrderDetail = null;
+        let currentFilter = '';
 
-   
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            loadOrders(1);
+        });
 
-    document.addEventListener('DOMContentLoaded', function() {
-        loadStats();
-        loadOrders(1);
-    });
-
-    async function loadStats() {
-        try {
-            const token = localStorage.getItem('access_token');
-            console.log(token)
-            const response = await fetch(`${API_BASE_URL}/orders/stats`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
-            });
-            const data = await response.json();
-
-            if (data.success) {
-                const stats = data.data;
-                document.getElementById('total-orders').textContent = stats.total_orders || 0;
-                document.getElementById('pending-orders').textContent = stats.pending_orders || 0;
-                document.getElementById('processing-orders').textContent = stats.processing_orders || 0;
-                document.getElementById('delivered-orders').textContent = stats.delivered_orders || 0;
-                document.getElementById('total-spent').textContent = formatPrice(stats.total_spent || 0) + 'đ';
-            }
-        } catch (error) {
-            console.error('Error loading stats:', error);
-            showError('Không thể tải thống kê');
-        }
-    }
-
-    async function loadOrders(page = 1) {
-        try {
-            showLoading();
-            const token = localStorage.getItem('access_token');
-            const response = await fetch(`${API_BASE_URL}/admin/orders?page=${page}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
-            });
-            const data = await response.json();
-
-            if (data.success) {
-                ordersData = data.data.orders;
-                paginationData = data.data.pagination;
-                currentPage = page;
-                renderOrders();
-                renderPagination();
-            } else {
-                showError(data.message || 'Không thể tải danh sách đơn hàng');
-            }
-        } catch (error) {
-            console.error('Error loading orders:', error);
-            showError('Không thể tải danh sách đơn hàng');
-        }
-    }
-
-    function renderOrders() {
-        const tbody = document.getElementById('orders-table-body');
-
-        if (ordersData.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="8" style="text-align: center; padding: 40px; color: #8c8c8c;">
-                        <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
-                        Không có đơn hàng nào
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        const rows = ordersData.map(order => `
-            <tr>
-                <td>#${order.id}</td>
-                <td>
-                    <div>
-                        <strong>${order.user.name}</strong><br>
-                        <small style="color: #8c8c8c;">${order.user.email}</small>
-                    </div>
-                </td>
-                <td>
-                    <span class="status-tag status-${order.status}">
-                        ${getStatusText(order.status)}
-                    </span>
-                </td>
-                <td><span style="text-transform: uppercase;">${order.payment}</span></td>
-                <td><strong>${formatPrice(order.total_price)}đ</strong></td>
-                <td>${order.total_items}</td>
-                <td>${formatDate(order.created_at)}</td>
-                <td>
-                    <button class="btn btn-primary" onclick="showOrderDetail(${order.id})">
-                        <i class="fas fa-eye"></i> Chi tiết
-                    </button>
-                </td>
-            </tr>
-        `).join('');
-
-        tbody.innerHTML = rows;
-    }
-
-    function renderPagination() {
-        const container = document.getElementById('pagination-container');
-        if (paginationData.last_page <= 1) {
-            container.style.display = 'none';
-            return;
-        }
-
-        container.style.display = 'flex';
-        let paginationHTML = '';
-
-        paginationHTML += `
-            <button onclick="changePage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>
-                <i class="fas fa-chevron-left"></i> Trước
-            </button>
-        `;
-
-        for (let i = 1; i <= paginationData.last_page; i++) {
-            if (i === 1 || i === paginationData.last_page || (i >= currentPage - 2 && i <= currentPage + 2)) {
-                paginationHTML += `
-                    <button onclick="changePage(${i})" class="${i === currentPage ? 'active' : ''}">
-                        ${i}
-                    </button>
-                `;
-            } else if (i === currentPage - 3 || i === currentPage + 3) {
-                paginationHTML += '<span>...</span>';
-            }
-        }
-
-        paginationHTML += `
-            <button onclick="changePage(${currentPage + 1})" ${currentPage >= paginationData.last_page ? 'disabled' : ''}>
-                Sau <i class="fas fa-chevron-right"></i>
-            </button>
-        `;
-
-        container.innerHTML = paginationHTML;
-    }
-
-    async function showOrderDetail(orderId) {
-        try {
-            const token = localStorage.getItem('access_token');
-            let order = ordersData.find(o => o.id === orderId);
-
-            if (!order) {
-                const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+        async function loadStats() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`${API_BASE_URL}/orders/stats`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Accept': 'application/json'
                     }
                 });
                 const data = await response.json();
+
                 if (data.success) {
-                    order = data.data;
+                    const stats = data.data;
+                    document.getElementById('total-orders').textContent = stats.total_orders || 0;
+                    document.getElementById('pending-orders').textContent = stats.pending_orders || 0;
+                    document.getElementById('processing-orders').textContent = stats.processing_orders || 0;
+                    document.getElementById('delivered-orders').textContent = stats.delivered_orders || 0;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                showError('Không thể tải thống kê');
+            }
+        }
+
+        async function loadOrders(page = 1) {
+            try {
+                showLoading();
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`${API_BASE_URL}/admin/orders?page=${page}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    allOrdersData = data.data.orders; // Store all orders
+                    paginationData = data.data.pagination;
+                    currentPage = page;
+                    applyCurrentFilter(); // Apply current filter
+                    renderPagination();
                 } else {
-                    throw new Error('Không thể tải chi tiết đơn hàng');
+                    showError(data.message || 'Không thể tải danh sách đơn hàng');
+                }
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                showError('Không thể tải danh sách đơn hàng');
+            }
+        }
+
+        function filterOrders() {
+            const filterValue = document.getElementById('payment-filter').value;
+            currentFilter = filterValue;
+            applyCurrentFilter();
+        }
+
+        function applyCurrentFilter() {
+            if (!currentFilter) {
+                ordersData = allOrdersData;
+            } else {
+                ordersData = allOrdersData.filter(order => order.payment === currentFilter);
+            }
+            renderOrders();
+        }
+
+        function renderOrders() {
+            const tbody = document.getElementById('orders-table-body');
+
+            if (ordersData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 40px; color: #8c8c8c;">
+                            <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
+                            ${currentFilter ? 'Không có đơn hàng nào với phương thức thanh toán đã chọn' : 'Không có đơn hàng nào'}
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            const rows = ordersData.map(order => `
+                <tr>
+                    <td>#${order.id}</td>
+                    <td>
+                        <div>
+                            <strong>${order.user.name}</strong><br>
+                            <small style="color: #8c8c8c;">${order.user.email}</small>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-tag status-${order.status}">
+                            ${getStatusText(order.status)}
+                        </span>
+                    </td>
+                    <td><span style="text-transform: uppercase;">${order.payment}</span></td>
+                    <td>${getCodDisplay(order.payment, order.shipping_fee)}</td>
+                    <td><strong>${formatPrice(order.total_price)}đ</strong></td>
+                    <td>${order.total_items}</td>
+                    <td>${formatDate(order.created_at)}</td>
+                    <td>
+                        <button class="btn btn-primary" onclick="showOrderDetail(${order.id})">
+                            <i class="fas fa-eye"></i> Chi tiết
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+
+            tbody.innerHTML = rows;
+        }
+
+        function getCodDisplay(paymentMethod, shippingFee) {
+            if (paymentMethod === 'qr') {
+                return '<span class="cod-tag cod-none">Không thu</span>';
+            } else if (paymentMethod === 'cod') {
+                return `<span class="cod-tag cod-collect">${formatPrice(shippingFee)}đ</span>`;
+            }
+            return '-';
+        }
+
+        function renderPagination() {
+            const container = document.getElementById('pagination-container');
+            if (paginationData.last_page <= 1) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'flex';
+            let paginationHTML = '';
+
+            paginationHTML += `
+                <button onclick="changePage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>
+                    <i class="fas fa-chevron-left"></i> Trước
+                </button>
+            `;
+
+            for (let i = 1; i <= paginationData.last_page; i++) {
+                if (i === 1 || i === paginationData.last_page || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    paginationHTML += `
+                        <button onclick="changePage(${i})" class="${i === currentPage ? 'active' : ''}">
+                            ${i}
+                        </button>
+                    `;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    paginationHTML += '<span>...</span>';
                 }
             }
 
-            currentOrderDetail = order;
+            paginationHTML += `
+                <button onclick="changePage(${currentPage + 1})" ${currentPage >= paginationData.last_page ? 'disabled' : ''}>
+                    Sau <i class="fas fa-chevron-right"></i>
+                </button>
+            `;
 
-            document.getElementById('modal-order-id').textContent = '#' + order.id;
-            document.getElementById('modal-customer-name').textContent = order.user.name;
-            document.getElementById('modal-customer-email').textContent = order.user.email;
-            document.getElementById('modal-status').innerHTML = `<span class="status-tag status-${order.status}">${getStatusText(order.status)}</span>`;
-            document.getElementById('modal-payment').textContent = order.payment.toUpperCase();
-            document.getElementById('modal-created-at').textContent = formatDate(order.created_at);
-            document.getElementById('modal-address').textContent = order.address;
-            document.getElementById('modal-price').textContent = formatPrice(order.price) + 'đ';
-            document.getElementById('modal-shipping-fee').textContent = formatPrice(order.shipping_fee) + 'đ';
-            document.getElementById('modal-total-price').textContent = formatPrice(order.total_price) + 'đ';
- document.getElementById('modal-shipping-code').textContent = order.shipping_code   ;
-            // Check if shipping order already exists
-            updateShippingButton(order);
-            hideShippingStatus();
-
-            const itemsContainer = document.getElementById('modal-items');
-            itemsContainer.innerHTML = '';
-            order.items.forEach(item => {
-                const itemElement = document.createElement('div');
-                itemElement.className = 'item-card';
-                itemElement.innerHTML = `
-                    <div class="item-header">
-                        <div class="item-title">${item.book.title}</div>
-                        <div class="item-price">${formatPrice(item.price)}đ</div>
-                    </div>
-                    <div class="item-details">
-                        <div><strong>Tác giả:</strong> ${item.book.author}</div>
-                        <div><strong>Thể loại:</strong> ${item.book.category}</div>
-                        <div><strong>Số lượng:</strong> ${item.quantity}</div>
-                        <div><strong>Giá gốc:</strong> ${formatPrice(item.book.price)}đ</div>
-                    </div>
-                `;
-                itemsContainer.appendChild(itemElement);
-            });
-
-            document.getElementById('orderModal').style.display = 'block';
-
-        } catch (error) {
-            console.error('Error loading order detail:', error);
-            alert('Không thể tải chi tiết đơn hàng: ' + error.message);
-        }
-    }
-
-    function updateShippingButton(order) {
-        const btn = document.getElementById('create-shipping-btn');
-        
-        // Check if order can have shipping created (you can add your own logic here)
-        const canCreateShipping = ['ready_to_pick', 'picking', 'picked'].includes(order.status);
-        
-        if (canCreateShipping) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-truck"></i> Tạo đơn ship';
-        } else {
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-truck"></i> Không thể tạo đơn ship';
-        }
-    }
-
-    
-    async function createShippingOrder() {
-        if (!currentOrderDetail) {
-            alert('Không có thông tin đơn hàng');
-            return;
+            container.innerHTML = paginationHTML;
         }
 
-        const btn = document.getElementById('create-shipping-btn');
-        const originalText = btn.innerHTML;
-        
-        try {
-            // Show loading state
-            btn.disabled = true;
-            btn.innerHTML = '<div class="loading-spinner"></div> Đang tạo đơn ship...';
+        async function showOrderDetail(orderId) {
+            try {
+                const token = localStorage.getItem('access_token');
+                let order = allOrdersData.find(o => o.id === orderId);
 
-            const token = localStorage.getItem('access_token');
-            const shippingData = {
-                customer_name: currentOrderDetail.user.name,
-                customer_phone: currentOrderDetail?.phone || '0000000000' // fallback if no phone
-            };
+                if (!order) {
+                    const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/json'
+                        }
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        order = data.data;
+                    } else {
+                        throw new Error('Không thể tải chi tiết đơn hàng');
+                    }
+                }
 
-            const response = await fetch(`${API_BASE_URL}/orders/${currentOrderDetail.id}/shipping`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(shippingData)
-            });
+                currentOrderDetail = order;
 
-            const data = await response.json();
+                document.getElementById('modal-order-id').textContent = '#' + order.id;
+                document.getElementById('modal-customer-name').textContent = order.user.name;
+                document.getElementById('modal-customer-email').textContent = order.user.email;
+                document.getElementById('modal-status').innerHTML = `<span class="status-tag status-${order.status}">${getStatusText(order.status)}</span>`;
+                document.getElementById('modal-payment').textContent = order.payment.toUpperCase();
+                document.getElementById('modal-created-at').textContent = formatDate(order.created_at);
+                document.getElementById('modal-address').textContent = order.address;
+                document.getElementById('modal-price').textContent = formatPrice(order.price) + 'đ';
+                document.getElementById('modal-shipping-fee').textContent = formatPrice(order.shipping_fee) + 'đ';
+                document.getElementById('modal-total-price').textContent = formatPrice(order.total_price) + 'đ';
+                document.getElementById('modal-shipping-code').textContent = order.shipping_code || '-';
 
-            if (data.success || response.ok) {
-                showShippingStatus('Đơn ship đã được tạo thành công!', 'created');
-                btn.innerHTML = '<i class="fas fa-check"></i> Đã tạo đơn ship';
-                
-                // Refresh order data to get updated status
-                setTimeout(() => {
-                    loadOrders(currentPage);
-                }, 1000);
+                // Check if shipping order already exists
+                updateShippingButton(order);
+                hideShippingStatus();
+
+                const itemsContainer = document.getElementById('modal-items');
+                itemsContainer.innerHTML = '';
+                order.items.forEach(item => {
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'item-card';
+                    itemElement.innerHTML = `
+                        <div class="item-header">
+                            <div class="item-title">${item.book.title}</div>
+                            <div class="item-price">${formatPrice(item.price)}đ</div>
+                        </div>
+                        <div class="item-details">
+                            <div><strong>Tác giả:</strong> ${item.book.author}</div>
+                            <div><strong>Thể loại:</strong> ${item.book.category}</div>
+                            <div><strong>Số lượng:</strong> ${item.quantity}</div>
+                            <div><strong>Giá gốc:</strong> ${formatPrice(item.book.price)}đ</div>
+                        </div>
+                    `;
+                    itemsContainer.appendChild(itemElement);
+                });
+
+                document.getElementById('orderModal').style.display = 'block';
+
+            } catch (error) {
+                console.error('Error loading order detail:', error);
+                alert('Không thể tải chi tiết đơn hàng: ' + error.message);
+            }
+        }
+
+        function updateShippingButton(order) {
+            const btn = document.getElementById('create-shipping-btn');
+            
+            // Check if order can have shipping created (you can add your own logic here)
+            const canCreateShipping = ['ready_to_pick', 'picking', 'picked'].includes(order.status);
+            
+            if (canCreateShipping) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-truck"></i> Tạo đơn ship';
             } else {
-                throw new Error(data.message || 'Không thể tạo đơn ship');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-truck"></i> Không thể tạo đơn ship';
+            }
+        }
+
+        async function createShippingOrder() {
+            if (!currentOrderDetail) {
+                alert('Không có thông tin đơn hàng');
+                return;
             }
 
-        } catch (error) {
-            console.error('Error creating shipping order:', error);
-            showShippingStatus(`Lỗi tạo đơn ship: ${error.message}`, 'error');
-            btn.disabled = false;
-            btn.innerHTML = originalText;
+            const btn = document.getElementById('create-shipping-btn');
+            const originalText = btn.innerHTML;
+            
+            try {
+                // Show loading state
+                btn.disabled = true;
+                btn.innerHTML = '<div class="loading-spinner"></div> Đang tạo đơn ship...';
+
+                const token = localStorage.getItem('access_token');
+                const shippingData = {
+                    customer_name: currentOrderDetail.user.name,
+                    customer_phone: currentOrderDetail?.phone || '0000000000' // fallback if no phone
+                };
+
+                const response = await fetch(`${API_BASE_URL}/orders/${currentOrderDetail.id}/shipping`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(shippingData)
+                });
+
+                const data = await response.json();
+
+                if (data.success || response.ok) {
+                    showShippingStatus('Đơn ship đã được tạo thành công!', 'created');
+                    btn.innerHTML = '<i class="fas fa-check"></i> Đã tạo đơn ship';
+                    
+                    // Refresh order data to get updated status
+                    setTimeout(() => {
+                        loadOrders(currentPage);
+                    }, 1000);
+                } else {
+                    throw new Error(data.message || 'Không thể tạo đơn ship');
+                }
+
+            } catch (error) {
+                console.error('Error creating shipping order:', error);
+                showShippingStatus(`Lỗi tạo đơn ship: ${error.message}`, 'error');
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
         }
-    }
 
-    function showShippingStatus(message, type) {
-        const container = document.getElementById('shipping-status-container');
-        container.style.display = 'block';
-        container.className = `shipping-status ${type}`;
-        container.innerHTML = `
-            <i class="fas ${type === 'created' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
-            ${message}
-        `;
-        
-        // Auto-hide success message after 5 seconds
-        if (type === 'created') {
-            setTimeout(() => {
-                hideShippingStatus();
-            }, 5000);
+        function showShippingStatus(message, type) {
+            const container = document.getElementById('shipping-status-container');
+            container.style.display = 'block';
+            container.className = `shipping-status ${type}`;
+            container.innerHTML = `
+                <i class="fas ${type === 'created' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
+                ${message}
+            `;
+            
+            // Auto-hide success message after 5 seconds
+            if (type === 'created') {
+                setTimeout(() => {
+                    hideShippingStatus();
+                }, 5000);
+            }
         }
-    }
 
-    function hideShippingStatus() {
-        const container = document.getElementById('shipping-status-container');
-        container.style.display = 'none';
-    }
+        function hideShippingStatus() {
+            const container = document.getElementById('shipping-status-container');
+            container.style.display = 'none';
+        }
 
-    function closeModal() {
-        document.getElementById('orderModal').style.display = 'none';
-        currentOrderDetail = null;
-        hideShippingStatus();
-    }
+        function closeModal() {
+            document.getElementById('orderModal').style.display = 'none';
+            currentOrderDetail = null;
+            hideShippingStatus();
+        }
 
-    function formatPrice(price) {
-        return new Intl.NumberFormat('vi-VN').format(parseFloat(price));
-    }
+        function formatPrice(price) {
+            return new Intl.NumberFormat('vi-VN').format(parseFloat(price));
+        }
 
-    function formatDate(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleString('vi-VN', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('vi-VN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function changePage(page) {
+            if (page < 1 || page > paginationData.last_page) return;
+            loadOrders(page);
+        }
+
+        function showLoading() {
+            const tbody = document.getElementById('orders-table-body');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 40px; color: #8c8c8c;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
+                        Đang tải dữ liệu...
+                    </td>
+                </tr>
+            `;
+        }
+
+        function showError(message) {
+            const tbody = document.getElementById('orders-table-body');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 40px; color: #ff4d4f;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
+                        ${message}
+                        <br><br>
+                        <button class="btn btn-primary" onclick="loadOrders(currentPage)">
+                            <i class="fas fa-redo"></i> Thử lại
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'ready_to_pick': 'Chờ lấy hàng',
+                'picking': 'Đang lấy hàng',
+                'money_collect_picking': 'Thu tiền khi lấy',
+                'picked': 'Đã lấy hàng',
+                'storing': 'Đã nhập kho',
+                'delivering': 'Đang giao hàng',
+                'delivered': 'Đã giao hàng',
+                'delivery_fail': 'Giao không thành công',
+                'cancelled': 'Đã hủy'
+            };
+            return statusMap[status] || status;
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('orderModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
         });
-    }
-
-    function changePage(page) {
-        if (page < 1 || page > paginationData.last_page) return;
-        loadOrders(page);
-    }
-
-    function showLoading() {
-        const tbody = document.getElementById('orders-table-body');
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="8" style="text-align: center; padding: 40px; color: #8c8c8c;">
-                    <i class="fas fa-spinner fa-spin" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
-                    Đang tải dữ liệu...
-                </td>
-            </tr>
-        `;
-    }
-
-    function showError(message) {
-        const tbody = document.getElementById('orders-table-body');
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="8" style="text-align: center; padding: 40px; color: #ff4d4f;">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
-                    ${message}
-                    <br><br>
-                    <button class="btn btn-primary" onclick="loadOrders(currentPage)">
-                        <i class="fas fa-redo"></i> Thử lại
-                    </button>
-                </td>
-            </tr>
-        `;
-    }
-
-    function getStatusText(status) {
-        const statusMap = {
-            'ready_to_pick': 'Chờ lấy hàng',
-            'picking': 'Đang lấy hàng',
-            'money_collect_picking': 'Thu tiền khi lấy',
-            'picked': 'Đã lấy hàng',
-            'storing': 'Đã nhập kho',
-            'delivering': 'Đang giao hàng',
-            'delivered': 'Đã giao hàng',
-            'delivery_fail': 'Giao không thành công',
-            'cancelled': 'Đã hủy'
-        };
-        return statusMap[status] || status;
-    }
-
-    window.onclick = function(event) {
-        const modal = document.getElementById('orderModal');
-        if (event.target === modal) {
-            closeModal();
-        }
-    }
-
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            closeModal();
-        }
-    });
-
-</script>
-
+    </script>
 </body>
 </html>
 @endsection
