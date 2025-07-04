@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\BookImageController;
+use App\Http\Controllers\RevenueController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\BannerController;
@@ -588,4 +589,21 @@ Route::post('/check-status', function (Request $request) {
 //         ], 500);
 //     }
 // });
+
+});
+// Hoặc bạn có thể group với middleware auth nếu cần xác thực
+Route::prefix('revenue')->group(function () {
+    Route::get('/total', [RevenueController::class, 'getTotalRevenue']);
+    Route::get('/daily', [RevenueController::class, 'getDailyRevenue']);
+    Route::get('/monthly', [RevenueController::class, 'getMonthlyRevenue']);
+    Route::get('/quarterly', [RevenueController::class, 'getQuarterlyRevenue']);
+    Route::get('/yearly', [RevenueController::class, 'getYearlyRevenue']);
+    Route::get('/top-products', [RevenueController::class, 'getTopProducts']);
+    Route::get('/by-status', [RevenueController::class, 'getRevenueByStatus']);
+    Route::get('/by-payment', [RevenueController::class, 'getRevenueByPaymentMethod']);
+    Route::get('/dashboard', [RevenueController::class, 'getDashboard']);
+    // Route riêng cho từng quý
+Route::get('/quarter', [RevenueController::class, 'getQuarterDetail']);
+
+
 });

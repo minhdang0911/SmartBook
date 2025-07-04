@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Home\EbookController;
 use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\RevenueController;
 use Illuminate\Support\Facades\Route;
 
 // Admin Controllers
@@ -25,6 +26,7 @@ use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Http\Request;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+
 
 Route::get('/upload-form', function () {
     return '
@@ -113,6 +115,7 @@ Route::middleware('auth')->group(function () {
 Route::post('/admin/books/upload', [BookController::class, 'upload'])->name('admin.books.upload');
 Route::post('/ckeditor/upload', [App\Http\Controllers\CKEditorController::class, 'upload'])->name('ckeditor.upload');
 
+Route::get('/admin/revenue', [RevenueController::class, 'index'])->name('admin.revenue.index');
 
 
 

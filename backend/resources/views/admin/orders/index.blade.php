@@ -637,7 +637,6 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             checkAuth();
-            loadUserInfo();
             loadStats();
             loadAllOrders();
         });
@@ -650,32 +649,44 @@
             }
         }
 
-        async function loadUserInfo() {
-            try {
-                const token = localStorage.getItem('access_token');
-                const response = await fetch(`${API_BASE_URL}/me`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
-                    }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    currentUser = data.data || data;
-                    console.log('User info:', currentUser);
-                } else {
-                    console.error('Failed to load user info');
-                    if (response.status === 401) {
-                        localStorage.removeItem('access_token');
-                        window.location.href = '/login';
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading user info:', error);
-            }
-        }
+       
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('adminSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            document.getElementById('toggleSidebar').addEventListener('click', () => {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+            });
+            overlay.addEventListener('click', () => {
+                sidebar.classList.remove('active');
+                overlay.classList.remove('active');
+            });
 
+            // Hiển thị user name
+            const userNameEl = document.getElementById('user-name');
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                fetch(`${API_BASE_URL}/me`, {
+                        headers: {
+                            'Authorization': 'Bearer ' + token,
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        userNameEl.innerText = data.user?.name || 'Người dùng';
+                    });
+            } else {
+                userNameEl.innerText = 'Khách';
+            }
+
+            document.querySelectorAll('.logout-btn').forEach(btn => {
+                btn.addEventListener('click', e => {
+                    e.preventDefault();
+                    logout();
+                });
+            });
+        });
         async function loadStats() {
             try {
                 const token = localStorage.getItem('access_token');
