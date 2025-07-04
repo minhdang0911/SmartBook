@@ -18,7 +18,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+ 
             min-height: 100vh;
         }
 
@@ -39,11 +39,13 @@
             font-weight: 700;
             margin-bottom: 10px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            color:#333
         }
 
         .page-description {
             font-size: 1.1rem;
             opacity: 0.9;
+               color:#333
         }
 
         .stats-row {
@@ -626,16 +628,53 @@
     <script>
         const API_BASE_URL = 'http://localhost:8000/api';
         let currentPage = 1;
-        let ordersData = [];
-        let allOrdersData = []; // Store all orders for filtering
-        let paginationData = {};
+        let allOrdersData = []; // Lưu trữ tất cả dữ liệu
+        let filteredOrdersData = []; // Dữ liệu sau khi lọc
         let currentOrderDetail = null;
         let currentFilter = '';
+        let currentUser = null;
+        const ITEMS_PER_PAGE = 10;
 
         document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            loadUserInfo();
             loadStats();
-            loadOrders(1);
+            loadAllOrders();
         });
+
+        async function checkAuth() {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+        }
+
+        async function loadUserInfo() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`${API_BASE_URL}/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    currentUser = data.data || data;
+                    console.log('User info:', currentUser);
+                } else {
+                    console.error('Failed to load user info');
+                    if (response.status === 401) {
+                        localStorage.removeItem('access_token');
+                        window.location.href = '/login';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+            }
+        }
 
         async function loadStats() {
             try {
@@ -661,27 +700,36 @@
             }
         }
 
-        async function loadOrders(page = 1) {
+        async function loadAllOrders() {
             try {
                 showLoading();
                 const token = localStorage.getItem('access_token');
-                const response = await fetch(`${API_BASE_URL}/admin/orders?page=${page}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
-                    }
-                });
-                const data = await response.json();
+                let allOrders = [];
+                let page = 1;
+                let hasMore = true;
 
-                if (data.success) {
-                    allOrdersData = data.data.orders; // Store all orders
-                    paginationData = data.data.pagination;
-                    currentPage = page;
-                    applyCurrentFilter(); // Apply current filter
-                    renderPagination();
-                } else {
-                    showError(data.message || 'Không thể tải danh sách đơn hàng');
+                // Lấy tất cả đơn hàng từ tất cả các trang
+                while (hasMore) {
+                    const response = await fetch(`${API_BASE_URL}/admin/orders?page=${page}&per_page=100`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/json'
+                        }
+                    });
+                    const data = await response.json();
+
+                    if (data.success && data.data.orders.length > 0) {
+                        allOrders = allOrders.concat(data.data.orders);
+                        hasMore = data.data.pagination.current_page < data.data.pagination.last_page;
+                        page++;
+                    } else {
+                        hasMore = false;
+                    }
                 }
+
+                allOrdersData = allOrders;
+                applyCurrentFilter();
+                
             } catch (error) {
                 console.error('Error loading orders:', error);
                 showError('Không thể tải danh sách đơn hàng');
@@ -691,22 +739,24 @@
         function filterOrders() {
             const filterValue = document.getElementById('payment-filter').value;
             currentFilter = filterValue;
+            currentPage = 1; // Reset về trang 1 khi lọc
             applyCurrentFilter();
         }
 
         function applyCurrentFilter() {
             if (!currentFilter) {
-                ordersData = allOrdersData;
+                filteredOrdersData = allOrdersData;
             } else {
-                ordersData = allOrdersData.filter(order => order.payment === currentFilter);
+                filteredOrdersData = allOrdersData.filter(order => order.payment === currentFilter);
             }
             renderOrders();
+            renderPagination();
         }
 
         function renderOrders() {
             const tbody = document.getElementById('orders-table-body');
 
-            if (ordersData.length === 0) {
+            if (filteredOrdersData.length === 0) {
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="9" style="text-align: center; padding: 40px; color: #8c8c8c;">
@@ -718,7 +768,12 @@
                 return;
             }
 
-            const rows = ordersData.map(order => `
+            // Tính toán dữ liệu cho trang hiện tại
+            const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = startIndex + ITEMS_PER_PAGE;
+            const pageData = filteredOrdersData.slice(startIndex, endIndex);
+
+            const rows = pageData.map(order => `
                 <tr>
                     <td>#${order.id}</td>
                     <td>
@@ -733,7 +788,7 @@
                         </span>
                     </td>
                     <td><span style="text-transform: uppercase;">${order.payment}</span></td>
-                    <td>${getCodDisplay(order.payment, order.shipping_fee)}</td>
+                    <td>${getCodDisplay(order.payment, order.total_price)}</td>
                     <td><strong>${formatPrice(order.total_price)}đ</strong></td>
                     <td>${order.total_items}</td>
                     <td>${formatDate(order.created_at)}</td>
@@ -748,18 +803,20 @@
             tbody.innerHTML = rows;
         }
 
-        function getCodDisplay(paymentMethod, shippingFee) {
+        function getCodDisplay(paymentMethod, totalPrice) {
             if (paymentMethod === 'qr') {
                 return '<span class="cod-tag cod-none">Không thu</span>';
             } else if (paymentMethod === 'cod') {
-                return `<span class="cod-tag cod-collect">${formatPrice(shippingFee)}đ</span>`;
+                return `<span class="cod-tag cod-collect">${formatPrice(totalPrice)}đ</span>`;
             }
             return '-';
         }
 
         function renderPagination() {
             const container = document.getElementById('pagination-container');
-            if (paginationData.last_page <= 1) {
+            const totalPages = Math.ceil(filteredOrdersData.length / ITEMS_PER_PAGE);
+            
+            if (totalPages <= 1) {
                 container.style.display = 'none';
                 return;
             }
@@ -767,14 +824,16 @@
             container.style.display = 'flex';
             let paginationHTML = '';
 
+            // Nút Previous
             paginationHTML += `
                 <button onclick="changePage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>
                     <i class="fas fa-chevron-left"></i> Trước
                 </button>
             `;
 
-            for (let i = 1; i <= paginationData.last_page; i++) {
-                if (i === 1 || i === paginationData.last_page || (i >= currentPage - 2 && i <= currentPage + 2)) {
+            // Các nút số trang
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
                     paginationHTML += `
                         <button onclick="changePage(${i})" class="${i === currentPage ? 'active' : ''}">
                             ${i}
@@ -785,13 +844,23 @@
                 }
             }
 
+            // Nút Next
             paginationHTML += `
-                <button onclick="changePage(${currentPage + 1})" ${currentPage >= paginationData.last_page ? 'disabled' : ''}>
+                <button onclick="changePage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>
                     Sau <i class="fas fa-chevron-right"></i>
                 </button>
             `;
 
             container.innerHTML = paginationHTML;
+        }
+
+        function changePage(page) {
+            const totalPages = Math.ceil(filteredOrdersData.length / ITEMS_PER_PAGE);
+            if (page < 1 || page > totalPages) return;
+            
+            currentPage = page;
+            renderOrders();
+            renderPagination();
         }
 
         async function showOrderDetail(orderId) {
@@ -828,7 +897,6 @@
                 document.getElementById('modal-total-price').textContent = formatPrice(order.total_price) + 'đ';
                 document.getElementById('modal-shipping-code').textContent = order.shipping_code || '-';
 
-                // Check if shipping order already exists
                 updateShippingButton(order);
                 hideShippingStatus();
 
@@ -863,7 +931,6 @@
         function updateShippingButton(order) {
             const btn = document.getElementById('create-shipping-btn');
             
-            // Check if order can have shipping created (you can add your own logic here)
             const canCreateShipping = ['ready_to_pick', 'picking', 'picked'].includes(order.status);
             
             if (canCreateShipping) {
@@ -885,14 +952,13 @@
             const originalText = btn.innerHTML;
             
             try {
-                // Show loading state
                 btn.disabled = true;
                 btn.innerHTML = '<div class="loading-spinner"></div> Đang tạo đơn ship...';
 
                 const token = localStorage.getItem('access_token');
                 const shippingData = {
                     customer_name: currentOrderDetail.user.name,
-                    customer_phone: currentOrderDetail?.phone || '0000000000' // fallback if no phone
+                    customer_phone: currentOrderDetail?.phone || '0000000000'
                 };
 
                 const response = await fetch(`${API_BASE_URL}/orders/${currentOrderDetail.id}/shipping`, {
@@ -911,9 +977,8 @@
                     showShippingStatus('Đơn ship đã được tạo thành công!', 'created');
                     btn.innerHTML = '<i class="fas fa-check"></i> Đã tạo đơn ship';
                     
-                    // Refresh order data to get updated status
                     setTimeout(() => {
-                        loadOrders(currentPage);
+                        loadAllOrders();
                     }, 1000);
                 } else {
                     throw new Error(data.message || 'Không thể tạo đơn ship');
@@ -936,7 +1001,6 @@
                 ${message}
             `;
             
-            // Auto-hide success message after 5 seconds
             if (type === 'created') {
                 setTimeout(() => {
                     hideShippingStatus();
@@ -970,11 +1034,6 @@
             });
         }
 
-        function changePage(page) {
-            if (page < 1 || page > paginationData.last_page) return;
-            loadOrders(page);
-        }
-
         function showLoading() {
             const tbody = document.getElementById('orders-table-body');
             tbody.innerHTML = `
@@ -995,7 +1054,7 @@
                         <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
                         ${message}
                         <br><br>
-                        <button class="btn btn-primary" onclick="loadOrders(currentPage)">
+                        <button class="btn btn-primary" onclick="loadAllOrders()">
                             <i class="fas fa-redo"></i> Thử lại
                         </button>
                     </td>
@@ -1031,6 +1090,5 @@
             }
         });
     </script>
-</body>
 </html>
 @endsection
