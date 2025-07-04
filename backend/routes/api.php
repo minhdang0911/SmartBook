@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\BookImageController;
+use App\Http\Controllers\Api\PostApiController;
+use App\Http\Controllers\Api\TopicApiController;
 use App\Http\Controllers\RevenueController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\Auth\GoogleController;
@@ -23,6 +25,20 @@ use App\Http\Controllers\RatingController;
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
+// Bài viết
+Route::prefix('posts')->group(function () {
+    Route::get('/', [PostApiController::class, 'index']);
+    Route::get('/popular', [PostApiController::class, 'popular']);
+    Route::get('/{slug}', [PostApiController::class, 'show']);
+    Route::get('/{slug}/related', [PostApiController::class, 'related']);
+});
+
+// Chủ đề bài viết
+Route::prefix('topics')->group(function () {
+    Route::get('/', [TopicApiController::class, 'index']);
+    Route::get('/{slug}/posts', [TopicApiController::class, 'posts']);
+});
 
 // Tác giả
 Route::get('/authors', [AuthorController::class, 'index']);
@@ -143,7 +159,7 @@ Route::prefix('/orders/zalopay')->group(function () {
             'key1' => env('ZALOPAY_KEY1'),
             'endpoint' => env('ZALOPAY_ENDPOINT', 'https://sb-openapi.zalopay.vn/v2/create'),
         ];
-        
+
         // Kiểm tra config trước
         if (!$config['app_id'] || !$config['key1']) {
             return response()->json([
@@ -153,18 +169,18 @@ Route::prefix('/orders/zalopay')->group(function () {
                 'endpoint' => $config['endpoint']
             ], 400);
         }
-        
+
         // Test data đơn giản
         $app_trans_id = date('ymd') . '_' . rand(100000, 999999);
         $amount = 50000;
         $app_time = time() * 1000;
-        
+
         $embed_data = json_encode(['redirecturl' => 'https://sandbox.zalopay.vn/thankyou']);
         $item = json_encode([['itemid' => 'test', 'itemname' => 'Test Item', 'itemprice' => $amount, 'itemquantity' => 1]]);
-        
+
         $data = $config['app_id'] . '|' . $app_trans_id . '|demo|' . $amount . '|' . $app_time . '|' . $embed_data . '|' . $item;
         $mac = hash_hmac('sha256', $data, $config['key1']);
-        
+
         $order = [
             'app_id' => $config['app_id'],
             'app_trans_id' => $app_trans_id,
@@ -177,10 +193,10 @@ Route::prefix('/orders/zalopay')->group(function () {
             'callback_url' => url('/api/test-callback'),
             'mac' => $mac,
         ];
-        
+
         Log::info('Test ZaloPay Request:', $order);
         Log::info('Data for MAC:', ['data' => $data]);
-        
+
         try {
             $response = Http::timeout(30)
                 ->asForm()
@@ -190,16 +206,16 @@ Route::prefix('/orders/zalopay')->group(function () {
                     'User-Agent' => 'SmartBook/1.0'
                 ])
                 ->post($config['endpoint'], $order);
-            
+
             $responseBody = $response->body();
             $isHtml = str_contains($responseBody, '<html>') || str_contains($responseBody, '<!DOCTYPE');
-            
+
             Log::info('ZaloPay Response:', [
                 'status' => $response->status(),
                 'body' => $responseBody,
                 'is_html' => $isHtml
             ]);
-            
+
             return response()->json([
                 'config' => [
                     'app_id' => $config['app_id'],
@@ -215,13 +231,13 @@ Route::prefix('/orders/zalopay')->group(function () {
                     'is_json' => !$isHtml && json_decode($responseBody) !== null
                 ]
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('ZaloPay Test Error:', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'error' => 'Request failed',
                 'message' => $e->getMessage(),
@@ -242,7 +258,7 @@ Route::post('/create-order', function (Request $request) {
         'key2' => env('ZALOPAY_KEY2'),
         'endpoint' => env('ZALOPAY_ENDPOINT', 'https://sb-openapi.zalopay.vn/v2/create'),
     ];
-    
+
     // Validate config
     if (!$config['app_id'] || !$config['key1']) {
         return response()->json([
@@ -250,26 +266,26 @@ Route::post('/create-order', function (Request $request) {
             'return_code' => 0
         ], 400);
     }
-    
+
     // Validate request
     $request->validate([
         'amount' => 'required|integer|min:1000',
     ]);
-    
+
     try {
         $amount = $request->input('amount');
         $description = $request->input('description', 'Thanh toán đơn hàng');
         $user_id = $request->input('user_id', 'demo');
-        
+
         // Tạo app_trans_id theo format YYMMDD_XXXXXX
         $app_trans_id = date('ymd') . '_' . rand(100000, 999999);
         $app_time = time() * 1000; // ZaloPay yêu cầu timestamp milliseconds
-        
+
         // Embed data
         $embed_data = [
             'redirecturl' => 'http://localhost:3000/'
         ];
-        
+
         // Items
         $items = [
             [
@@ -279,12 +295,12 @@ Route::post('/create-order', function (Request $request) {
                 'itemquantity' => 1
             ]
         ];
-        
+
         // Tạo MAC theo format chính xác của ZaloPay
         // Format: app_id|app_trans_id|app_user|amount|app_time|embed_data|item
         $data = $config['app_id'] . '|' . $app_trans_id . '|' . $user_id . '|' . $amount . '|' . $app_time . '|' . json_encode($embed_data) . '|' . json_encode($items);
         $mac = hash_hmac('sha256', $data, $config['key1']);
-        
+
         // Tạo order
         $order = [
             'app_id' => $config['app_id'],
@@ -298,12 +314,12 @@ Route::post('/create-order', function (Request $request) {
             'callback_url' => url('/api/zalopay/callback'),
             'mac' => $mac,
         ];
-        
+
         Log::info('ZaloPay Create Order Request:', [
             'order' => $order,
             'mac_data' => $data
         ]);
-        
+
         // Gửi request tới ZaloPay
         $response = Http::timeout(30)
             ->asForm()
@@ -312,14 +328,14 @@ Route::post('/create-order', function (Request $request) {
                 'Accept' => 'application/json'
             ])
             ->post($config['endpoint'], $order);
-        
+
         $responseData = $response->json();
-        
+
         Log::info('ZaloPay Create Order Response:', [
             'status' => $response->status(),
             'response' => $responseData
         ]);
-        
+
         if ($response->successful() && isset($responseData['return_code']) && $responseData['return_code'] == 1) {
             return response()->json([
                 'success' => true,
@@ -338,20 +354,20 @@ Route::post('/create-order', function (Request $request) {
                 'sub_return_message' => $responseData['sub_return_message'] ?? null
             ], 400);
         }
-        
+
     } catch (\Exception $e) {
         Log::error('ZaloPay Create Order Error:', [
             'error' => $e->getMessage(),
             'trace' => $e->getTraceAsString()
         ]);
-        
+
         return response()->json([
             'success' => false,
             'error' => 'Có lỗi xảy ra khi tạo đơn hàng',
             'message' => $e->getMessage()
         ], 500);
     }
-    
+
 });
 
 // Route callback từ ZaloPay
@@ -359,66 +375,66 @@ Route::post('/create-order', function (Request $request) {
 //     $config = [
 //         'key2' => env('ZALOPAY_KEY2')
 //     ];
-    
+
 //     Log::info('ZaloPay Callback Received:', $request->all());
-    
+
 //     try {
 //         $data = $request->input('data');
 //         $receivedMac = $request->input('mac');
-        
+
 //         // if (!$data || !$receivedMac) {
 //         //     return response()->json([
 //         //         'return_code' => 0,
 //         //         'return_message' => 'Invalid callback data'
 //         //     ]);
 //         // }
-        
+
 //         // Verify MAC
 //         $computedMac = hash_hmac('sha256', $data, $config['key2']);
-        
+
 //         // if ($computedMac !== $receivedMac) {
 //         //     Log::warning('ZaloPay Callback Invalid MAC:', [
 //         //         'received_mac' => $receivedMac,
 //         //         'computed_mac' => $computedMac,
 //         //         'data' => $data
 //         //     ]);
-            
+
 //         //     return response()->json([
 //         //         'return_code' => -1,
 //         //         'return_message' => 'mac not equal'
 //         //     ]);
 //         // }
-        
+
 //         // Parse callback data
 //         $callbackData = json_decode($data, true);
-        
+
 //         if (!$callbackData) {
 //             return response()->json([
 //                 'return_code' => 0,
 //                 'return_message' => 'Invalid JSON data'
 //             ]);
 //         }
-        
+
 //         Log::info('ZaloPay Payment Success:', [
 //             'app_trans_id' => $callbackData['app_trans_id'] ?? null,
 //             'zp_trans_id' => $callbackData['zp_trans_id'] ?? null,
 //             'amount' => $callbackData['amount'] ?? null
 //         ]);
-        
+
 //         // TODO: Xử lý logic thanh toán thành công ở đây
 //         // Ví dụ: Cập nhật trạng thái đơn hàng trong database
-        
+
 //         return response()->json([
 //             'return_code' => 1,
 //             'return_message' => 'success'
 //         ]);
-        
+
 //     } catch (\Exception $e) {
 //         Log::error('ZaloPay Callback Error:', [
 //             'error' => $e->getMessage(),
 //             'trace' => $e->getTraceAsString()
 //         ]);
-        
+
 //         return response()->json([
 //             'return_code' => 0,
 //             'return_message' => 'exception'
@@ -433,29 +449,29 @@ Route::post('/check-status', function (Request $request) {
         'key1' => env('ZALOPAY_KEY1'),
         'query_endpoint' => env('ZALOPAY_QUERY_ENDPOINT', 'https://sb-openapi.zalopay.vn/v2/query'),
     ];
-    
+
     $request->validate([
         'app_trans_id' => 'required|string'
     ]);
-    
+
     try {
         $app_trans_id = $request->input('app_trans_id');
-        
+
         // Tạo MAC cho query
         $data = $config['app_id'] . '|' . $app_trans_id . '|' . $config['key1'];
         $mac = hash_hmac('sha256', $data, $config['key1']);
-        
+
         $queryData = [
             'app_id' => $config['app_id'],
             'app_trans_id' => $app_trans_id,
             'mac' => $mac
         ];
-        
+
         Log::info('ZaloPay Check Status Request:', [
             'query_data' => $queryData,
             'mac_data' => $data
         ]);
-        
+
         $response = Http::timeout(30)
             ->asForm()
             ->withHeaders([
@@ -463,22 +479,22 @@ Route::post('/check-status', function (Request $request) {
                 'Accept' => 'application/json'
             ])
             ->post($config['query_endpoint'], $queryData);
-        
+
         $responseData = $response->json();
-        
+
         Log::info('ZaloPay Check Status Response:', [
             'status' => $response->status(),
             'response' => $responseData
         ]);
-        
+
         return response()->json($responseData);
-        
+
     } catch (\Exception $e) {
         Log::error('ZaloPay Check Status Error:', [
             'error' => $e->getMessage(),
             'trace' => $e->getTraceAsString()
         ]);
-        
+
         return response()->json([
             'return_code' => 0,
             'return_message' => 'Có lỗi xảy ra khi kiểm tra trạng thái đơn hàng',
@@ -495,7 +511,7 @@ Route::post('/check-status', function (Request $request) {
 //         'key2' => env('ZALOPAY_KEY2'),
 //         'endpoint' => env('ZALOPAY_ENDPOINT', 'https://sb-openapi.zalopay.vn/v2/create'),
 //     ];
-    
+
 //     // Kiểm tra config
 //     $configStatus = [
 //         'app_id' => $config['app_id'] ? 'OK (' . $config['app_id'] . ')' : 'MISSING',
@@ -503,7 +519,7 @@ Route::post('/check-status', function (Request $request) {
 //         'key2' => $config['key2'] ? 'OK (length: ' . strlen($config['key2']) . ')' : 'MISSING',
 //         'endpoint' => $config['endpoint']
 //     ];
-    
+
 //     return response()->json([
 //         'status' => 'ZaloPay Test Configuration',
 //         'config' => $configStatus,
@@ -525,25 +541,25 @@ Route::post('/check-status', function (Request $request) {
 //         'key1' => env('ZALOPAY_KEY1'),
 //         'refund_endpoint' => env('ZALOPAY_REFUND_ENDPOINT', 'https://sb-openapi.zalopay.vn/v2/refund'),
 //     ];
-    
+
 //     $request->validate([
 //         'zp_trans_id' => 'required|string',
 //         'amount' => 'required|integer|min:1000',
 //         'description' => 'string|max:255'
 //     ]);
-    
+
 //     try {
 //         $zp_trans_id = $request->input('zp_trans_id');
 //         $amount = $request->input('amount');
 //         $description = $request->input('description', 'Hoàn tiền đơn hàng');
-        
+
 //         $m_refund_id = date('ymd') . '_' . $config['app_id'] . '_' . rand(100000, 999999);
 //         $timestamp = time() * 1000;
-        
+
 //         // Tạo MAC cho refund
 //         $data = $config['app_id'] . '|' . $zp_trans_id . '|' . $amount . '|' . $description . '|' . $timestamp;
 //         $mac = hash_hmac('sha256', $data, $config['key1']);
-        
+
 //         $refundData = [
 //             'app_id' => $config['app_id'],
 //             'zp_trans_id' => $zp_trans_id,
@@ -553,12 +569,12 @@ Route::post('/check-status', function (Request $request) {
 //             'm_refund_id' => $m_refund_id,
 //             'mac' => $mac
 //         ];
-        
+
 //         Log::info('ZaloPay Refund Request:', [
 //             'refund_data' => $refundData,
 //             'mac_data' => $data
 //         ]);
-        
+
 //         $response = Http::timeout(30)
 //             ->asForm()
 //             ->withHeaders([
@@ -566,22 +582,22 @@ Route::post('/check-status', function (Request $request) {
 //                 'Accept' => 'application/json'
 //             ])
 //             ->post($config['refund_endpoint'], $refundData);
-        
+
 //         $responseData = $response->json();
-        
+
 //         Log::info('ZaloPay Refund Response:', [
 //             'status' => $response->status(),
 //             'response' => $responseData
 //         ]);
-        
+
 //         return response()->json($responseData);
-        
+
 //     } catch (\Exception $e) {
 //         Log::error('ZaloPay Refund Error:', [
 //             'error' => $e->getMessage(),
 //             'trace' => $e->getTraceAsString()
 //         ]);
-        
+
 //         return response()->json([
 //             'return_code' => 0,
 //             'return_message' => 'Có lỗi xảy ra khi hoàn tiền',

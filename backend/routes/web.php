@@ -1,8 +1,5 @@
 <?php
 
-use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\Home\EbookController;
-use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\RevenueController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,12 +12,17 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PublisherController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\CouponController;
+use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\BookController;
+use App\Http\Controllers\Admin\BookImageController;
+use App\Http\Controllers\Admin\PostController;
+use App\Http\Controllers\Admin\TopicController;
+
 // Home Controllers
 use App\Http\Controllers\Home\BookController as HomeBookController;
 use Cloudinary\Configuration\Configuration;
 
-use App\Http\Controllers\Admin\BookController;
-use App\Http\Controllers\Admin\BookImageController;
+
 // Auth
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\ProfileController;
@@ -64,27 +66,32 @@ Route::resource('books', HomeBookController::class);
 
 // ===================== Admin Routes =====================
 
-// =====================Admin authentication=====================
-Route::prefix('admin/users')->name('admin.users.')->group(function () {
-    Route::get('/', [UserController::class, 'index'])->name('index');
-    Route::get('/{user}/edit', [UserController::class, 'edit'])->name('edit');
-    Route::put('/{user}', [UserController::class, 'update'])->name('update');
-    Route::put('/{user}/status', [UserController::class, 'toggleStatus'])->name('toggleStatus');
-    Route::put('/{user}/lock', [UserController::class, 'lock'])->name('lock');
-    Route::put('/{user}/unlock', [UserController::class, 'unlock'])->name('unlock');
-});
-
-// =====================Admin book images=====================
-Route::prefix('admin/book-images')->name('admin.book_images.')->group(function () {
-    Route::get('/', [BookImageController::class, 'index'])->name('index');
-    Route::get('/create', [BookImageController::class, 'create'])->name('create');
-    Route::post('/', [BookImageController::class, 'store'])->name('store');
-    Route::get('/{book_image}/edit', [BookImageController::class, 'edit'])->name('edit');
-    Route::put('/{book_image}', [BookImageController::class, 'update'])->name('update');
-    Route::delete('/{book_image}', [BookImageController::class, 'destroy'])->name('destroy');
-});
-
+// =====================Admin routes=====================
 Route::prefix('admin')->name('admin.')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Users
+    Route::prefix('users')->name('users.')->group(function () {
+        Route::get('/', [UserController::class, 'index'])->name('index');
+        Route::get('/{user}/edit', [UserController::class, 'edit'])->name('edit');
+        Route::put('/{user}', [UserController::class, 'update'])->name('update');
+        Route::put('/{user}/status', [UserController::class, 'toggleStatus'])->name('toggleStatus');
+        Route::put('/{user}/lock', [UserController::class, 'lock'])->name('lock');
+        Route::put('/{user}/unlock', [UserController::class, 'unlock'])->name('unlock');
+    });
+
+    // Book Images
+    Route::prefix('book-images')->name('book_images.')->group(function () {
+        Route::get('/', [BookImageController::class, 'index'])->name('index');
+        Route::get('/create', [BookImageController::class, 'create'])->name('create');
+        Route::post('/', [BookImageController::class, 'store'])->name('store');
+        Route::get('/{book_image}/edit', [BookImageController::class, 'edit'])->name('edit');
+        Route::put('/{book_image}', [BookImageController::class, 'update'])->name('update');
+        Route::delete('/{book_image}', [BookImageController::class, 'destroy'])->name('destroy');
+    });
+
+    // Resource controllers
     Route::resource('authors', AuthorController::class);
     Route::resource('publishers', PublisherController::class);
     Route::resource('categories', CategoryController::class);
@@ -92,8 +99,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::resource('banners', BannerController::class);
     Route::resource('orders', OrderController::class);
     Route::resource('coupons', CouponController::class);
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::resource('topics', TopicController::class);
+    Route::resource('posts', PostController::class);
 });
+
 
 // ===================== Auth & Google Login =====================
 Route::get('/auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');

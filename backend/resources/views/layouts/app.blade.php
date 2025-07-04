@@ -353,7 +353,10 @@
         }
 
         /* Hover Effects */
-        .nav-link, .dropdown-item, .mobile-menu-btn, .user-dropdown .dropdown-toggle {
+        .nav-link,
+        .dropdown-item,
+        .mobile-menu-btn,
+        .user-dropdown .dropdown-toggle {
             cursor: pointer;
         }
 
@@ -372,6 +375,7 @@
         }
 
         @media (prefers-reduced-motion: reduce) {
+
             .sidebar,
             .nav-link,
             .dropdown-item,
@@ -385,7 +389,7 @@
 
 <body>
     <div class="overlay" id="sidebarOverlay"></div>
-    
+
     <div class="sidebar" id="adminSidebar">
         <div class="sidebar-header">
             <h4>
@@ -393,7 +397,7 @@
                 SmartBook
             </h4>
         </div>
-        
+
         <nav class="sidebar-nav">
             <div class="nav-item">
                 <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"
@@ -448,6 +452,22 @@
                     href="{{ route('admin.book_images.index') }}">
                     <i class="bi bi-images"></i>
                     <span>Ảnh phụ</span>
+                </a>
+            </div>
+
+            <div class="nav-item">
+                <a class="nav-link {{ request()->routeIs('admin.topics.*') ? 'active' : '' }}"
+                    href="{{ route('admin.topics.index') }}">
+                    <i class="bi bi-tags"></i>
+                    <span>Chủ đề</span>
+                </a>
+            </div>
+
+            <div class="nav-item">
+                <a class="nav-link {{ request()->routeIs('admin.posts.*') ? 'active' : '' }}"
+                    href="{{ route('admin.posts.index') }}">
+                    <i class="bi bi-file-text"></i>
+                    <span>Bài viết</span>
                 </a>
             </div>
 
@@ -514,7 +534,9 @@
                             <span>Hồ sơ</span>
                         </a>
                     </li>
-                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
                     <li>
                         <a class="dropdown-item logout-btn" href="#">
                             <i class="bi bi-box-arrow-right"></i>
@@ -556,14 +578,14 @@
             const sidebar = document.getElementById('adminSidebar');
             const overlay = document.getElementById('sidebarOverlay');
             const toggleBtn = document.getElementById('toggleSidebar');
-            
+
             if (toggleBtn) {
                 toggleBtn.addEventListener('click', () => {
                     sidebar.classList.toggle('active');
                     overlay.classList.toggle('active');
                 });
             }
-            
+
             overlay.addEventListener('click', () => {
                 sidebar.classList.remove('active');
                 overlay.classList.remove('active');
