@@ -4,19 +4,51 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Post;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Models\PostLike;
+
 
 class PostApiController extends Controller
 {
+    // Danh sách bài viết có lọc, tìm kiếm, sắp xếp
     public function index(Request $request)
     {
-        $perPage = $request->input('per_page', 10); // Mặc định 10 bài mỗi trang
+        $perPage = $request->input('per_page', 10);
+        $keyword = $request->input('keyword');
+        $topicId = $request->input('topic_id');
+        $sortBy = $request->input('sort_by', 'default'); // views | pinned | default
 
-        $posts = Post::published()
-            ->pinnedFirst()
-            ->with('topics:id,name')
-            ->paginate($perPage);
+        $query = Post::published()->with('topics:id,name');
+
+        // Tìm theo từ khoá trong tiêu đề hoặc nội dung
+        if ($keyword) {
+            $query->where(function ($q) use ($keyword) {
+                $q->where('title', 'like', "%$keyword%")
+                    ->orWhere('content', 'like', "%$keyword%");
+            });
+        }
+
+        // Lọc theo chủ đề
+        if ($topicId) {
+            $query->whereHas('topics', fn($q) => $q->where('topics.id', $topicId));
+        }
+
+        // Sắp xếp
+        switch ($sortBy) {
+            case 'views':
+                $query->orderByDesc('views');
+                break;
+            case 'pinned':
+                $query->orderByDesc('is_pinned')->latest();
+                break;
+            default:
+                $query->latest();
+                break;
+        }
+
+        $posts = $query->paginate($perPage);
 
         return response()->json([
             'success' => true,
@@ -31,7 +63,7 @@ class PostApiController extends Controller
         ]);
     }
 
-
+    // Chi tiết bài viết
     public function show($slug)
     {
         $post = Post::published()
@@ -56,6 +88,7 @@ class PostApiController extends Controller
         ]);
     }
 
+    // Bài viết liên quan theo chủ đề
     public function related($slug)
     {
         $post = Post::published()
@@ -76,8 +109,8 @@ class PostApiController extends Controller
         $relatedPosts = Post::published()
             ->with('topics:id,name')
             ->where('id', '!=', $post->id)
-            ->whereHas('topics', function ($query) use ($topicIds) {
-                $query->whereIn('topics.id', $topicIds);
+            ->whereHas('topics', function ($q) use ($topicIds) {
+                $q->whereIn('topics.id', $topicIds);
             })
             ->latest()
             ->take(4)
@@ -85,11 +118,12 @@ class PostApiController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Lấy danh sách bài viết liên quan thành công',
+            'message' => 'Lấy bài viết liên quan thành công',
             'data' => $relatedPosts->map(fn($p) => $this->formatPost($p))
         ]);
     }
 
+    // Bài viết phổ biến (views cao)
     public function popular(Request $request)
     {
         $limit = $request->input('limit', 5);
@@ -100,23 +134,123 @@ class PostApiController extends Controller
             ->take($limit)
             ->get();
 
-        if ($posts->isEmpty()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Không có bài viết phổ biến nào',
-                'data' => []
-            ]);
-        }
-
         return response()->json([
             'success' => true,
-            'message' => 'Lấy danh sách bài viết phổ biến thành công',
+            'message' => 'Lấy bài viết phổ biến thành công',
             'data' => $posts->map(fn($post) => $this->formatPost($post))
         ]);
     }
 
+    // Bài viết đã ghim
+    public function pinned(Request $request)
+    {
+        $limit = $request->input('limit', 4);
+
+        $posts = Post::published()
+            ->where('is_pinned', true)
+            ->with('topics:id,name')
+            ->latest()
+            ->take($limit)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Lấy danh sách bài viết đã ghim thành công',
+            'data' => $posts->map(fn($post) => $this->formatPost($post))
+        ]);
+    }
+
+    // Like bài viết
+    public function like(Post $post)
+    {
+
+        $userId = auth()->id();
+
+        // Tìm record kể cả đã bị xóa mềm
+        $existing = PostLike::withTrashed()
+            ->where('user_id', $userId)
+            ->where('post_id', $post->id)
+            ->first();
+
+        if ($existing) {
+            if ($existing->trashed()) {
+                // Nếu đã bị soft delete → khôi phục
+                $existing->restore();
+                $post->increment('like_count');
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Đã like lại bài viết!',
+                ]);
+            }
+
+            // Nếu đã like rồi và chưa xoá
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đã like bài viết này rồi',
+            ]);
+        }
+
+        // Chưa like lần nào → tạo mới
+        PostLike::create([
+            'user_id' => $userId,
+            'post_id' => $post->id,
+        ]);
+
+        $post->increment('like_count');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã like bài viết thành công!',
+        ]);
+    }
+
+
+    // Unlike bài viết
+    public function unlike(Request $request, $postId)
+    {
+        $user = $request->user();
+
+        $like = PostLike::where('user_id', $user->id)
+            ->where('post_id', $postId)
+            ->first();
+
+        if (!$like) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn chưa like bài viết này.'
+            ], 400);
+        }
+
+        // Xoá like (soft delete)
+        $like->delete();
+
+        // Giảm like_count, đảm bảo không âm
+        $post = Post::find($postId);
+        if ($post && $post->like_count > 0) {
+            $post->decrement('like_count');
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã bỏ like bài viết.'
+        ]);
+    }
+
+
+    // Format lại bài viết để return
     protected function formatPost($post, $withContent = false)
     {
+        $user = auth()->user();
+
+        // Kiểm tra đã like chưa (nếu có user đăng nhập)
+        $hasLiked = false;
+        if ($user) {
+            $hasLiked = \App\Models\PostLike::where('user_id', $user->id)
+                ->where('post_id', $post->id)
+                ->exists();
+        }
+
         return [
             'id' => $post->id,
             'title' => $post->title,
@@ -125,7 +259,10 @@ class PostApiController extends Controller
             'excerpt' => $withContent ? null : Str::limit(strip_tags($post->content), 100),
             'content' => $withContent ? $post->content : null,
             'created_at' => $post->created_at->format('d/m/Y'),
-            'views' => $post->views ?? null,
+            'views' => $post->views ?? 0,
+            'is_pinned' => (bool) $post->is_pinned,
+            'like_count' => $post->like_count ?? 0,
+            'has_liked' => $hasLiked,
             'topics' => $post->topics->map(fn($topic) => [
                 'id' => $topic->id,
                 'name' => $topic->name,

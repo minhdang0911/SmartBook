@@ -29,7 +29,11 @@ Route::get('/user', function (Request $request) {
 // Bài viết
 Route::prefix('posts')->group(function () {
     Route::get('/', [PostApiController::class, 'index']);
-    Route::get('/popular', [PostApiController::class, 'popular']);
+    Route::get('/pinned', [PostApiController::class, 'pinned']); // bài viết được ghim
+    Route::get('/popular', [PostApiController::class, 'popular']); // theo views
+    Route::get('/featured', [PostApiController::class, 'featured']); // theo cái ghim
+    Route::post('/{post}/like', [PostApiController::class, 'like']);  // like bài viết
+    Route::delete('/{post}/unlike', [PostApiController::class, 'unlike']); // unlike bài viết
     Route::get('/{slug}', [PostApiController::class, 'show']);
     Route::get('/{slug}/related', [PostApiController::class, 'related']);
 });
