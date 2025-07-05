@@ -10,12 +10,7 @@
     </div>
 
     {{-- FLASH MESSAGE --}}
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show rounded-3" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
+    @include('components.alert')
 
     {{-- SEARCH + ADD --}}
     <form class="search-form d-flex flex-wrap gap-3 align-items-center mb-4" method="GET">
@@ -34,7 +29,7 @@
         <table class="table table-hover table-bordered align-middle text-center mb-0">
             <thead style="background: linear-gradient(135deg, #f8f9fa, #e9ecef);">
                 <tr>
-                    <th style="width: 5%">#</th>
+                    <th style="width: 5%">STT</th>
                     <th style="width: 30%">Tên chủ đề</th>
                     <th style="width: 30%">Slug</th>
                     <th style="width: 15%">Ngày tạo</th>
@@ -83,6 +78,8 @@
             <div class="modal-content rounded-3">
                 <form action="{{ route('admin.topics.update', $topic) }}" method="POST">
                     @csrf @method('PUT')
+                    <input type="hidden" name="_form" value="edit">
+                    <input type="hidden" name="_edit_id" value="{{ $topic->id }}">
                     <div class="modal-header border-0 bg-light">
                         <h5 class="modal-title fw-bold" id="editTopicModalLabel{{ $topic->id }}">Sửa chủ đề</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -90,11 +87,16 @@
                     <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Tên chủ đề</label>
-                            <input type="text" name="name" class="form-control" value="{{ $topic->name }}" required>
+                            <input type="text" name="name" class="form-control" value="{{ old('_form') === 'edit' && old('_edit_id') == $topic->id ? old('name') : $topic->name }}">
+                            @if(old('_form') === 'edit' && old('_edit_id') == $topic->id)
+                                @error('name')
+                                    <div class="text-danger mt-1 small">{{ $message }}</div>
+                                @enderror
+                            @endif
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Slug (tùy chọn)</label>
-                            <input type="text" name="slug" class="form-control" value="{{ $topic->slug }}">
+                            <input type="text" name="slug" class="form-control" value="{{ old('_form') === 'edit' && old('_edit_id') == $topic->id ? old('slug') : $topic->slug }}">
                         </div>
                     </div>
                     <div class="modal-footer border-0">
@@ -114,6 +116,7 @@
         <div class="modal-content rounded-3">
             <form action="{{ route('admin.topics.store') }}" method="POST">
                 @csrf
+                <input type="hidden" name="_form" value="add">
                 <div class="modal-header border-0 bg-light">
                     <h5 class="modal-title fw-bold" id="addTopicModalLabel">Thêm chủ đề</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -121,11 +124,16 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Tên chủ đề</label>
-                        <input type="text" name="name" class="form-control" required>
+                        <input type="text" name="name" class="form-control" value="{{ old('_form') === 'add' ? old('name') : '' }}">
+                        @if(old('_form') === 'add')
+                            @error('name')
+                                <div class="text-danger mt-1 small">{{ $message }}</div>
+                            @enderror
+                        @endif
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Slug (tùy chọn)</label>
-                        <input type="text" name="slug" class="form-control">
+                        <input type="text" name="slug" class="form-control" value="{{ old('_form') === 'add' ? old('slug') : '' }}">
                     </div>
                 </div>
                 <div class="modal-footer border-0">
@@ -137,6 +145,46 @@
     </div>
 </div>
 
+{{-- ERROR MODAL TRIGGER --}}
+@if($errors->any())
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        @if(old('_form') === 'add')
+            new bootstrap.Modal(document.getElementById('addTopicModal')).show();
+        @elseif(old('_form') === 'edit' && old('_edit_id'))
+            new bootstrap.Modal(document.getElementById('editTopicModal{{ old('_edit_id') }}')).show();
+        @endif
+    });
+</script>
+@endif
+
+{{-- SLUG GENERATOR --}}
+<script>
+    function slugify(text) {
+        return text.toString().toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9 -]/g, '').replace(/\s+/g, '-')
+            .replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const addName = document.querySelector('#addTopicModal input[name="name"]');
+        const addSlug = document.querySelector('#addTopicModal input[name="slug"]');
+        if (addName && addSlug) {
+            addName.addEventListener('input', () => addSlug.value = slugify(addName.value));
+        }
+
+        document.querySelectorAll('[id^="editTopicModal"]').forEach(modal => {
+            const name = modal.querySelector('input[name="name"]');
+            const slug = modal.querySelector('input[name="slug"]');
+            if (name && slug) {
+                name.addEventListener('input', () => slug.value = slugify(name.value));
+            }
+        });
+    });
+</script>
+
+{{-- STYLE --}}
 <style>
 .table-responsive {
     border-radius: 0.5rem;

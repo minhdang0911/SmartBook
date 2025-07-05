@@ -11,7 +11,7 @@
 
         {{-- ERROR MESSAGES --}}
         @if ($errors->any())
-            <div class="alert alert-danger">
+            <div class="alert alert-danger" id="formErrorAlert">
                 <ul class="mb-0 small">
                     @foreach ($errors->all() as $err)
                         <li>{{ $err }}</li>
@@ -27,7 +27,7 @@
             <div class="mb-3">
                 <label class="form-label fw-semibold">Tiêu đề</label>
                 <input type="text" name="title" id="titleInput"
-                    class="form-control @error('title') is-invalid @enderror" value="{{ old('title') }}">
+                    class="form-control @error('title') is-invalid @enderror" value="{{ old('title') }}" autofocus>
                 @error('title')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -56,16 +56,14 @@
             {{-- Nội dung --}}
             <div class="mb-3">
                 <label class="form-label fw-semibold">Nội dung</label>
-                <textarea name="content" class="form-control @error('content') is-invalid @enderror" rows="6">{{ old('content') }}</textarea>
-                @error('content')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+                <textarea name="content" id="contentEditor" class="form-control">{{ old('content', $post->content ?? '') }}</textarea>
             </div>
 
-            {{-- Danh mục --}}
+
+            {{-- Chủ đề --}}
             <div class="mb-3">
                 <label class="form-label fw-semibold">Chủ đề</label>
-                <select name="topics[]" class="form-select" multiple>
+                <select name="topics[]" id="topicSelect" class="form-select" multiple>
                     @foreach ($topics as $topic)
                         <option value="{{ $topic->id }}"
                             {{ collect(old('topics'))->contains($topic->id) ? 'selected' : '' }}>
@@ -76,7 +74,6 @@
                 <div class="form-text">Giữ Ctrl (hoặc Cmd) để chọn nhiều chủ đề.</div>
             </div>
 
-
             {{-- Ảnh đại diện --}}
             <div class="mb-3">
                 <label class="form-label fw-semibold">Ảnh đại diện (thumbnail)</label>
@@ -86,10 +83,9 @@
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
 
-                {{-- ✅ PREVIEW --}}
                 <div class="mt-3">
-                    <img id="thumbnailPreview" src="#" alt="Preview" class="img-thumbnail d-none"
-                        style="max-height: 200px;">
+                    <img id="thumbnailPreview" src="#" alt="Preview thumbnail" class="img-thumbnail d-none"
+                        style="max-height: 200px; object-fit: cover;">
                 </div>
             </div>
 
@@ -121,49 +117,84 @@
     </div>
 @endsection
 
-@push('scripts')
-    <script>
-        function toSlug(str) {
-            str = str.toLowerCase();
-            str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-            str = str.replace(/đ/g, 'd');
-            str = str.replace(/Đ/g, 'd');
-            str = str.replace(/[^a-z0-9\s-]/g, '');
-            str = str.replace(/\s+/g, '-');
-            str = str.replace(/-+/g, '-');
-            return str.trim('-');
+@push('styles')
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        .ck-editor__editable_inline {
+            min-height: 400px !important;
         }
+    </style>
+@endpush
 
-        document.addEventListener('DOMContentLoaded', function() {
+@push('scripts')
+    {{-- jQuery --}}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    {{-- Select2 --}}
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    {{-- CKEditor 5 --}}
+    <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Khởi tạo Select2
+            $('#topicSelect').select2({
+                placeholder: 'Chọn chủ đề...',
+                width: '100%'
+            });
+
+            // Auto tạo slug
             const titleInput = document.getElementById('titleInput');
             const slugInput = document.getElementById('slugInput');
-
             titleInput.addEventListener('input', function() {
                 if (!slugInput.dataset.touched) {
                     slugInput.value = toSlug(this.value);
                 }
             });
-
             slugInput.addEventListener('input', function() {
                 this.dataset.touched = true;
             });
-        });
 
-        document.getElementById('thumbnailInput').addEventListener('change', function(e) {
+            // Thumbnail preview
             const preview = document.getElementById('thumbnailPreview');
-            const file = this.files[0];
-
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.src = e.target.result;
-                    preview.classList.remove('d-none');
+            document.getElementById('thumbnailInput').addEventListener('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.src = e.target.result;
+                        preview.classList.remove('d-none');
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    preview.src = '#';
+                    preview.classList.add('d-none');
                 }
-                reader.readAsDataURL(file);
-            } else {
-                preview.src = '#';
-                preview.classList.add('d-none');
+            });
+
+            // Auto scroll alert lỗi
+            if (document.getElementById('formErrorAlert')) {
+                document.getElementById('formErrorAlert').scrollIntoView({
+                    behavior: 'smooth'
+                });
             }
+
+            // Khởi tạo CKEditor
+            ClassicEditor.create(document.querySelector('textarea[name="content"]'), {
+                ckfinder: {
+                    uploadUrl: '{{ route('admin.upload-image') . '?_token=' . csrf_token() }}'
+                }
+            }).catch(error => {
+                console.error(error);
+            });
         });
+
+        function toSlug(str) {
+            str = str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            str = str.replace(/đ/g, 'd').replace(/Đ/g, 'd');
+            str = str.replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
+            return str.trim('-');
+        }
     </script>
 @endpush

@@ -13,15 +13,26 @@ class PostController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Post::with('topics')->latest();
+        $query = Post::with(['topics'])->latest();
 
         if ($request->filled('keyword')) {
             $query->where('title', 'like', '%' . $request->keyword . '%');
         }
 
-        $posts = $query->paginate(10);
+        if ($request->filled('topic_id')) {
+            $query->whereHas('topics', function ($q) use ($request) {
+                $q->where('topics.id', $request->topic_id);
+            });
+        }
 
-        return view('admin.posts.index', compact('posts'));
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $posts = $query->paginate(10)->withQueryString();
+        $topics = Topic::orderBy('name')->get();
+
+        return view('admin.posts.index', compact('posts', 'topics'));
     }
 
 
@@ -39,18 +50,25 @@ class PostController extends Controller
             'excerpt'   => 'nullable',
             'content'   => 'nullable',
             'status'    => 'required|in:draft,published',
-            'thumbnail' => 'nullable|image|max:2048',
+            'thumbnail' => 'nullable|image|max:5120',
             'topics'    => 'nullable|array',
             'topics.*'  => 'exists:topics,id',
         ], [
-            'thumbnail.image' => 'File tải lên phải là hình ảnh.',
-            'thumbnail.max'   => 'Ảnh không được vượt quá 2MB.',
-            'topics.*.exists' => 'Chủ đề không hợp lệ.',
+            'title.required'      => 'Vui lòng nhập tiêu đề.',
+            'title.max'           => 'Tiêu đề không được vượt quá 255 ký tự.',
+            'slug.unique'         => 'Slug đã tồn tại, vui lòng chọn slug khác.',
+            'thumbnail.image'     => 'File tải lên phải là hình ảnh.',
+            'thumbnail.max'       => 'Ảnh không được vượt quá 5MB.',
+            'topics.*.exists'     => 'Chủ đề không hợp lệ.',
+            'status.required'     => 'Vui lòng chọn trạng thái.',
+            'status.in'           => 'Trạng thái không hợp lệ.',
         ]);
 
+        $slug = $request->filled('slug')
+            ? Str::slug($request->slug)
+            : Str::slug($request->title);
 
-        $slug = $request->filled('slug') ? Str::slug($request->slug) : Str::slug($request->title);
-
+        // Upload thumbnail
         $thumbnailUrl = null;
         if ($request->hasFile('thumbnail')) {
             $cloudinary = new CloudinaryService();
@@ -62,14 +80,12 @@ class PostController extends Controller
             'slug'      => $slug,
             'excerpt'   => $request->excerpt,
             'content'   => $request->content,
-            'is_pinned' => $request->has('is_pinned'),
+            'is_pinned' => $request->boolean('is_pinned'),
             'status'    => $request->status,
             'thumbnail' => $thumbnailUrl,
         ]);
 
-        if ($request->has('topics')) {
-            $post->topics()->attach($request->topics);
-        }
+        $post->topics()->attach($request->topics ?? []);
 
         return redirect()->route('admin.posts.index')->with('success', 'Thêm bài viết thành công!');
     }
@@ -90,14 +106,25 @@ class PostController extends Controller
             'excerpt'   => 'nullable',
             'content'   => 'nullable',
             'status'    => 'required|in:draft,published',
-            'thumbnail' => 'nullable|image|max:2048',
+            'thumbnail' => 'nullable|image|max:5120',
             'topics'    => 'nullable|array',
             'topics.*'  => 'exists:topics,id',
+        ], [
+            'title.required'      => 'Vui lòng nhập tiêu đề.',
+            'title.max'           => 'Tiêu đề không được vượt quá 255 ký tự.',
+            'slug.unique'         => 'Slug đã tồn tại, vui lòng chọn slug khác.',
+            'thumbnail.image'     => 'File tải lên phải là hình ảnh.',
+            'thumbnail.max'       => 'Ảnh không được vượt quá 5MB.',
+            'topics.*.exists'     => 'Chủ đề không hợp lệ.',
+            'status.required'     => 'Vui lòng chọn trạng thái.',
+            'status.in'           => 'Trạng thái không hợp lệ.',
         ]);
 
-        $slug = $request->filled('slug') ? Str::slug($request->slug) : Str::slug($request->title);
+        $slug = $request->filled('slug')
+            ? Str::slug($request->slug)
+            : Str::slug($request->title);
 
-        // Handle thumbnail update
+        // Update thumbnail
         $thumbnailUrl = $post->thumbnail;
         if ($request->hasFile('thumbnail')) {
             $cloudinary = new CloudinaryService();
@@ -112,7 +139,7 @@ class PostController extends Controller
             'slug'      => $slug,
             'excerpt'   => $request->excerpt,
             'content'   => $request->content,
-            'is_pinned' => $request->has('is_pinned'),
+            'is_pinned' => $request->boolean('is_pinned'),
             'status'    => $request->status,
             'thumbnail' => $thumbnailUrl,
         ]);
@@ -124,6 +151,12 @@ class PostController extends Controller
 
     public function destroy(Post $post)
     {
+        // Delete thumbnail if exists
+        if ($post->thumbnail) {
+            $cloudinary = new CloudinaryService();
+            $cloudinary->deleteImageByPublicId($post->thumbnail);
+        }
+
         $post->delete();
 
         return redirect()->route('admin.posts.index')->with('success', 'Xoá bài viết thành công!');
