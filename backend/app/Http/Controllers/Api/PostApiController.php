@@ -167,7 +167,7 @@ class PostApiController extends Controller
             ->whereHas('topics', function ($q) use ($topicIds) {
                 $q->whereIn('topics.id', $topicIds);
             })
-            ->latest()
+            ->orderByDesc('views')
             ->take(4)
             ->get();
 
@@ -243,7 +243,7 @@ class PostApiController extends Controller
         $like->delete();
 
         // Giảm like_count, đảm bảo không âm
-        $post = Post::find($postId);
+        $post = Post::published()->find($postId);
         if ($post && $post->like_count > 0) {
             $post->decrement('like_count');
         }
