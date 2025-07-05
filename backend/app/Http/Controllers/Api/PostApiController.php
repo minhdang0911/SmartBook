@@ -63,6 +63,61 @@ class PostApiController extends Controller
         ]);
     }
 
+    // Bài viết phổ biến (views cao)
+    public function popular(Request $request)
+    {
+        $limit = $request->input('limit', 5);
+
+        $posts = Post::published()
+            ->with('topics:id,name')
+            ->orderByDesc('views')
+            ->take($limit)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Lấy bài viết phổ biến thành công',
+            'data' => $posts->map(fn($post) => $this->formatPost($post))
+        ]);
+    }
+
+    // Bài viết đã ghim
+    public function pinned(Request $request)
+    {
+        $limit = $request->input('limit', 4);
+
+        $posts = Post::published()
+            ->where('is_pinned', true)
+            ->with('topics:id,name')
+            ->latest()
+            ->take($limit)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Lấy danh sách bài viết đã ghim thành công',
+            'data' => $posts->map(fn($post) => $this->formatPost($post))
+        ]);
+    }
+
+    // Bài viết nổi bật (nhiều like nhất)
+    public function featured(Request $request)
+    {
+        $limit = $request->input('limit', 4); // mặc định lấy 4 bài
+
+        $posts = Post::published()
+            ->with('topics:id,name')
+            ->orderByDesc('like_count')
+            ->take($limit)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Lấy bài viết nổi bật thành công',
+            'data' => $posts->map(fn($post) => $this->formatPost($post))
+        ]);
+    }
+
     // Chi tiết bài viết
     public function show($slug)
     {
@@ -123,43 +178,6 @@ class PostApiController extends Controller
         ]);
     }
 
-    // Bài viết phổ biến (views cao)
-    public function popular(Request $request)
-    {
-        $limit = $request->input('limit', 5);
-
-        $posts = Post::published()
-            ->with('topics:id,name')
-            ->orderByDesc('views')
-            ->take($limit)
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Lấy bài viết phổ biến thành công',
-            'data' => $posts->map(fn($post) => $this->formatPost($post))
-        ]);
-    }
-
-    // Bài viết đã ghim
-    public function pinned(Request $request)
-    {
-        $limit = $request->input('limit', 4);
-
-        $posts = Post::published()
-            ->where('is_pinned', true)
-            ->with('topics:id,name')
-            ->latest()
-            ->take($limit)
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Lấy danh sách bài viết đã ghim thành công',
-            'data' => $posts->map(fn($post) => $this->formatPost($post))
-        ]);
-    }
-
     // Like bài viết
     public function like(Post $post)
     {
@@ -205,7 +223,6 @@ class PostApiController extends Controller
         ]);
     }
 
-
     // Unlike bài viết
     public function unlike(Request $request, $postId)
     {
@@ -236,7 +253,6 @@ class PostApiController extends Controller
             'message' => 'Đã bỏ like bài viết.'
         ]);
     }
-
 
     // Format lại bài viết để return
     protected function formatPost($post, $withContent = false)
