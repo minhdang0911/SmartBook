@@ -147,10 +147,17 @@ Route::prefix('banners')->group(function () {
     Route::delete('{id}', [BannerController::class, 'destroy']);
 });
 
+ // routes/api.php
+Route::prefix('coupons')->group(function () {
+    Route::post('check', [CouponController::class, 'check']);
+    Route::get('get', [CouponController::class, 'show']);
+    Route::post('/', [CouponController::class, 'store']);
+    Route::get('{id}', [CouponController::class, 'detail']);
+    Route::patch('{coupon}', [CouponController::class, 'update']); // Sửa {id} thành {coupon}
+    Route::post('{coupon}', [CouponController::class, 'destroy']); // Sửa {id} thành {coupon}
+});
 // Mã giảm giá
-Route::apiResource('coupons', CouponController::class);
-Route::post('/coupons/check', [CouponController::class, 'check']);
-Route::get('/coupons/get', [CouponController::class, 'show']);
+
 // Route lấy danh sách mã giảm giá cho người dùng
 //
 Route::get('/books/{book_id}/images', [ControllersBookImageController::class, 'getImagesByBookId']);

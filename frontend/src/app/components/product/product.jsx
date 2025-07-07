@@ -498,78 +498,371 @@ const BookStore = () => {
         );
     };
 
-    const BookCard = ({ book, showPrice = false, showViews = false, size = 'normal' }) => (
-        <div className={`book-card ${size}`} onClick={() => handleBookClick(book.id)}>
-            <div className="book-cover">
-                <img
-                    src={book.cover_image || 'https://via.placeholder.com/150x200?text=No+Image'}
-                    alt={book.title}
-                    onError={(e) => {
-                        e.target.src = 'https://via.placeholder.com/150x200?text=No+Image';
-                    }}
-                />
+    const BookCard = ({ book, showPrice = false, showViews = false, size = 'normal' }) => {
+        // Generate random rating between 3.5 and 5.0
+        const generateRandomRating = () => {
+            return (Math.random() * (5.0 - 3.5) + 3.5).toFixed(1);
+        };
 
-                {/* Quick View Button */}
-                <div className="quick-view-btn" onClick={(e) => handleQuickView(e, book)}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        />
-                        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
-                    </svg>
-                    <span>Xem nhanh</span>
+        // Use existing rating or generate random one
+        const rating = book.average_rating || generateRandomRating();
+
+        const formatPrice = (price) => {
+            return new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND',
+            }).format(price);
+        };
+
+        // Generate fake discount price (20-40% higher than current price)
+        const generateDiscountPrice = (currentPrice) => {
+            const discountPercent = Math.random() * 0.2 + 0.2; // 20-40% discount
+            const originalPrice = currentPrice / (1 - discountPercent);
+            return Math.round(originalPrice);
+        };
+
+        const handleBookClick = (bookId) => {
+            window.location.href = `/book/${bookId}`;
+        };
+
+        const handleQuickView = (e, book) => {
+            e.stopPropagation();
+            setSelectedBook(book);
+            setShowQuickView(true);
+        };
+
+        const renderStars = (rating) => {
+            const numRating = parseFloat(rating) || 0;
+            const stars = [];
+
+            // Nếu rating = 0 thì hiển thị 5 sao rỗng
+            if (numRating === 0) {
+                for (let i = 0; i < 5; i++) {
+                    stars.push(
+                        <span key={`empty-${i}`} className="star empty">
+                            ☆
+                        </span>,
+                    );
+                }
+                return stars;
+            }
+
+            const fullStars = Math.floor(numRating);
+            const hasHalfStar = numRating % 1 !== 0;
+            const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+            // Full stars (sao đầy)
+            for (let i = 0; i < fullStars; i++) {
+                stars.push(
+                    <span key={i} className="star filled">
+                        ★
+                    </span>,
+                );
+            }
+
+            // Half star (sao nửa)
+            if (hasHalfStar) {
+                stars.push(
+                    <span key="half" className="star half-filled">
+                        ★
+                    </span>,
+                );
+            }
+
+            // Empty stars (sao rỗng)
+            for (let i = 0; i < emptyStars; i++) {
+                stars.push(
+                    <span key={`empty-${i}`} className="star empty">
+                        ☆
+                    </span>,
+                );
+            }
+
+            return stars;
+        };
+
+        return (
+            <div className={`book-card ${size}`} onClick={() => handleBookClick(book.id)}>
+                <div className="book-cover">
+                    <img
+                        src={book.cover_image || 'https://via.placeholder.com/150x200?text=No+Image'}
+                        alt={book.title}
+                        onError={(e) => {
+                            e.target.src = 'https://via.placeholder.com/150x200?text=No+Image';
+                        }}
+                    />
+
+                    {/* Quick View Button */}
+                    <div className="quick-view-btn" onClick={(e) => handleQuickView(e, book)}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                            <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
+                        </svg>
+                        <span>Xem nhanh</span>
+                    </div>
                 </div>
-            </div>
 
-            <div className="book-info">
-                <h4 className="book-title">{book.title}</h4>
-                {book.author && (
-                    <p className="book-author">
-                        {typeof book.author === 'string' ? book.author : book.author?.name || 'Unknown Author'}
-                    </p>
-                )}
-                {book.genre && (
-                    <div className="book-genre">
-                        {Array.isArray(book.genre)
-                            ? book.genre.map((g) => (typeof g === 'string' ? g : g.name)).join(', ')
-                            : typeof book.genre === 'string'
-                            ? book.genre
-                            : book.genre.name || ''}
-                    </div>
-                )}
-                {book.categories && (
-                    <div className="book-categories">
-                        {Array.isArray(book.categories)
-                            ? book.categories.map((c) => (typeof c === 'string' ? c : c.name)).join(', ')
-                            : typeof book.categories === 'string'
-                            ? book.categories
-                            : book.categories.name || ''}
-                    </div>
-                )}
-                {book.average_rating && (
+                <div className="book-info">
+                    <h4 className="book-title">{book.title}</h4>
+
+                    {book.author && (
+                        <p className="book-author">
+                            {typeof book.author === 'string' ? book.author : book.author?.name || 'Unknown Author'}
+                        </p>
+                    )}
+
+                    {/* Rating with stars */}
                     <div className="book-rating">
-                        <span className="stars">{'★'.repeat(Math.floor(book.average_rating))}</span>
-                        <span className="rating-number">{book.average_rating}</span>
+                        <div className="stars-container">{renderStars(parseFloat(book.rating_avg))}</div>
+                        <span className="rating-number">{book.rating_avg}</span>
                     </div>
-                )}
-                {book.is_physical === 1 && book.price && (
-                    <div className="book-price-container">
-                        <span className="book-price">{formatPrice(book.price)}</span>
-                    </div>
-                )}
-                {showViews && book.views && (
-                    <div className="book-views">
-                        <span className="views-icon">👁️</span>
-                        <span className="views-count">{book.views.toLocaleString('vi-VN')} lượt xem</span>
-                    </div>
-                )}
+
+                    {book.genre && (
+                        <div className="book-genre">
+                            {Array.isArray(book.genre)
+                                ? book.genre.map((g) => (typeof g === 'string' ? g : g.name)).join(', ')
+                                : typeof book.genre === 'string'
+                                ? book.genre
+                                : book.genre.name || ''}
+                        </div>
+                    )}
+
+                    {book.categories && (
+                        <div className="book-categories">
+                            {Array.isArray(book.categories)
+                                ? book.categories.map((c) => (typeof c === 'string' ? c : c.name)).join(', ')
+                                : typeof book.categories === 'string'
+                                ? book.categories
+                                : book.categories.name || ''}
+                        </div>
+                    )}
+
+                    {book.format && (
+                        <div className="book-format">
+                            <span className="format-label">{book.format}</span>
+                        </div>
+                    )}
+
+                    {book.is_physical === 1 && book.price && (
+                        <div className="book-price-container">
+                            {/* Always show fake original price */}
+                            <span className="original-price">
+                                {formatPrice(book.originalPrice || generateDiscountPrice(book.price))}
+                            </span>
+                            {book?.discount_price > 0 && (
+                                <span className="book-price">{formatPrice(book.discount_price)}</span>
+                            )}
+                        </div>
+                    )}
+
+                    {showViews && book.views && (
+                        <div className="book-views">
+                            <span className="views-icon">👁️</span>
+                            <span className="views-count">{book.views.toLocaleString('vi-VN')} lượt xem</span>
+                        </div>
+                    )}
+                </div>
+
+                <style jsx>{`
+                    .book-card {
+                        width: 200px;
+                        background: white;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                        transition: transform 0.2s ease, box-shadow 0.2s ease;
+                        cursor: pointer;
+                        overflow: hidden;
+                    }
+
+                    .book-card:hover {
+                        transform: translateY(-4px);
+                        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+                    }
+
+                    .book-cover {
+                        position: relative;
+                        width: 100%;
+                        height: 280px;
+                        overflow: hidden;
+                    }
+
+                    .book-cover img {
+                        width: 100%;
+                        height: 100%;
+                        object-fit: cover;
+                        transition: transform 0.3s ease;
+                    }
+
+                    .book-card:hover .book-cover img {
+                        transform: scale(1.05);
+                    }
+
+                    .quick-view-btn {
+                        position: absolute;
+                        top: 10px;
+                        right: 10px;
+                        background: rgba(0, 0, 0, 0.7);
+                        color: white;
+                        border: none;
+                        border-radius: 20px;
+                        padding: 8px 12px;
+                        font-size: 12px;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        gap: 4px;
+                        opacity: 0;
+                        transform: translateY(-10px);
+                        transition: all 0.3s ease;
+                    }
+
+                    .book-card:hover .quick-view-btn {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+
+                    .book-info {
+                        padding: 16px;
+                    }
+
+                    .book-title {
+                        font-size: 14px;
+                        font-weight: 600;
+                        margin: 0 0 8px 0;
+                        color: #333;
+                        line-height: 1.3;
+                        display: -webkit-box;
+                        -webkit-line-clamp: 2;
+                        -webkit-box-orient: vertical;
+                        overflow: hidden;
+                    }
+
+                    .book-author {
+                        font-size: 12px;
+                        color: #666;
+                        margin: 0 0 8px 0;
+                        display: -webkit-box;
+                        -webkit-line-clamp: 1;
+                        -webkit-box-orient: vertical;
+                        overflow: hidden;
+                    }
+
+                    .book-rating {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        margin-bottom: 8px;
+                    }
+
+                    .stars-container {
+                        display: flex;
+                        gap: 1px;
+                    }
+
+                    .star {
+                        font-size: 14px;
+                        color: #ddd;
+                    }
+
+                    .star.filled {
+                        color: #ffc107;
+                    }
+
+                    .star.half {
+                        background: linear-gradient(90deg, #ffc107 50%, #ddd 50%);
+                        -webkit-background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                        background-clip: text;
+                    }
+
+                    .rating-number {
+                        font-size: 12px;
+                        color: #666;
+                        font-weight: 500;
+                    }
+
+                    .book-genre,
+                    .book-categories {
+                        font-size: 11px;
+                        color: #999;
+                        margin-bottom: 6px;
+                        display: -webkit-box;
+                        -webkit-line-clamp: 1;
+                        -webkit-box-orient: vertical;
+                        overflow: hidden;
+                    }
+
+                    .book-format {
+                        margin-bottom: 8px;
+                    }
+
+                    .format-label {
+                        display: inline-block;
+                        padding: 2px 8px;
+                        background: #f0f0f0;
+                        border-radius: 12px;
+                        font-size: 10px;
+                        color: #666;
+                        font-weight: 500;
+                    }
+
+                    .book-price-container {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        margin-top: 8px;
+                    }
+
+                    .original-price {
+                        font-size: 12px;
+                        color: #999;
+                        text-decoration: line-through;
+                    }
+
+                    .book-price {
+                        font-size: 14px;
+                        font-weight: 600;
+                        color: #333;
+                    }
+
+                    .book-views {
+                        display: flex;
+                        align-items: center;
+                        gap: 4px;
+                        margin-top: 8px;
+                        font-size: 11px;
+                        color: #999;
+                    }
+
+                    .book-card.small {
+                        width: 160px;
+                    }
+
+                    .book-card.small .book-cover {
+                        height: 220px;
+                    }
+
+                    .book-card.small .book-info {
+                        padding: 12px;
+                    }
+
+                    .book-card.large {
+                        width: 240px;
+                    }
+
+                    .book-card.large .book-cover {
+                        height: 320px;
+                    }
+                `}</style>
             </div>
-        </div>
-    );
+        );
+    };
 
     const handleBookClick = (bookId) => {
         window.location.href = `/book/${bookId}`;

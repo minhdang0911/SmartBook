@@ -69,7 +69,7 @@ class PostApiController extends Controller
         $limit = $request->input('limit', 5);
 
         $posts = Post::published()
-            ->with('topics:id,name')
+            ->with(relations: 'topics:id,name')
             ->orderByDesc('views')
             ->take($limit)
             ->get();

@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Auth;
 
 use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\RedirectResponse;
- 
+
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
 
@@ -19,7 +19,7 @@ use Illuminate\View\View;
 
 class RatingController extends Controller
 {
-   
+
 
     /**
      * Tạo hoặc cập nhật rating cho sách
@@ -68,15 +68,15 @@ class RatingController extends Controller
                     'message' => 'Không thể xác thực người dùng'
                 ], 401);
             }
-            
+
             $bookId = $request->book_id;
             $ratingStar = $request->rating_star;
             $comment = $request->comment;
 
             // Kiểm tra xem user đã rating cho sách này chưa
             $existingRating = Rating::where('book_id', $bookId)
-                                  ->where('user_id', $userId)
-                                  ->first();
+                ->where('user_id', $userId)
+                ->first();
 
             if ($existingRating) {
                 // Cập nhật rating hiện tại
@@ -84,6 +84,10 @@ class RatingController extends Controller
                     'rating_star' => $ratingStar,
                     'comment' => $comment
                 ]);
+
+                // ✅ Cập nhật lại trung bình
+                $book = Book::find($bookId);
+                $book->updateRatingAvg();
 
                 return response()->json([
                     'status' => true,
@@ -98,6 +102,7 @@ class RatingController extends Controller
                     ]
                 ], 200);
             } else {
+                $book = Book::find($bookId);
                 // Tạo rating mới
                 $rating = Rating::create([
                     'book_id' => $bookId,
@@ -105,18 +110,19 @@ class RatingController extends Controller
                     'rating_star' => $ratingStar,
                     'comment' => $comment
                 ]);
+                $book->updateRatingAvg();
 
                 return response()->json([
                     'status' => true,
                     'message' => 'Đánh giá thành công!',
                     'data' => [
-                        'rating_id' => $rating->id,
-                        'book_id' => $bookId,
-                        'user_id' => $userId,
-                        'rating_star' => $this->formatRating($ratingStar),
-                        'comment' => $comment,
-                        'created_at' => $rating->created_at
-                    ]
+                            'rating_id' => $rating->id,
+                            'book_id' => $bookId,
+                            'user_id' => $userId,
+                            'rating_star' => $this->formatRating($ratingStar),
+                            'comment' => $comment,
+                            'created_at' => $rating->created_at
+                        ]
                 ], 201);
             }
 
@@ -144,7 +150,7 @@ class RatingController extends Controller
             }
 
             $userId = Auth::id();
-            
+
             if (!$userId) {
                 return response()->json([
                     'status' => false,
@@ -153,8 +159,8 @@ class RatingController extends Controller
             }
 
             $rating = Rating::where('book_id', $bookId)
-                           ->where('user_id', $userId)
-                           ->first();
+                ->where('user_id', $userId)
+                ->first();
 
             if (!$rating) {
                 return response()->json([
@@ -167,14 +173,14 @@ class RatingController extends Controller
             return response()->json([
                 'status' => true,
                 'data' => [
-                    'rating_id' => $rating->id,
-                    'book_id' => $rating->book_id,
-                    'user_id' => $rating->user_id,
-                    'rating_star' => $this->formatRating($rating->rating_star),
-                    'comment' => $rating->comment,
-                    'created_at' => $rating->created_at,
-                    'updated_at' => $rating->updated_at
-                ]
+                        'rating_id' => $rating->id,
+                        'book_id' => $rating->book_id,
+                        'user_id' => $rating->user_id,
+                        'rating_star' => $this->formatRating($rating->rating_star),
+                        'comment' => $rating->comment,
+                        'created_at' => $rating->created_at,
+                        'updated_at' => $rating->updated_at
+                    ]
             ], 200);
 
         } catch (\Exception $e) {
@@ -193,7 +199,7 @@ class RatingController extends Controller
     {
         try {
             $userId = Auth::id();
-            
+
             if (!$userId) {
                 return response()->json([
                     'status' => false,
@@ -202,9 +208,9 @@ class RatingController extends Controller
             }
 
             $ratings = Rating::with('book:id,title,author')
-                           ->where('user_id', $userId)
-                           ->orderBy('created_at', 'desc')
-                           ->get();
+                ->where('user_id', $userId)
+                ->orderBy('created_at', 'desc')
+                ->get();
 
             return response()->json([
                 'status' => true,
@@ -240,7 +246,7 @@ class RatingController extends Controller
     {
         try {
             $userId = Auth::id();
-            
+
             if (!$userId) {
                 return response()->json([
                     'status' => false,
@@ -249,8 +255,8 @@ class RatingController extends Controller
             }
 
             $rating = Rating::where('book_id', $bookId)
-                           ->where('user_id', $userId)
-                           ->first();
+                ->where('user_id', $userId)
+                ->first();
 
             if (!$rating) {
                 return response()->json([
@@ -265,9 +271,9 @@ class RatingController extends Controller
                 'status' => true,
                 'message' => 'Xóa đánh giá thành công!',
                 'data' => [
-                    'user_id' => $userId,
-                    'book_id' => $bookId
-                ]
+                        'user_id' => $userId,
+                        'book_id' => $bookId
+                    ]
             ], 200);
 
         } catch (\Exception $e) {
@@ -295,46 +301,54 @@ class RatingController extends Controller
 
             $ratings = Rating::where('book_id', $bookId)->get();
             $totalRatings = $ratings->count();
-            
+
             if ($totalRatings == 0) {
                 return response()->json([
                     'status' => true,
                     'data' => [
-                        'book_id' => $bookId,
-                        'total_ratings' => 0,
-                        'average_rating' => 0,
-                        'average_display' => '0.0',
-                        'star_distribution' => [
-                            '5' => ['count' => 0, 'percentage' => 0],
-                            '4' => ['count' => 0, 'percentage' => 0],
-                            '3' => ['count' => 0, 'percentage' => 0],
-                            '2' => ['count' => 0, 'percentage' => 0],
-                            '1' => ['count' => 0, 'percentage' => 0]
-                        ],
-                        'detailed_breakdown' => [
-                            '5.0' => 0, '4.5' => 0, '4.0' => 0, '3.5' => 0, '3.0' => 0,
-                            '2.5' => 0, '2.0' => 0, '1.5' => 0, '1.0' => 0, '0.5' => 0
+                            'book_id' => $bookId,
+                            'total_ratings' => 0,
+                            'average_rating' => 0,
+                            'average_display' => '0.0',
+                            'star_distribution' => [
+                                    '5' => ['count' => 0, 'percentage' => 0],
+                                    '4' => ['count' => 0, 'percentage' => 0],
+                                    '3' => ['count' => 0, 'percentage' => 0],
+                                    '2' => ['count' => 0, 'percentage' => 0],
+                                    '1' => ['count' => 0, 'percentage' => 0]
+                                ],
+                            'detailed_breakdown' => [
+                                '5.0' => 0,
+                                '4.5' => 0,
+                                '4.0' => 0,
+                                '3.5' => 0,
+                                '3.0' => 0,
+                                '2.5' => 0,
+                                '2.0' => 0,
+                                '1.5' => 0,
+                                '1.0' => 0,
+                                '0.5' => 0
+                            ]
                         ]
-                    ]
                 ], 200);
             }
 
             $averageRating = $ratings->avg('rating_star');
-            
+
             // Tính phân bố sao theo kiểu Google (1-5 sao)
             $starDistribution = [];
             for ($i = 5; $i >= 1; $i--) {
-                $count = $ratings->filter(function($rating) use ($i) {
-                    return floor($rating->rating_star) == $i || 
-                           ($i == 5 && $rating->rating_star >= 4.5) ||
-                           ($i == 4 && $rating->rating_star >= 3.5 && $rating->rating_star < 4.5) ||
-                           ($i == 3 && $rating->rating_star >= 2.5 && $rating->rating_star < 3.5) ||
-                           ($i == 2 && $rating->rating_star >= 1.5 && $rating->rating_star < 2.5) ||
-                           ($i == 1 && $rating->rating_star < 1.5);
+                $count = $ratings->filter(function ($rating) use ($i) {
+                    return floor($rating->rating_star) == $i ||
+                        ($i == 5 && $rating->rating_star >= 4.5) ||
+                        ($i == 4 && $rating->rating_star >= 3.5 && $rating->rating_star < 4.5) ||
+                        ($i == 3 && $rating->rating_star >= 2.5 && $rating->rating_star < 3.5) ||
+                        ($i == 2 && $rating->rating_star >= 1.5 && $rating->rating_star < 2.5) ||
+                        ($i == 1 && $rating->rating_star < 1.5);
                 })->count();
-                
+
                 $percentage = $totalRatings > 0 ? round(($count / $totalRatings) * 100, 1) : 0;
-                
+
                 $starDistribution[$i] = [
                     'count' => $count,
                     'percentage' => $percentage
@@ -380,59 +394,107 @@ class RatingController extends Controller
      * Lấy danh sách đánh giá theo số sao cụ thể (Google Style)
      */
     public function getRatingsByStar(Request $request, $bookId)
-{
-    try {
-        $book = Book::find($bookId);
-        if (!$book) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Sách không tồn tại.'
-            ], 404);
-        }
+    {
+        try {
+            $book = Book::find($bookId);
+            if (!$book) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Sách không tồn tại.'
+                ], 404);
+            }
 
-        $validator = Validator::make($request->all(), [
-            'star_level' => 'nullable|integer|min:1|max:5', // Đổi thành nullable
-            'page' => 'integer|min:1',
-            'limit' => 'integer|min:1|max:50'
-        ]);
+            $validator = Validator::make($request->all(), [
+                'star_level' => 'nullable|integer|min:1|max:5', // Đổi thành nullable
+                'page' => 'integer|min:1',
+                'limit' => 'integer|min:1|max:50'
+            ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Dữ liệu không hợp lệ.',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Dữ liệu không hợp lệ.',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
 
-        $starLevel = $request->get('star_level');
-        $page = $request->get('page', 1);
-        $limit = $request->get('limit', 10);
+            $starLevel = $request->get('star_level');
+            $page = $request->get('page', 1);
+            $limit = $request->get('limit', 10);
 
-        $query = Rating::with(['user:id,name,avatar'])
-                      ->where('book_id', $bookId);
+            $query = Rating::with(['user:id,name,avatar'])
+                ->where('book_id', $bookId);
 
-        // Nếu không truyền star_level, lấy comment ưu tiên 5 sao và giới hạn 5 kết quả
-        if (is_null($starLevel)) {
-            $limit = 5; // Force limit = 5 khi không truyền star_level
-            $page = 1;  // Force page = 1
-            
-            // Sắp xếp ưu tiên 5 sao trước, sau đó theo thời gian mới nhất
-            $query->orderBy('rating_star', 'desc')
-                  ->orderBy('created_at', 'desc');
-                  
+            // Nếu không truyền star_level, lấy comment ưu tiên 5 sao và giới hạn 5 kết quả
+            if (is_null($starLevel)) {
+                $limit = 5; // Force limit = 5 khi không truyền star_level
+                $page = 1;  // Force page = 1
+
+                // Sắp xếp ưu tiên 5 sao trước, sau đó theo thời gian mới nhất
+                $query->orderBy('rating_star', 'desc')
+                    ->orderBy('created_at', 'desc');
+
+                $total = $query->count();
+                $ratings = $query->take($limit)->get();
+
+                return response()->json([
+                    'status' => true,
+                    'data' => [
+                        'book_id' => $bookId,
+                        'mode' => 'priority_5_star', // Thêm mode để frontend biết
+                        'star_level' => null,
+                        'current_page' => 1,
+                        'per_page' => $limit,
+                        'total' => $total,
+                        'total_pages' => 1,
+                        'ratings' => $ratings->map(function ($rating) {
+                            return [
+                                'rating_id' => $rating->id,
+                                'user_name' => $rating->user->name ?? 'Ẩn danh',
+                                'user_avatar' => $rating->user->avatar ?? null,
+                                'rating_star' => $this->formatRating($rating->rating_star),
+                                'comment' => $rating->comment,
+                                'created_at' => $rating->created_at->format('d/m/Y H:i'),
+                                'time_ago' => $rating->created_at->diffForHumans()
+                            ];
+                        })
+                    ]
+                ], 200);
+            }
+
+            // Logic cũ khi có truyền star_level
+            $query->where(function ($q) use ($starLevel) {
+                if ($starLevel == 5) {
+                    $q->where('rating_star', '>=', 4.5);
+                } elseif ($starLevel == 4) {
+                    $q->where('rating_star', '>=', 3.5)
+                        ->where('rating_star', '<', 4.5);
+                } elseif ($starLevel == 3) {
+                    $q->where('rating_star', '>=', 2.5)
+                        ->where('rating_star', '<', 3.5);
+                } elseif ($starLevel == 2) {
+                    $q->where('rating_star', '>=', 1.5)
+                        ->where('rating_star', '<', 2.5);
+                } else { // $starLevel == 1
+                    $q->where('rating_star', '<', 1.5);
+                }
+            })->orderBy('created_at', 'desc');
+
             $total = $query->count();
-            $ratings = $query->take($limit)->get();
-            
+            $ratings = $query->skip(($page - 1) * $limit)
+                ->take($limit)
+                ->get();
+
             return response()->json([
                 'status' => true,
                 'data' => [
                     'book_id' => $bookId,
-                    'mode' => 'priority_5_star', // Thêm mode để frontend biết
-                    'star_level' => null,
-                    'current_page' => 1,
+                    'mode' => 'filter_by_star', // Thêm mode để frontend biết
+                    'star_level' => $starLevel,
+                    'current_page' => $page,
                     'per_page' => $limit,
                     'total' => $total,
-                    'total_pages' => 1,
+                    'total_pages' => ceil($total / $limit),
                     'ratings' => $ratings->map(function ($rating) {
                         return [
                             'rating_id' => $rating->id,
@@ -446,63 +508,15 @@ class RatingController extends Controller
                     })
                 ]
             ], 200);
+
+        } catch (\Exception $e) {
+            \Log::error('Get Ratings By Star Error: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Logic cũ khi có truyền star_level
-        $query->where(function($q) use ($starLevel) {
-            if ($starLevel == 5) {
-                $q->where('rating_star', '>=', 4.5);
-            } elseif ($starLevel == 4) {
-                $q->where('rating_star', '>=', 3.5)
-                  ->where('rating_star', '<', 4.5);
-            } elseif ($starLevel == 3) {
-                $q->where('rating_star', '>=', 2.5)
-                  ->where('rating_star', '<', 3.5);
-            } elseif ($starLevel == 2) {
-                $q->where('rating_star', '>=', 1.5)
-                  ->where('rating_star', '<', 2.5);
-            } else { // $starLevel == 1
-                $q->where('rating_star', '<', 1.5);
-            }
-        })->orderBy('created_at', 'desc');
-
-        $total = $query->count();
-        $ratings = $query->skip(($page - 1) * $limit)
-                       ->take($limit)
-                       ->get();
-
-        return response()->json([
-            'status' => true,
-            'data' => [
-                'book_id' => $bookId,
-                'mode' => 'filter_by_star', // Thêm mode để frontend biết
-                'star_level' => $starLevel,
-                'current_page' => $page,
-                'per_page' => $limit,
-                'total' => $total,
-                'total_pages' => ceil($total / $limit),
-                'ratings' => $ratings->map(function ($rating) {
-                    return [
-                        'rating_id' => $rating->id,
-                        'user_name' => $rating->user->name ?? 'Ẩn danh',
-                        'user_avatar' => $rating->user->avatar ?? null,
-                        'rating_star' => $this->formatRating($rating->rating_star),
-                        'comment' => $rating->comment,
-                        'created_at' => $rating->created_at->format('d/m/Y H:i'),
-                        'time_ago' => $rating->created_at->diffForHumans()
-                    ];
-                })
-            ]
-        ], 200);
-
-    } catch (\Exception $e) {
-        \Log::error('Get Ratings By Star Error: ' . $e->getMessage());
-        return response()->json([
-            'status' => false,
-            'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
-        ], 500);
     }
-}
 
     /**
      * Lấy tất cả đánh giá của một sách với phân trang
@@ -537,7 +551,7 @@ class RatingController extends Controller
             $sort = $request->get('sort', 'newest');
 
             $query = Rating::with(['user:id,name,avatar'])
-                          ->where('book_id', $bookId);
+                ->where('book_id', $bookId);
 
             // Sắp xếp
             switch ($sort) {
@@ -556,8 +570,8 @@ class RatingController extends Controller
 
             $total = $query->count();
             $ratings = $query->skip(($page - 1) * $limit)
-                           ->take($limit)
-                           ->get();
+                ->take($limit)
+                ->get();
 
             return response()->json([
                 'status' => true,
@@ -596,6 +610,6 @@ class RatingController extends Controller
      */
     private function formatRating($rating)
     {
-        return $rating == floor($rating) ? (int)$rating : $rating;
+        return $rating == floor($rating) ? (int) $rating : $rating;
     }
 }

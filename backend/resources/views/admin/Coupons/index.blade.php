@@ -163,7 +163,7 @@
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Phạm vi áp dụng</label>
                                     <select id="scope" name="scope" onchange="toggleScopeFields()"
                                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                        <option value="order">Tất cả đơn hàng</option>
+                                        <option value="all">Tất cả đơn hàng</option>
                                         <option value="product">Sản phẩm cụ thể</option>
                                         <option value="category">Danh mục cụ thể</option>
                                     </select>
@@ -334,7 +334,7 @@
                     case 'category':
                         categoryField.classList.remove('hidden');
                         break;
-                    case 'order':
+                    case 'all':
                         // No additional fields needed for order scope
                         break;
                 }
@@ -349,7 +349,7 @@
                         fetch(API_ENDPOINTS.categories).then(r => r.json())
                     ]);
 
-                    coupons = couponsData;
+                    coupons = couponsData?.coupons;
                     books = booksData.data || booksData;
                     categories = categoriesData.data || categoriesData;
 
@@ -363,7 +363,7 @@
             // Get scope display text
             function getScopeText(scope) {
                 switch (scope) {
-                    case 'order':
+                    case 'all':
                         return 'Tất cả đơn hàng';
                     case 'product':
                         return 'Sản phẩm cụ thể';
@@ -645,7 +645,7 @@
                         `${API_ENDPOINTS.updateCoupon}/${editingCouponId}` :
                         API_ENDPOINTS.createCoupon;
 
-                    const method = editingCouponId ? 'PUT' : 'POST';
+                    const method = editingCouponId ? 'PATCH' : 'POST';
 
                     const response = await fetch(url, {
                         method: method,

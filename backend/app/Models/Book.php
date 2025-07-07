@@ -5,20 +5,23 @@ use Illuminate\Database\Eloquent\Model;
 
 class Book extends Model
 {
-    protected $fillable = [
-        'title',
-        'description',
-        'cover_image',
-        'author_id',
-        'publisher_id',
-        'category_id',
-        'is_physical',
-        'price',
-        'stock',
-        'views',
-        'likes',
-        'book_images'
-    ];
+   protected $fillable = [
+    'title',
+    'description',
+    'cover_image',
+    'author_id',
+    'publisher_id',
+    'category_id',
+    'is_physical',
+    'price',
+    'discount_price',
+    'stock',
+    'views',
+    'likes',
+    'book_images',
+    'rating_avg'  
+];
+
 
     protected $casts = [
         'book_images' => 'array',
