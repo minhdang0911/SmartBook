@@ -121,7 +121,10 @@
                     <label class="form-label">Ảnh phụ hiện tại</label>
                     <div class="d-flex flex-wrap gap-2">
                         @foreach ($book->images as $img)
-                            <img src="{{ $img->image_url }}" class="img-fluid rounded" style="height: 100px;">
+                            <div class="position-relative d-inline-block">
+                                <img src="{{ $img->image_url }}" class="img-fluid rounded" style="height: 100px;">
+                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 btn-delete-image" data-id="{{ $img->id }}">✖</button>
+                            </div>
                         @endforeach
                     </div>
                 </div>
@@ -136,7 +139,7 @@
 
             <!-- Nút -->
             <div class="col-12 d-flex gap-2 justify-content-center justify-content-md-start">
-                <button class="btn btn-primary">💾 Cập nhật</button>
+                <button class="btn btn-primary">📂 Cập nhật</button>
                 <a href="{{ route('admin.books.index') }}" class="btn btn-secondary">⬅️ Quay lại</a>
             </div>
         </div>
@@ -151,7 +154,6 @@
         .create(document.querySelector('.my-editor'))
         .catch(error => console.error(error));
 
-    // Preview ảnh bìa
     document.getElementById('cover_image').addEventListener('change', function (e) {
         const file = e.target.files[0];
         const preview = document.getElementById('previewCover');
@@ -163,7 +165,6 @@
         }
     });
 
-    // Preview ảnh phụ
     document.getElementById('images').addEventListener('change', function (e) {
         const container = document.getElementById('previewImages');
         container.innerHTML = '';
@@ -176,7 +177,6 @@
         });
     });
 
-    // Toggle field
     function toggleFields() {
         const isPhysical = document.querySelector('input[name="is_physical"]:checked').value === '1';
         document.getElementById('price').disabled = !isPhysical;
@@ -186,7 +186,37 @@
     document.querySelectorAll('input[name="is_physical"]').forEach(input => {
         input.addEventListener('change', toggleFields);
     });
-
     toggleFields();
+
+    document.querySelectorAll('.btn-delete-image').forEach(btn => {
+    btn.addEventListener('click', function () {
+        const imageId = this.dataset.id;
+        if (!confirm("Bạn có chắc muốn xóa ảnh này?")) return;
+
+        fetch(`/admin/book-images/${imageId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // 👇 Hiển thị thông báo thành công
+                alert('✅ Ảnh đã được xóa thành công!');
+                this.closest('.position-relative').remove();
+            } else {
+                alert('❌ Xóa ảnh thất bại: ' + (data.message || 'Lỗi không xác định'));
+            }
+        })
+        .catch(err => {
+            alert('⚠️ Lỗi mạng khi xóa ảnh!');
+            console.error(err);
+        });
+    });
+});
+
 </script>
 @endpush

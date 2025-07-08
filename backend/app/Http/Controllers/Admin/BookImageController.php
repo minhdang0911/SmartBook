@@ -82,13 +82,18 @@ class BookImageController extends Controller
     }
 
     public function destroy(BookImage $book_image)
-    {
+{
+    try {
         if ($book_image->image_url) {
             $this->cloudinary->deleteImageByPublicId($book_image->image_url);
         }
 
         $book_image->delete();
 
-        return redirect()->route('admin.book_images.index')->with('success', '🗑️ Ảnh phụ đã được xoá.');
+        return response()->json(['success' => true]);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'message' => 'Xóa ảnh thất bại.'], 500);
     }
+}
+
 }

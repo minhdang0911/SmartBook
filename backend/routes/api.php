@@ -22,11 +22,17 @@ use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\BookImageController as ControllersBookImageController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\RatingController;
+use App\Http\Controllers\Api\BookChapterApiController;
 
 // Lấy thông tin user bằng sanctum (nếu dùng Sanctum thôi)
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
+Route::get('/books', [BookChapterApiController::class, 'listBooks']);
+Route::get('/books/{bookId}/chapters', [BookChapterApiController::class, 'getChapters']);
+Route::get('/chapters/{chapterId}', [BookChapterApiController::class, 'getChapter']);
+
 
 // Bài viết
 Route::prefix('posts')->group(function () {
