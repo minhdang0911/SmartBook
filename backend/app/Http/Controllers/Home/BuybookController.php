@@ -14,7 +14,7 @@ class BuybookController extends Controller
         $page = $request->query('page', 1);
 
         $query = Book::where('is_physical', 1)
-            ->select('id', 'title', 'cover_image');
+            ->select('id', 'title', 'cover_image', 'price');
 
         $total = $query->count();
 

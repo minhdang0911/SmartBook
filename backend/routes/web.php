@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\RevenueController;
 use Illuminate\Support\Facades\Route;
 
@@ -133,3 +134,4 @@ Route::get('/admin/revenue', [RevenueController::class, 'index'])->name('admin.r
 
 // Auth scaffolding
 require __DIR__ . '/auth.php';
+Route::get('/admin/event', [EventController::class, 'index'])->name('admin.event.index');
