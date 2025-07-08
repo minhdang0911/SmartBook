@@ -119,16 +119,16 @@ class BookController extends Controller
         $coverUrl = $this->cloudinary->uploadImage($request->file('cover_image'), 'book_covers');
 
         $book = Book::create([
-            'title' => $request->title,
-            'author_id' => $request->author_id,
-            'publisher_id' => $request->publisher_id,
-            'category_id' => $request->category_id,
-            'is_physical' => $request->input('is_physical'), // ✅ thêm dòng này
-            'price' => $request->price,
-            'stock' => $request->stock,
-            'description' => $request->description,
-            'cover_image' => $coverUrl,
-            ]);
+        'title' => $request->title,
+        'author_id' => $request->author_id,
+        'publisher_id' => $request->publisher_id,
+        'category_id' => $request->category_id,
+        'is_physical' => $request->input('is_physical'), // ✅ thêm dòng này
+        'price' => $request->price,
+        'stock' => $request->stock,
+        'description' => $request->description,
+        'cover_image' => $coverUrl,
+        ]);
 
         BookImage::create([
             'book_id' => $book->id,

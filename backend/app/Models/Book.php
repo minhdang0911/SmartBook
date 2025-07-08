@@ -43,5 +43,10 @@ class Book extends Model
         $this->rating_avg = round($avg, 1);
         $this->save();
     }
+    public function chapters()
+{
+    return $this->hasMany(BookChapter::class);
+}
+
 }
 

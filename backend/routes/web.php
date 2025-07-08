@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\BookImageController;
 use App\Http\Controllers\Admin\ImageUploadController;
 use App\Http\Controllers\Admin\PostController;
 use App\Http\Controllers\Admin\TopicController;
+use App\Http\Controllers\Admin\ChapterController;
 
 // Home Controllers
 use App\Http\Controllers\Home\BookController as HomeBookController;
@@ -129,7 +130,12 @@ Route::post('/ckeditor/upload', [App\Http\Controllers\CKEditorController::class,
 
 Route::get('/admin/revenue', [RevenueController::class, 'index'])->name('admin.revenue.index');
 
-
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::resource('chapters', ChapterController::class); // Quản lý chương riêng
+});
+Route::get('/chapters/{chapter}', [ChapterController::class, 'show'])->name('chapters.show');
+Route::get('/sach/{slug}/{chapterSlug}', [ChapterController::class, 'show'])->name('chapters.read');
+Route::get('/admin/books/{book}/chapters/orders', [ChapterController::class, 'getChapterOrders']);
 
 // Auth scaffolding
 require __DIR__ . '/auth.php';
