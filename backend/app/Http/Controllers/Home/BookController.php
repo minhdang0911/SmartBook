@@ -383,4 +383,26 @@ class BookController extends Controller
             return response()->json(['message' => 'Unknown book type'], 400);
         }
     }
+    //view update 
+    public function increaseView($id)
+{
+    $book = \App\Models\Book::find($id);
+
+    if (!$book) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Không tìm thấy sách.',
+        ], 404);
+    }
+
+    // Tăng view lên 1
+    $book->increment('views');
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Lượt xem đã được cập nhật.',
+        'views' => $book->views,
+    ]);
+}
+
 }

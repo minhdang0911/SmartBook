@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\BookImageController;
+use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventProductController;
 use App\Http\Controllers\Api\PostApiController;
 use App\Http\Controllers\Api\TopicApiController;
 use App\Http\Controllers\RevenueController;
@@ -65,12 +67,14 @@ Route::post('/categories', [CategoryController::class, 'store']);
 Route::put('/categories/{id}', [CategoryController::class, 'update']);
 Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
 
-// Public routes - không cần đăng nhập
+// books
 Route::get('/books', [BookController::class, 'index']);
 Route::get('/ebooks', [EbookController::class, 'Ebooks']);
 Route::get('/buybooks', [BuybookController::class, 'buyBooks']);
 Route::get('/books/search', [BookController::class, 'search']);
 Route::get('/books/ids', [BookController::class, 'getAllIds']);
+Route::post('/books/increase-view/{id}', [BookController::class, 'increaseView']);
+
 Route::get('/test-api', fn() => response()->json(['message' => 'API đang hoạt động ✅']));
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/send-otp', [AuthController::class, 'sendOtp']);
@@ -153,7 +157,7 @@ Route::prefix('banners')->group(function () {
     Route::delete('{id}', [BannerController::class, 'destroy']);
 });
 
- // routes/api.php
+// routes/api.php
 Route::prefix('coupons')->group(function () {
     Route::post('check', [CouponController::class, 'check']);
     Route::get('get', [CouponController::class, 'show']);
@@ -633,4 +637,31 @@ Route::prefix('revenue')->group(function () {
     Route::get('/dashboard', [RevenueController::class, 'getDashboard']);
     // Route riêng cho từng quý
     Route::get('/quarter', [RevenueController::class, 'getQuarterDetail']);
+});
+
+
+
+
+// Route quản lý sách thuộc về event
+Route::prefix('events/{event_id}')->group(function () {
+    Route::post('/books', [EventProductController::class, 'store']);
+    Route::put('/books/{book_id}', [EventProductController::class, 'update']);
+    Route::delete('/books/{book_id}', [EventProductController::class, 'destroy']);
+});
+
+Route::prefix('events')->group(function () {
+// Tạo event
+Route::post('/', [EventController::class, 'store'])->name('store');
+
+// Lấy danh sách tất cả event
+Route::get('/', [EventController::class, 'getall'])->name('events.getall');
+
+// Lấy chi tiết 1 event
+Route::get('/{event_id}', [EventController::class, 'show'])->name('events.show');
+
+// Cập nhật event
+Route::put('/{event_id}', [EventController::class, 'update'])->name('events.update');
+
+// Xoá event
+Route::delete('/{event_id}', [EventController::class, 'destroy'])->name('events.destroy');
 });

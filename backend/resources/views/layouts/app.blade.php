@@ -508,6 +508,14 @@
                     <span>Mã giảm giá</span>
                 </a>
             </div>
+             <div class="nav-item">
+                <a class="nav-link {{ request()->routeIs('admin.event.*') ? 'active' : '' }}"
+                    href="{{ route('admin.event.index') }}">
+                    <i class="bi bi-ticket-perforated"></i>
+                    <span>Flash Sale & Event</span>
+                </a>
+            </div>
+             
 
             <div class="nav-item">
                 <a class="nav-link logout-btn" href="#">
