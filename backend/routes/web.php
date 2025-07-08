@@ -136,6 +136,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 Route::get('/chapters/{chapter}', [ChapterController::class, 'show'])->name('chapters.show');
 Route::get('/sach/{slug}/{chapterSlug}', [ChapterController::class, 'show'])->name('chapters.read');
 Route::get('/admin/books/{book}/chapters/orders', [ChapterController::class, 'getChapterOrders']);
+Route::get('/admin/books/search', [\App\Http\Controllers\Admin\BookController::class, 'search'])->name('admin.books.search');
 
 // Auth scaffolding
 require __DIR__ . '/auth.php';
