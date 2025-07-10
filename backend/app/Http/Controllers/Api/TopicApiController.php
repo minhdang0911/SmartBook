@@ -12,7 +12,7 @@ class TopicApiController extends Controller
 {
     public function index()
     {
-        $topics = Topic::select('id', 'name')->orderBy('name')->get();
+        $topics = Topic::select('id', 'name','slug')->orderBy('name')->get();
 
         return response()->json([
             'success' => true,
