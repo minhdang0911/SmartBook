@@ -23,6 +23,27 @@ use App\Http\Controllers\BookImageController as ControllersBookImageController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\RatingController;
 use App\Http\Controllers\Api\BookChapterApiController;
+use App\Http\Controllers\CommentController;
+use App\Http\Controllers\CommentReactionController;
+use App\Http\Controllers\PostLikeController;
+
+
+
+
+
+Route::prefix('comments')->group(function () {
+    Route::get('/{post}', [CommentController::class, 'index']);
+    Route::post('/', [CommentController::class, 'store']);
+    Route::put('/{id}', [CommentController::class, 'update']);
+    Route::delete('/{id}', [CommentController::class, 'destroy']);
+});
+
+Route::prefix('comments')->group(function () {
+    Route::post('/{id}/react', [CommentReactionController::class, 'react']);
+    Route::post('/{id}/unpreact', [CommentReactionController::class, 'unreact']);
+    Route::get('/{id}/reactions', [CommentReactionController::class, 'listReactions']);
+
+});
 
 // Lấy thông tin user bằng sanctum (nếu dùng Sanctum thôi)
 Route::get('/user', function (Request $request) {
@@ -37,13 +58,18 @@ Route::get('/chapters/{chapterId}', [BookChapterApiController::class, 'getChapte
 // Bài viết
 Route::prefix('posts')->group(function () {
     Route::get('/', [PostApiController::class, 'index']);
+    Route::get('liked', [PostLikeController::class, 'getLikedPosts']);
     Route::get('/pinned', [PostApiController::class, 'pinned']); // bài viết được ghim
     Route::get('/popular', [PostApiController::class, 'popular']); // theo views
     Route::get('/featured', [PostApiController::class, 'featured']); // theo lượt thích
     Route::post('/{post}/like', [PostApiController::class, 'like']);  // like bài viết
     Route::delete('/{post}/unlike', [PostApiController::class, 'unlike']); // unlike bài viết
-    Route::get('/{slug}/related', [PostApiController::class, 'related']);
+    Route::get('/related/{topicId}', [PostApiController::class, 'related']);
     Route::get('/{slug}', [PostApiController::class, 'show']);
+    // Lấy danh sách tất cả các bài viết/cuốn sách đã like
+
+
+
 });
 
 // Chủ đề bài viết
@@ -650,18 +676,18 @@ Route::prefix('events/{event_id}')->group(function () {
 });
 
 Route::prefix('events')->group(function () {
-// Tạo event
-Route::post('/', [EventController::class, 'store'])->name('store');
+    // Tạo event
+    Route::post('/', [EventController::class, 'store'])->name('store');
 
-// Lấy danh sách tất cả event
-Route::get('/', [EventController::class, 'getall'])->name('events.getall');
+    // Lấy danh sách tất cả event
+    Route::get('/', [EventController::class, 'getall'])->name('events.getall');
 
-// Lấy chi tiết 1 event
-Route::get('/{event_id}', [EventController::class, 'show'])->name('events.show');
+    // Lấy chi tiết 1 event
+    Route::get('/{event_id}', [EventController::class, 'show'])->name('events.show');
 
-// Cập nhật event
-Route::put('/{event_id}', [EventController::class, 'update'])->name('events.update');
+    // Cập nhật event
+    Route::put('/{event_id}', [EventController::class, 'update'])->name('events.update');
 
-// Xoá event
-Route::delete('/{event_id}', [EventController::class, 'destroy'])->name('events.destroy');
+    // Xoá event
+    Route::delete('/{event_id}', [EventController::class, 'destroy'])->name('events.destroy');
 });

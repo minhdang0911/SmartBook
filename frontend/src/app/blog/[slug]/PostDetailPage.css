@@ -3,6 +3,8 @@
     justify-content: center; /* căn giữa ngang */
     padding: 40px 20px;
     background-color: #f9f9f9;
+    max-width: 80%;
+    margin: 0 auto;
 }
 
 .post-detail-wrapper {

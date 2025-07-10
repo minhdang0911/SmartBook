@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Post;
+use App\Models\Topic;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -144,39 +145,38 @@ class PostApiController extends Controller
     }
 
     // Bài viết liên quan theo chủ đề
-    public function related($slug)
-    {
-        $post = Post::published()
-            ->with('topics')
-            ->where('slug', $slug)
-            ->first();
-
-        if (!$post) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Bài viết không tồn tại',
-                'data' => null
-            ], 404);
-        }
-
-        $topicIds = $post->topics->pluck('id');
-
-        $relatedPosts = Post::published()
-            ->with('topics:id,name')
-            ->where('id', '!=', $post->id)
-            ->whereHas('topics', function ($q) use ($topicIds) {
-                $q->whereIn('topics.id', $topicIds);
-            })
-            ->orderByDesc('views')
-            ->take(4)
-            ->get();
-
+public function related($topicId)
+{
+    // Kiểm tra topic có tồn tại không
+    $topic = Topic::find($topicId);
+    
+    if (!$topic) {
         return response()->json([
-            'success' => true,
-            'message' => 'Lấy bài viết liên quan thành công',
-            'data' => $relatedPosts->map(fn($p) => $this->formatPost($p))
-        ]);
+            'success' => false,
+            'message' => 'Topic không tồn tại',
+            'data' => null
+        ], 404);
     }
+
+    // Lấy bài viết liên quan dựa vào topic ID
+    $relatedPosts = Post::published()
+        ->with(['topics:id,name'])
+        ->whereHas('topics', function ($query) use ($topicId) {
+            $query->where('topics.id', $topicId);
+        })
+        ->orderByDesc('views') // Sắp xếp theo lượt xem
+        ->orderByDesc('created_at') // Sau đó theo thời gian tạo
+        ->take(4)
+        ->get();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Lấy bài viết liên quan thành công',
+        'data' => $relatedPosts->map(function ($relatedPost) {
+            return $this->formatPost($relatedPost);
+        })
+    ]);
+}
 
     // Like bài viết
     public function like(Post $post)
