@@ -256,4 +256,17 @@ public function update(Request $request, Book $book)
 
         return response()->json(['error' => 'No file uploaded'], 400);
     }
+    public function search(Request $request)
+{
+    $query = $request->input('q');
+
+    $books = Book::where('is_physical', 0)
+                ->where('title', 'like', '%' . $query . '%')
+                ->select('id', 'title')
+                ->limit(20)
+                ->get();
+
+    return response()->json($books);
+}
+
 }
