@@ -24,6 +24,61 @@
         gap: 10px;
     }
 
+    .table thead th {
+        background-color: #000 !important;
+        color: white !important;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .table td {
+        vertical-align: middle !important;
+        font-size: 0.92rem;
+        text-align: center;
+    }
+
+    .table-responsive {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .book-cover {
+        width: 60px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .btn-group-action {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    /* Phần pagination + tổng số */
+    .book-pagination-summary {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin-top: 24px;
+        gap: 6px;
+        text-align: center;
+    }
+
+    .book-pagination-summary .pagination {
+        margin: 0;
+    }
+
+    .book-pagination-summary .book-summary {
+        font-size: 0.92rem;
+        color: #555;
+    }
+
+    /* Card view cho mobile */
     .book-card {
         border: 1px solid #e0e0e0;
         border-radius: 12px;
@@ -37,14 +92,6 @@
         display: flex;
         gap: 16px;
         align-items: center;
-    }
-
-    .book-cover {
-        width: 60px;
-        height: 80px;
-        border-radius: 6px;
-        object-fit: cover;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
     }
 
     .book-info h5 {
@@ -80,20 +127,13 @@
         font-size: 1rem;
     }
 
-    .table th, .table td {
-        vertical-align: middle;
-        font-size: 0.9rem;
-    }
-
-    .pagination {
-        justify-content: center;
-        margin-top: 24px;
-    }
-
-    .btn-group-action {
-        display: flex;
-        justify-content: center;
-        gap: 6px;
+    .additional-image-preview {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
     }
 
     @media (max-width: 767.98px) {
@@ -109,6 +149,8 @@
     }
 </style>
 @endpush
+
+
 
 @section('content')
 <div class="container mt-4">
@@ -142,9 +184,9 @@
                         <td class="text-center">{{ $books->firstItem() + $index }}</td>
                         <td class="text-center">
                             <img src="{{ $book->cover_image ?? 'https://via.placeholder.com/60x80?text=No+Image' }}"
-                                 alt="Ảnh bìa"
-                                 style="height: 60px;"
-                                 class="rounded shadow-sm">
+                            alt="Ảnh bìa"
+                            class="book-cover">
+
                         </td>
                         <td>{{ $book->title }}</td>
                         <td>{{ $book->author->name ?? '—' }}</td>
@@ -215,9 +257,14 @@
         </div>
     @endif
 
-    {{-- Pagination --}}
-    <div class="pagination">
+                {{-- Phân trang + tổng số sách --}}
+@if ($books->total() > 0)
+    <div class="book-pagination-summary">
         {{ $books->appends(request()->except('page'))->links('pagination::bootstrap-5') }}
+        <div class="book-summary">
+            Sách đang hiển thị <strong>{{ $books->firstItem() }}–{{ $books->lastItem() }}</strong> trên tổng <strong>{{ $books->total() }}</strong> sách
+        </div>
     </div>
-</div>
+@endif
+
 @endsection

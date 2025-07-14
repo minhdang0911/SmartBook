@@ -417,7 +417,7 @@
             <div class="nav-item">
             <a class="nav-link {{ request()->routeIs('admin.chapters.*') ? 'active' : '' }}"
                 href="{{ route('admin.chapters.index') }}">
-                <i class="bi bi-book"></i>
+                <i class="bi-journal-text"></i>
                 <span>Quản lý chương</span>
             </a>
             </div>

@@ -1,10 +1,12 @@
 @extends('layouts.app')
+@section('title', 'Danh sách Chương')
 
 @section('content')
 <div class="container">
-    <h2 class="mb-4">📚 Danh sách chương</h2>
+<div class="page-header">
+    <h1><i class="bi bi-journals"></i> Danh sách Chương</h1>
+</div>
 
-    <a href="{{ route('admin.chapters.create') }}" class="btn btn-primary mb-3">➕ Thêm chương</a>
 <form method="GET" action="{{ route('admin.chapters.index') }}" class="mb-3 row g-2 align-items-center">
     <div class="col-md-4">
         <input type="text" name="book_title" value="{{ request('book_title') }}" class="form-control" placeholder="🔍 Tìm theo tên sách">
@@ -15,10 +17,13 @@
     <div class="col-md-4 d-flex gap-2">
         <button type="submit" class="btn btn-success">Tìm kiếm</button>
         <a href="{{ route('admin.chapters.index') }}" class="btn btn-secondary">🔄 Reset</a>
+        <a href="{{ route('admin.chapters.create') }}" class="btn btn-success ">➕ Thêm chương</a>
+</div>
     </div>
+    
 </form>
 
-    <table class="table table-bordered table-striped align-middle">
+<table class="table table-bordered align-middle">
         <thead class="table-light">
             <tr>
                 <th scope="col">📖 Tên sách</th>
@@ -34,7 +39,6 @@
                     <td>{{ $chapter->title }}</td>
                     <td>{{ $chapter->chapter_order }}</td>
                     <td class="text-center">
-                        <a href="{{ route('admin.chapters.show', $chapter) }}" class="btn btn-sm btn-info">👁 Xem</a>
 
                         <a href="{{ route('admin.chapters.edit', $chapter->id) }}" class="btn btn-sm btn-warning">
                             ✏️ Sửa
@@ -57,49 +61,74 @@
         </tbody>
     </table>
     <center><div class="d-flex justify-content-center mt-4">
-    <style>
-        .pagination {
-            display: flex;
-            gap: 6px;
-            padding: 0;
-            list-style: none;
-            margin: 0;
-        }
+   @push('styles')
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 32px 24px;
+        text-align: center;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        margin-bottom: 24px;
+    }
 
-        .pagination li {
-            display: inline;
-        }
+    .page-header h1 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
 
-        .pagination li a,
-        .pagination li span {
-            display: inline-block;
-            padding: 6px 12px;
-            font-size: 1rem;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            color: #007bff;
-            background-color: #fff;
-            text-decoration: none;
-            transition: 0.2s all;
-        }
+    .table thead th {
+        background-color: #000 !important;
+        color: white !important;
+        text-align: center;
+        vertical-align: middle;
+    }
 
-        .pagination li.active span {
-            background-color: #007bff;
-            color: #fff;
-            border-color: #007bff;
-        }
+    .table td {
+        vertical-align: middle !important;
+        font-size: 0.92rem;
+        text-align: center;
+    }
 
-        .pagination li.disabled span {
-            background-color: #f1f1f1;
-            color: #999;
-            cursor: not-allowed;
-        }
+    .btn-group-action {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
 
-        .pagination li a:hover {
-            background-color: #e9ecef;
-            color: #0056b3;
-        }
-    </style>
+    .pagination {
+        justify-content: center;
+        margin-top: 24px;
+    }
+
+    .empty-state {
+        text-align: center;
+        color: #666;
+        padding: 32px 0;
+        font-size: 1rem;
+    }
+
+    .form-control {
+        font-size: 0.95rem;
+    }
+
+    .btn {
+        font-size: 0.9rem;
+    }
+
+    .text-muted {
+        font-size: 0.9rem;
+    }
+</style>
+@endpush
+
 
 {{ $chapters->withQueryString()->links('pagination::bootstrap-4') }}
 </center>

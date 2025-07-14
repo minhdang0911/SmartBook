@@ -134,10 +134,9 @@ Route::get('/admin/revenue', [RevenueController::class, 'index'])->name('admin.r
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::resource('chapters', ChapterController::class); // Quản lý chương riêng
 });
-Route::get('/chapters/{chapter}', [ChapterController::class, 'show'])->name('chapters.show');
-Route::get('/sach/{slug}/{chapterSlug}', [ChapterController::class, 'show'])->name('chapters.read');
 Route::get('/admin/books/{book}/chapters/orders', [ChapterController::class, 'getChapterOrders']);
 Route::get('/admin/books/search', [\App\Http\Controllers\Admin\BookController::class, 'search'])->name('admin.books.search');
+Route::delete('/admin/book-images/{id}', [BookImageController::class, 'destroy'])->name('admin.book-images.destroy');
 
 // Auth scaffolding
 require __DIR__ . '/auth.php';
