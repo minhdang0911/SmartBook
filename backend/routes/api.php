@@ -33,7 +33,7 @@ use App\Http\Controllers\PostLikeController;
 
 Route::prefix('comments')->group(function () {
       Route::get('/', [CommentController::class, 'index']);
-    Route::get('/replies', [CommentController::class, 'replies']); // Comment con (replies)
+    Route::post('/replies', [CommentController::class, 'replies']); // Comment con (replies)
   
     Route::post('/', [CommentController::class, 'store']);
     Route::put('/{id}', [CommentController::class, 'update']);

@@ -241,7 +241,7 @@ const CommentItem = ({ comment, postId, onReply, onCommentUpdate, onCommentDelet
 
     const handleReplyClick = () => {
         setShowReplyForm(true);
-        setReplyContent(`@${commentData.user.name} `);
+        setReplyContent(`@${commentData?.user?.name} `);
     };
 
     const cancelReply = () => {
@@ -345,8 +345,8 @@ const CommentItem = ({ comment, postId, onReply, onCommentUpdate, onCommentDelet
                                         borderBottom: '1px solid #f0f2f5',
                                     }}
                                 >
-                                    <UserAvatar user={reaction.user} size={24} />
-                                    <span style={{ fontSize: '13px', flex: 1 }}>{reaction.user.name}</span>
+                                    <UserAvatar user={reaction?.user} size={24} />
+                                    <span style={{ fontSize: '13px', flex: 1 }}>{reaction?.user?.name}</span>
                                     <span style={{ fontSize: '16px' }}>{reactionEmojis[reaction.type]}</span>
                                 </div>
                             ))}
@@ -360,11 +360,11 @@ const CommentItem = ({ comment, postId, onReply, onCommentUpdate, onCommentDelet
     return (
         <div style={{ marginBottom: '24px' }}>
             <div style={{ display: 'flex', gap: '12px' }}>
-                <UserAvatar user={commentData.user} />
+                <UserAvatar user={commentData?.user} />
                 <div style={{ flex: 1 }}>
                     <div style={{ marginBottom: '4px' }}>
                         <span style={{ fontWeight: 'bold', color: '#1877f2', fontSize: '14px' }}>
-                            {commentData.user.name}
+                            {commentData?.user?.name}
                         </span>
                         <span style={{ color: '#65676b', fontSize: '14px', marginLeft: '8px' }}>
                             {formatTime(commentData.created_at)}
