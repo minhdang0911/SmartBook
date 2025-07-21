@@ -23,6 +23,7 @@ use App\Http\Controllers\BookImageController as ControllersBookImageController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\RatingController;
 use App\Http\Controllers\Api\BookChapterApiController;
+use App\Http\Controllers\Api\UserProfileController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CommentReactionController;
 use App\Http\Controllers\PostLikeController;
@@ -32,9 +33,9 @@ use App\Http\Controllers\PostLikeController;
 
 
 Route::prefix('comments')->group(function () {
-      Route::get('/', [CommentController::class, 'index']);
+    Route::get('/', [CommentController::class, 'index']);
     Route::post('/replies', [CommentController::class, 'replies']); // Comment con (replies)
-  
+
     Route::post('/', [CommentController::class, 'store']);
     Route::put('/{id}', [CommentController::class, 'update']);
     Route::patch('/{id}', [CommentController::class, 'destroy']);
@@ -44,7 +45,6 @@ Route::prefix('comments')->group(function () {
     Route::post('/{id}/react', [CommentReactionController::class, 'react']);
     Route::post('/{id}/unpreact', [CommentReactionController::class, 'unreact']);
     Route::get('/{id}/reactions', [CommentReactionController::class, 'listReactions']);
-
 });
 
 // Lấy thông tin user bằng sanctum (nếu dùng Sanctum thôi)
@@ -68,10 +68,6 @@ Route::prefix('posts')->group(function () {
     Route::delete('/{post}/unlike', [PostApiController::class, 'unlike']); // unlike bài viết
     Route::get('/related/{topicId}', [PostApiController::class, 'related']);
     Route::get('/{slug}', [PostApiController::class, 'show']);
-    // Lấy danh sách tất cả các bài viết/cuốn sách đã like
-
-
-
 });
 
 // Chủ đề bài viết
@@ -79,6 +75,12 @@ Route::prefix('topics')->group(function () {
     Route::get('/', [TopicApiController::class, 'index']);
     Route::get('/{slug}/posts', [TopicApiController::class, 'posts']);
 });
+// Cập nhật thông tin người dùng
+Route::put('/user/change-password', [UserProfileController::class, 'updatePassword']);
+Route::put('/user/profile', [UserProfileController::class, 'update']);
+
+
+
 
 // Tác giả
 Route::get('/authors', [AuthorController::class, 'index']);
