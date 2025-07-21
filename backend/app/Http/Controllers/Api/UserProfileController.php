@@ -9,6 +9,18 @@ use Illuminate\Support\Facades\Auth;
 
 class UserProfileController extends Controller
 {
+    public function profile()
+    {
+        $user = Auth::user();
+
+        return response()->json([
+            'name' => $user->name,
+            'phone' => $user->phone,
+            'email' => $user->email,
+            'role' => $user->role,
+        ]);
+    }
+
     public function update(Request $request)
     {
         $user = $request->user();

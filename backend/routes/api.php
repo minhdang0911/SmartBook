@@ -75,10 +75,13 @@ Route::prefix('topics')->group(function () {
     Route::get('/', [TopicApiController::class, 'index']);
     Route::get('/{slug}/posts', [TopicApiController::class, 'posts']);
 });
-// Cập nhật thông tin người dùng
-Route::put('/user/change-password', [UserProfileController::class, 'updatePassword']);
-Route::put('/user/profile', [UserProfileController::class, 'update']);
 
+// Thông tin người dùng
+Route::prefix('user')->group(function () {
+Route::put('/change-password', [UserProfileController::class, 'updatePassword']);
+Route::put('/profile', [UserProfileController::class, 'update']);
+Route::get('/profile', [UserProfileController::class, 'profile']);
+});
 
 
 
