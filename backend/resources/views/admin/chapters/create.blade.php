@@ -186,13 +186,40 @@ $(document).ready(function () {
 
     // ✅ CKEditor
     ClassicEditor
-        .create(document.querySelector('#editor'))
-        .then(editor => {
-            editorInstance = editor;
-        })
-        .catch(error => {
-            console.error('CKEditor error:', error);
-        });
+    .create(document.querySelector('#editor'), {
+        toolbar: {
+            items: [
+                'heading', '|',
+                'bold', 'italic', 'underline', 'strikethrough', '|',
+                'fontFamily', 'fontSize', '|',
+                'alignment:left', 'alignment:center', 'alignment:right', '|',
+                'numberedList', 'bulletedList', '|',
+                'link', 'blockQuote', 'insertTable', '|',
+                'undo', 'redo'
+            ]
+        },
+        fontFamily: {
+            options: [
+                'default',
+                'Arial, Helvetica, sans-serif',
+                'Courier New, Courier, monospace',
+                'Georgia, serif',
+                'Roboto, sans-serif',
+                'Times New Roman, Times, serif',
+                'Verdana, Geneva, sans-serif'
+            ]
+        },
+        alignment: {
+            options: ['left', 'center', 'right']
+        }
+    })
+    .then(editor => {
+        editorInstance = editor;
+    })
+    .catch(error => {
+        console.error('CKEditor error:', error);
+    });
+
 });
 </script>
 @endpush
