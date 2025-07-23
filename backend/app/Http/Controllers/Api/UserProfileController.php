@@ -23,19 +23,36 @@ class UserProfileController extends Controller
 
     public function update(Request $request)
     {
+        $validated = $request->validate(
+            [
+                'name'  => 'sometimes|required|string|max:100',
+                'phone' => ['sometimes', 'nullable', 'string', 'regex:/^(0?)(3[2-9]|5[6|8|9]|7[06-9]|8[1-5]|9[0-9])[0-9]{7}$/'],
+            ],
+            [
+                'name.required' => 'Vui lòng nhập tên.',
+                'name.string'   => 'Tên phải là chuỗi ký tự.',
+                'name.max'      => 'Tên không được vượt quá 100 ký tự.',
+                'phone.string'  => 'Số điện thoại phải là chuỗi số.',
+                'phone.regex'   => 'Số điện thoại không hợp lệ. Vui lòng nhập đúng định dạng 10 số của Việt Nam.',
+            ]
+        );
+
         $user = $request->user();
 
-        $request->validate([
-            'name'  => 'required|string|max:100',
-            'phone' => 'nullable|string|max:20',
-        ]);
+        if (array_key_exists('name', $validated)) {
+            $user->name = $validated['name'];
+        }
 
-        $user->name = $request->name;
-        $user->phone = $request->phone;
-        $user->save();
+        if (array_key_exists('phone', $validated)) {
+            $user->phone = $validated['phone'];
+        }
+
+        if ($user->isDirty()) {
+            $user->save();
+        }
 
         return response()->json([
-            'message' => 'Cập nhật thành công',
+            'message' => 'Cập nhật thông tin thành công',
             'user' => [
                 'name'  => $user->name,
                 'email' => $user->email,
