@@ -667,7 +667,7 @@
 
         async function loadBooks() {
             try {
-                const response = await apiRequest(`${API_BASE}/buybooks`);
+                const response = await apiRequest(`${API_BASE}/buybooks?limit=100`);
                 books = response.data || response;
             } catch (error) {
                 console.error('Error loading books:', error);

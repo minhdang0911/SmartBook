@@ -7,7 +7,8 @@ use App\Http\Controllers\Controller;
 
 class EventProductController extends Controller
 {
-    public function store(Request $request, $event_id) {
+    public function store(Request $request, $event_id)
+    {
         $data = $request->validate([
             'books_id' => 'required|exists:books,id',
             'discount_percent' => 'required|numeric|min:0|max:100',
@@ -17,12 +18,31 @@ class EventProductController extends Controller
 
         $data['event_id'] = $event_id;
 
-        $eventProduct = EventProduct::create($data);
-        return response()->json($eventProduct, 201);
-    }
-    
+        // Bổ sung mặc định nếu không truyền
+        $data['sold_quantity'] = $data['sold_quantity'] ?? 0;
 
-    public function update(Request $request, $event_id, $book_id) {
+        \DB::table('event_products')->updateOrInsert(
+            [
+                'event_id' => $event_id,
+                'books_id' => $data['books_id'],
+            ],
+            [
+                'discount_percent' => $data['discount_percent'],
+                'quantity_limit' => $data['quantity_limit'],
+                'sold_quantity' => $data['sold_quantity'],
+            ]
+        );
+
+        return response()->json([
+            'message' => 'Book added/updated successfully in event',
+            'event_id' => $event_id,
+            'books_id' => $data['books_id']
+        ], 200);
+    }
+
+
+    public function update(Request $request, $event_id, $book_id)
+    {
         $eventProduct = EventProduct::where('event_id', $event_id)
             ->where('books_id', $book_id)
             ->firstOrFail();
@@ -31,7 +51,8 @@ class EventProductController extends Controller
         return response()->json($eventProduct);
     }
 
-    public function destroy($event_id, $book_id) {
+    public function destroy($event_id, $book_id)
+    {
         EventProduct::where('event_id', $event_id)
             ->where('books_id', $book_id)
             ->delete();

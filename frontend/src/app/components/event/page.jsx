@@ -1,11 +1,11 @@
 'use client';
 
-import { FireOutlined, ShoppingCartOutlined } from '@ant-design/icons';
-import { Badge, Button, Card, Typography } from 'antd';
+import { ShoppingCartOutlined } from '@ant-design/icons';
+import { Button, Card, Typography } from 'antd';
 import { useEffect, useState } from 'react';
 import './OnlinePromotion.css';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 const OnlinePromotion = () => {
     const [events, setEvents] = useState([]);
@@ -15,7 +15,6 @@ const OnlinePromotion = () => {
     const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
     const [displayedBooks, setDisplayedBooks] = useState([]);
 
-    // Fetch events from API
     useEffect(() => {
         const fetchEvents = async () => {
             try {
@@ -31,7 +30,6 @@ const OnlinePromotion = () => {
         fetchEvents();
     }, []);
 
-    // Categorize events into current and upcoming
     const categorizeEvents = (eventsData) => {
         const now = new Date();
         const current = [];
@@ -51,50 +49,33 @@ const OnlinePromotion = () => {
         setCurrentEvents(current);
         setUpcomingEvents(upcoming);
 
-        // Set displayed books based on current events
         if (current.length > 0) {
             const allCurrentBooks = current.flatMap((event) => event.books);
             setDisplayedBooks(allCurrentBooks);
         }
     };
 
-    // Countdown timer for current and upcoming events
     useEffect(() => {
         let timer;
+        const updateCountdown = (targetTime) => {
+            const now = new Date().getTime();
+            const distance = targetTime - now;
+
+            if (distance > 0) {
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                setCountdown({ days, hours, minutes, seconds });
+            } else {
+                setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+            }
+        };
+
         if (selectedTab === 'current' && currentEvents.length > 0) {
-            timer = setInterval(() => {
-                const now = new Date().getTime();
-                const eventEnd = new Date(currentEvents[0].end_date).getTime();
-                const distance = eventEnd - now;
-
-                if (distance > 0) {
-                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                    setCountdown({ days, hours, minutes, seconds });
-                } else {
-                    setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-                }
-            }, 1000);
+            timer = setInterval(() => updateCountdown(new Date(currentEvents[0].end_date).getTime()), 1000);
         } else if (selectedTab === 'upcoming' && upcomingEvents.length > 0) {
-            timer = setInterval(() => {
-                const now = new Date().getTime();
-                const eventStart = new Date(upcomingEvents[0].start_date).getTime();
-                const distance = eventStart - now;
-
-                if (distance > 0) {
-                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                    setCountdown({ days, hours, minutes, seconds });
-                } else {
-                    setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-                }
-            }, 1000);
+            timer = setInterval(() => updateCountdown(new Date(upcomingEvents[0].start_date).getTime()), 1000);
         }
 
         return () => {
@@ -102,7 +83,6 @@ const OnlinePromotion = () => {
         };
     }, [selectedTab, currentEvents, upcomingEvents]);
 
-    // Handle tab change
     const handleTabChange = (tab) => {
         setSelectedTab(tab);
         if (tab === 'current' && currentEvents.length > 0) {
@@ -114,19 +94,16 @@ const OnlinePromotion = () => {
         }
     };
 
-    // Calculate discounted price
     const calculateDiscountedPrice = (price, discount) => {
         const originalPrice = parseFloat(price);
         const discountAmount = originalPrice * (parseFloat(discount) / 100);
         return originalPrice - discountAmount;
     };
 
-    // Format price to Vietnamese currency
     const formatPrice = (price) => {
         return new Intl.NumberFormat('vi-VN').format(price) + 'đ';
     };
 
-    // Format date range
     const formatDateRange = (startDate, endDate) => {
         const start = new Date(startDate);
         const end = new Date(endDate);
@@ -142,26 +119,12 @@ const OnlinePromotion = () => {
     };
 
     return (
-        <div className="online-promotion-container">
-            <div className="promotion-wrapper">
-                {/* Header */}
-                <div className="header2">
-                    <Title level={1} className="main-title">
-                        Khuyến mãi Online
-                    </Title>
-                    <div className="banner2">
-                        <div className="banner2-content">
-                            <span className="banner2-text">DẪN ĐẦU GIÁ RẺ</span>
-                            <span className="discount-text">GIẢM ĐẾN 50%</span>
-                            <div className="banner2-arrow">
-                                <span>TỪ TIN HOÀN TIỀN</span>
-                                <span>NẾU SIÊU THỊ KHÁC RẺ HỌN</span>
-                            </div>
-                        </div>
-                    </div>
+        <div className="bookstore-container">
+            <div className="section">
+                <div className="section-title">
+                    <Title level={2}>Khuyến mãi Online</Title>
                 </div>
 
-                {/* Tab Navigation */}
                 <div className="tab-navigation">
                     <div className="tabs">
                         <div
@@ -188,12 +151,10 @@ const OnlinePromotion = () => {
                             <div className="tab-title">Sắp diễn ra</div>
                         </div>
                     </div>
-                    {/* Countdown Timer */}
+
                     {(selectedTab === 'current' || selectedTab === 'upcoming') && (
                         <div className="countdown-container">
-                            <span className="countdown-label">
-                                {selectedTab === 'current' ? 'Kết thúc sau' : 'Kết thúc sau'}
-                            </span>
+                            <span className="countdown-label">Kết thúc sau</span>
                             <div className="countdown-timer">
                                 <span className="countdown-item">{countdown.days.toString().padStart(2, '0')}</span>
                                 <span className="countdown-item">{countdown.hours.toString().padStart(2, '0')}</span>
@@ -204,79 +165,41 @@ const OnlinePromotion = () => {
                     )}
                 </div>
 
-                {/* Products Grid */}
-                <div className="products-grid">
-                    <div className="products-slider">
-                        <div
-                            className="products-track"
-                            style={{
-                                transform: `translateX(${displayedBooks.length > 6 ? '-0px' : '0px'})`,
-                                width: `${Math.ceil(displayedBooks.length / 6) * 100}%`,
-                            }}
-                        >
-                            {displayedBooks.map((book, index) => (
-                                <div key={book.id} className="product-slide">
-                                    <Card className="product-card">
-                                        <div className="product-image-container">
-                                            <img
-                                                src={book?.thumb || 'https://via.placeholder.com/300x400?text=No+Image'}
-                                                alt={book.title}
-                                                className="w-[300px] h-[400px] object-cover rounded shadow-md"
-                                                onError={(e) => {
-                                                    e.target.src = 'https://via.placeholder.com/300x400?text=No+Image';
-                                                }}
-                                            />
-
-                                            <div className="product-badges">
-                                                <Badge className="flash-sale-badge" text="FLASH SALE" />
-                                                <Badge className="discount-badge" text="ƯU ĐÃI ĐẾN 50%" />
-                                            </div>
-                                        </div>
-
-                                        <div className="product-info">
-                                            <div className="product-specs">
-                                                <div className="spec-item">
-                                                    <span className="spec-label">Số lượng:</span>
-                                                    <span className="spec-value">{book.quantity_limit}</span>
-                                                </div>
-                                                <div className="spec-item">
-                                                    <span className="spec-label">Đã bán:</span>
-                                                    <span className="spec-value">{book.sold_quantity}</span>
-                                                </div>
-                                            </div>
-
-                                            <h3 className="product-title">{book.title}</h3>
-
-                                            <div className="product-pricing">
-                                                <div className="price-container">
-                                                    <span className="current-price">
-                                                        {formatPrice(
-                                                            calculateDiscountedPrice(book.price, book.discount_percent),
-                                                        )}
-                                                    </span>
-                                                    <span className="original-price">{formatPrice(book.price)}</span>
-                                                    <span className="discount-percent">-{book.discount_percent}%</span>
-                                                </div>
-                                            </div>
-
-                                            <div className="product-actions">
-                                                <div className="fire-icon">
-                                                    <FireOutlined />
-                                                </div>
-                                                <span className="stock-status">Vừa mở bán</span>
-                                                <Button
-                                                    type="primary"
-                                                    icon={<ShoppingCartOutlined />}
-                                                    className="add-to-cart-btn"
-                                                    size="small"
-                                                />
-                                            </div>
-                                        </div>
-                                    </Card>
+                <div className="books-grid">
+                    {displayedBooks.map((book) => (
+                        <div key={book.id} className="book-grid-item">
+                            <Card className="book-card">
+                                <div className="book-image-container">
+                                    <img
+                                        src={book?.thumb || 'https://via.placeholder.com/300x400?text=No+Image'}
+                                        alt={book.title}
+                                        className="book-image"
+                                        onError={(e) => {
+                                            e.target.src = 'https://via.placeholder.com/300x400?text=No+Image';
+                                        }}
+                                    />
+                                    <div className="discount-badge">ƯU ĐÃI ĐẾN 50%!!!</div>
+                                    <div className="book-actions">
+                                        <Button type="text" icon={<ShoppingCartOutlined />} className="cart-btn" />
+                                    </div>
                                 </div>
-                            ))}
+
+                                <div className="book-info">
+                                    <h3 className="book-title">{book.title}</h3>
+                                    <span className="book-author">Số lượng: {book.quantity_limit}</span>
+                                    <span className="book-author">Đã bán: {book.sold_quantity}</span>
+
+                                    <div className="price-container">
+                                        <span className="current-price">
+                                            {formatPrice(calculateDiscountedPrice(book.price, book.discount_percent))}
+                                        </span>
+                                        <span className="original-price">{formatPrice(book.price)}</span>
+                                        <span className="discount-price">-{book.discount_percent}%</span>
+                                    </div>
+                                </div>
+                            </Card>
                         </div>
-                    </div>
+                    ))}
                 </div>
             </div>
         </div>
