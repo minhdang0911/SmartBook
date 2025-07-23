@@ -316,8 +316,7 @@
             <table class="table table-bordered table-hover align-middle text-center">
                 <thead class="table-light">
                     <tr>
-                        <th>#</th>
-                        <th>Avatar</th>
+                        <th>STT</th>
                         <th>Họ tên</th>
                         <th>Email</th>
                         <th>SĐT</th>
@@ -331,10 +330,6 @@
                     @forelse ($users as $index => $user)
                         <tr class="{{ $user->deleted_at ? 'table-warning' : '' }}">
                             <td>{{ $users->firstItem() + $index }}</td>
-                            <td>
-                                <img src="{{ $user->avatar ?? 'https://ui-avatars.com/api/?name=' . urlencode($user->name) }}"
-                                    alt="Avatar" class="rounded-circle shadow" width="40" height="40">
-                            </td>
                             <td>{{ $user->name }}</td>
                             <td>{{ $user->email }}</td>
                             <td>{{ $user->phone ?? '—' }}</td>
@@ -409,8 +404,6 @@
             @forelse ($users as $user)
                 <div class="user-card mb-3">
                     <div class="d-flex gap-3 align-items-center mb-2">
-                        <img src="{{ $user->avatar ?? 'https://ui-avatars.com/api/?name=' . urlencode($user->name) }}"
-                            alt="Avatar" class="rounded-circle">
                         <div>
                             <h6 class="mb-0">{{ $user->name }}</h6>
                             <small class="text-muted">{{ $user->email }}</small>
