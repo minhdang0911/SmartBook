@@ -78,7 +78,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::prefix('users')->name('users.')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('index');
         Route::get('/{user}/edit', [UserController::class, 'edit'])->name('edit');
+        Route::put('/{id}/restore', [UserController::class, 'restore'])->name('restore');
         Route::put('/{user}', [UserController::class, 'update'])->name('update');
+        Route::delete('/{id}', [UserController::class, 'destroy'])->name('destroy');
         Route::put('/{user}/status', [UserController::class, 'toggleStatus'])->name('toggleStatus');
         Route::put('/{user}/lock', [UserController::class, 'lock'])->name('lock');
         Route::put('/{user}/unlock', [UserController::class, 'unlock'])->name('unlock');
