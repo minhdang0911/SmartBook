@@ -29,7 +29,8 @@ class PostController extends Controller
             $query->where('status', $request->status);
         }
 
-        $posts = $query->paginate(10)->withQueryString();
+       $posts = $query->paginate(9)->withQueryString();
+
         $topics = Topic::orderBy('name')->get();
 
         return view('admin.posts.index', compact('posts', 'topics'));
