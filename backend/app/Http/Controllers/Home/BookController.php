@@ -12,7 +12,7 @@ use App\Models\Banner;
 
 class BookController extends Controller
 {
-    public function index()
+       public function index()
     {
         // 5 sách giấy được đánh giá cao nhiều nhất
         $topRatedBooks = Book::with(['author', 'category', 'publisher'])
