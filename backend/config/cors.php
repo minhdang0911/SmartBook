@@ -5,8 +5,13 @@ return [
 
     'allowed_methods' => ['*'],
 
-    // ✅ Ghi đúng chính xác origin đang chạy FE (Next.js, React)
-    'allowed_origins' => ['http://localhost:3000'],
+    // ✅ Thêm nhiều domain tại đây
+    'allowed_origins' => [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'https://yourdomain.com',
+        'https://smart-book-eta.vercel.app',
+    ],
 
     'allowed_origins_patterns' => [],
 
@@ -16,6 +21,5 @@ return [
 
     'max_age' => 0,
 
-    // ✅ ĐANG DÙNG JWT/TOKEN thì PHẢI true
     'supports_credentials' => true,
 ];

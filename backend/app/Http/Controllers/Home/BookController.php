@@ -353,8 +353,9 @@ class BookController extends Controller
                 'stock' => $book->stock,
                 'views' => $book->views,
                 'likes' => $book->likes,
+                 'is_physical' => $book->is_physical,
                 'format' => 'paper',
-                'is_physical' => $book->is_physical,
+               
             ]);
         } elseif ($book->is_physical == 0) {
             // Sách điện tử
@@ -378,6 +379,7 @@ class BookController extends Controller
                 'views' => $book->views,
                 'likes' => $book->likes,
                 'format' => 'ebook',
+                 'is_physical' => $book->is_physical,
             ]);
         } else {
             return response()->json(['message' => 'Unknown book type'], 400);
