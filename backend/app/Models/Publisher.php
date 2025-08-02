@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Publisher extends Model
 {
-    protected $fillable = ['name'];
+    protected $fillable = ['name','image_url'];
     public $timestamps = false;
     public function books()
     {

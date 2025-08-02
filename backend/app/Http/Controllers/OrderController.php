@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
+use App\Mail\OrderConfirmationMail;
 
 use Carbon\Carbon;
 
@@ -23,121 +26,266 @@ class OrderController extends Controller
     private $ghnShopId = '5860204';
 
 
-    public function store(Request $request): JsonResponse
-    {
-        $user = Auth::user();
+public function store(Request $request): JsonResponse
+{
+    // Validate request
+    $validator = Validator::make($request->all(), [
+        'cart_item_ids' => 'required|array|min:1',
+        'cart_item_ids.*' => 'required|integer|exists:cart_items,id',
+        'sonha' => 'required|string|max:50',
+        'street' => 'required|string|max:100',
+        'district_id' => 'required|integer',
+        'ward_id' => 'required|integer',
+        'ward_name' => 'required|string|max:100',
+        'district_name' => 'required|string|max:100',
+        'payment' => 'required|in:cod,bank_transfer,credit_card',
+        'shipping_fee' => 'nullable|numeric|min:0',
+        'total_price' => 'nullable|numeric|min:0',
+        'note' => 'nullable|string|max:500',
+    ]);
 
-        DB::beginTransaction();
-        try {
-            $cartItemIds = $request->input('cart_item_ids', []);
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Dữ liệu không hợp lệ.',
+            'errors' => $validator->errors()
+        ], 422);
+    }
 
-            // Lấy cart
-            $cart = Cart::where('user_id', $user->id)->first();
+    $user = Auth::user();
 
-            if (!$cart) {
-                return response()->json(['success' => false, 'message' => 'Không tìm thấy giỏ hàng.'], 400);
-            }
+    if (!$user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Người dùng chưa đăng nhập.'
+        ], 401);
+    }
 
-            // Lấy danh sách cart items được chọn
-            $cartItems = $cart->cartItems()->with('book')
-                ->whereIn('id', $cartItemIds)
-                ->get();
+    DB::beginTransaction();
+    try {
+        $cartItemIds = $request->input('cart_item_ids', []);
 
-            if ($cartItems->isEmpty()) {
-                return response()->json(['success' => false, 'message' => 'Không có sản phẩm nào được chọn.'], 400);
-            }
+        // Lấy cart
+        $cart = Cart::where('user_id', $user->id)->first();
 
-            // Tính tổng tiền các item được chọn
-            $total = $cartItems->sum(function ($item) {
-                return $item->quantity * $item->price;
-            });
-
-            // Ghép địa chỉ từ các trường
-            $address = 'Số ' . $request->input('sonha') . ', '
-                . $request->input('street') . ', '
-                . $request->input('ward_name') . ', '
-                . $request->input('district_name');
-
-            // Tạo đơn hàng với status pending
-            $order = Order::create([
-                'user_id' => $user->id,
-                'sonha' => $request->input('sonha'),
-                'street' => $request->input('street'),
-                'district_id' => $request->input('district_id'),
-                'ward_id' => $request->input('ward_id'),
-                'note' => $request->input('note'),
-                'ward_name' => $request->input('ward_name'),
-                'district_name' => $request->input('district_name'),
-                'payment' => $request->input('payment', 'cod'),
-                'status' => 'pending',
-                'price' => $total, // giữ nguyên: tiền sách
-                'shipping_fee' => $request->input('shipping_fee', 0), // ✅ dùng phí ship từ FE
-                'total_price' => $request->input('total_price', $total), // ✅ dùng tổng từ FE
-                'address' => $address,
-                'created_at' => now(),
-                // 'phOne'=> $request->input('phone'),
-            ]);
-
-
-            // Tạo order items và kiểm tra stock
-            foreach ($cartItems as $item) {
-                $book = $item->book;
-
-                if (!$book) {
-                    DB::rollBack();
-                    return response()->json(['success' => false, 'message' => 'Sách không tồn tại.'], 400);
-                }
-
-                if ($book->stock < $item->quantity) {
-                    DB::rollBack();
-                    return response()->json([
-                        'success' => false,
-                        'message' => "Sách '{$book->title}' không đủ tồn kho."
-                    ], 400);
-                }
-
-                $book->stock -= $item->quantity;
-                $book->save();
-
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'book_id' => $book->id,
-                    'quantity' => $item->quantity,
-                    'price' => $item->price,
-                ]);
-            }
-
-            // Xoá item khỏi giỏ
-            $cart->cartItems()->whereIn('id', $cartItemIds)->delete();
-
-            // Cập nhật tổng còn lại
-            $remainingAmount = $cart->cartItems()->sum(DB::raw('quantity * price'));
-            $cart->update(['total_amount' => $remainingAmount]);
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Tạo đơn hàng thành công.',
-                'order_id' => $order->id,
-                'data' => [
-                    'order' => [
-                        'id' => $order->id,
-                        'status' => $order->status,
-                        'total_price' => $order->total_price,
-                        'address' => $order->address
-                    ]
-                ]
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
+        if (!$cart) {
             return response()->json([
                 'success' => false,
-                'message' => 'Đã xảy ra lỗi khi tạo đơn hàng.',
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => 'Không tìm thấy giỏ hàng.'
+            ], 400);
         }
+
+        // Lấy danh sách cart items được chọn
+        $cartItems = $cart->cartItems()->with('book')
+            ->whereIn('id', $cartItemIds)
+            ->get();
+
+        if ($cartItems->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không có sản phẩm nào được chọn.'
+            ], 400);
+        }
+
+        // Tính tổng tiền các item được chọn
+        $total = $cartItems->sum(function ($item) {
+            return $item->quantity * $item->price;
+        });
+
+        // Ghép địa chỉ từ các trường
+        $address = 'Số ' . $request->input('sonha') . ', '
+            . $request->input('street') . ', '
+            . $request->input('ward_name') . ', '
+            . $request->input('district_name');
+
+        $shippingFee = $request->input('shipping_fee', 0);
+        $totalPrice = $request->input('total_price', $total + $shippingFee);
+        
+        // Tạo order_code theo format: ddmmyystt
+        $orderCode = $this->generateOrderCode();
+
+        // Tạo đơn hàng với status pending
+        $order = Order::create([
+            'user_id' => $user->id,
+            'order_code' => $orderCode,
+            'sonha' => $request->input('sonha'),
+            'street' => $request->input('street'),
+            'district_id' => $request->input('district_id'),
+            'ward_id' => $request->input('ward_id'),
+            'note' => $request->input('note'),
+            'ward_name' => $request->input('ward_name'),
+            'district_name' => $request->input('district_name'),
+            'payment' => $request->input('payment', 'cod'),
+            'status' => 'pending',
+            'price' => $total,
+            'shipping_fee' => $shippingFee,
+            'total_price' => $totalPrice,
+            'address' => $address,
+            'created_at' => now(),
+        ]);
+
+        Log::info('Order created successfully', [
+            'order_id' => $order->id, 
+            'order_code' => $order->order_code,
+            'user_id' => $user->id
+        ]);
+
+        // Tạo order items và kiểm tra stock
+        foreach ($cartItems as $item) {
+            $book = $item->book;
+
+            if (!$book) {
+                DB::rollBack();
+                Log::error('Book not found for cart item', ['cart_item_id' => $item->id]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sách không tồn tại.'
+                ], 400);
+            }
+
+            if ($book->stock < $item->quantity) {
+                DB::rollBack();
+                Log::warning('Insufficient stock', [
+                    'book_id' => $book->id,
+                    'book_title' => $book->title,
+                    'available_stock' => $book->stock,
+                    'requested_quantity' => $item->quantity
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => "Sách '{$book->title}' không đủ tồn kho. Còn lại: {$book->stock}, yêu cầu: {$item->quantity}"
+                ], 400);
+            }
+
+            // Trừ stock
+            $book->stock -= $item->quantity;
+            $book->save();
+
+            // Tạo order item
+            OrderItem::create([
+                'order_id' => $order->id,
+                'book_id' => $book->id,
+                'quantity' => $item->quantity,
+                'price' => $item->price,
+            ]);
+
+            Log::info('Order item created', [
+                'order_id' => $order->id,
+                'book_id' => $book->id,
+                'quantity' => $item->quantity,
+                'price' => $item->price
+            ]);
+        }
+
+        // Xoá item khỏi giỏ
+        $deletedCount = $cart->cartItems()->whereIn('id', $cartItemIds)->delete();
+        Log::info('Cart items deleted', ['count' => $deletedCount]);
+
+        // Cập nhật tổng còn lại
+        $remainingAmount = $cart->cartItems()->sum(DB::raw('quantity * price'));
+        $cart->update(['total_amount' => $remainingAmount]);
+
+        DB::commit();
+        Log::info('Order transaction committed successfully', ['order_id' => $order->id]);
+
+        // Gửi email xác nhận đặt hàng
+        $this->sendOrderConfirmationEmail($order->id, $user);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tạo đơn hàng thành công.',
+            'order_id' => $order->id,
+            'order_code' => $order->order_code,
+            'data' => [
+                'order' => [
+                    'id' => $order->id,
+                    'order_code' => $order->order_code,
+                    'status' => $order->status,
+                    'total_price' => $order->total_price,
+                    'address' => $order->address,
+                    'payment' => $order->payment,
+                    'created_at' => $order->created_at->format('d/m/Y H:i:s')
+                ]
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Order creation failed', [
+            'user_id' => $user->id,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Đã xảy ra lỗi khi tạo đơn hàng.',
+            'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+        ], 500);
     }
+}
+
+/**
+ * Tạo order code theo format: ddmmyystt
+ * Ví dụ: 01082501, 01082502
+ */
+private function generateOrderCode(): string
+{
+    $today = now();
+    $datePrefix = $today->format('dmY'); // ddmmyyyy
+    
+    // Đếm số order đã tạo trong ngày hôm nay
+    $orderCount = Order::whereDate('created_at', $today->toDateString())->count();
+    
+    // Tạo số thứ tự (STT) với 2 chữ số, bắt đầu từ 01
+    $sequenceNumber = str_pad($orderCount + 1, 2, '0', STR_PAD_LEFT);
+    
+    return $datePrefix . $sequenceNumber;
+}
+
+private function sendOrderConfirmationEmail($orderId, $user)
+{
+    try {
+        Log::info('Starting to send email for order', [
+            'order_id' => $orderId,
+            'user_email' => $user->email
+        ]);
+
+        // Load lại order với orderItems và books để gửi email
+        $orderWithItems = Order::with(['orderItems.book', 'user'])->find($orderId);
+
+        if (!$orderWithItems) {
+            Log::error('Order not found when loading for email', ['order_id' => $orderId]);
+            return;
+        }
+
+        if (!$user->email) {
+            Log::error('User email is empty', ['user_id' => $user->id]);
+            return;
+        }
+
+        // Gửi email
+        Mail::to($user->email)->send(new OrderConfirmationMail($orderWithItems));
+
+        Log::info('Order confirmation email sent successfully', [
+            'order_id' => $orderId,
+            'order_code' => $orderWithItems->order_code,
+            'user_email' => $user->email
+        ]);
+
+    } catch (\Exception $mailException) {
+        Log::error('Failed to send order confirmation email', [
+            'order_id' => $orderId,
+            'user_email' => $user->email ?? 'N/A',
+            'error' => $mailException->getMessage(),
+            'trace' => $mailException->getTraceAsString()
+        ]);
+
+        // Có thể gửi notification cho admin hoặc retry queue
+        // $this->notifyAdminEmailFailed($orderId, $mailException);
+    }
+}
+
 
     // API riêng để tạo đơn ship
     public function createShipping(Request $request, $orderId): JsonResponse

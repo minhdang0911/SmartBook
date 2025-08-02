@@ -1,312 +1,542 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { Card, Avatar, Rate } from 'antd';
-import { LeftOutlined, RightOutlined } from '@ant-design/icons';
+import React, { useState, useEffect, useRef } from 'react';
+import { Card, Spin } from 'antd';
 
-const BrandTestimonialSlider = () => {
-  const [currentSlide, setCurrentSlide] = useState(0);
+const AdvancedGSAPPublishersMarquee = () => {
+  const [publishers, setPublishers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const marqueeRef = useRef(null);
+  const containerRef = useRef(null);
 
-  // Fake data for brands
-  const brands = [
-    { name: 'Lady Daddy', logo: 'LD' },
-    { name: 'Scandinavia Club', logo: 'SC' },
-    { name: 'Mi Casa Es Tu Casa', logo: 'MC' },
-    { name: 'Oak & Park', logo: 'OP' },
-    { name: 'App & Games', logo: 'AG' },
-    { name: 'Bean Shop', logo: 'BS' },
-    { name: 'Mi Casa Es Tu Casa', logo: 'MC2' }
-  ];
-
-  // Fake testimonial data
-  const testimonials = [
-    {
-      id: 1,
-      name: 'Sâm Nguyên',
-      role: 'Khách hàng',
-      avatar: 'SN',
-      rating: 5,
-      comment: 'Tôi đã tìm thấy một hương thơm mà tôi đã lâu không thể mua được ở đây. Dịch vụ khách hàng cũng rất tốt, nhân viên hỗ trợ nhiệt tình và nhanh chóng giải đáp mọi thắc mắc của tôi.',
-      bgColor: '#ff6b6b'
-    },
-    {
-      id: 2,
-      name: 'Bạch Ngân',
-      role: 'Khách hàng',
-      avatar: 'BN',
-      rating: 5,
-      comment: 'Giao diện đẹp mắt và dễ sử dụng, tôi dễ dàng tìm kiếm và tìm thấy những sản phẩm nước hoa yêu thích của mình. Thông tin chi tiết về từng sản phẩm giúp tôi hiểu rõ hơn về hương thơm và thành phần.',
-      bgColor: '#4ecdc4'
-    },
-    {
-      id: 3,
-      name: 'Minh Châu',
-      role: 'Khách hàng',
-      avatar: 'MC',
-      rating: 5,
-      comment: 'Chất lượng sản phẩm tuyệt vời, giao hàng nhanh chóng. Tôi đã mua nhiều chai nước hoa ở đây và luôn hài lòng với chất lượng cũng như dịch vụ.',
-      bgColor: '#45b7d1'
-    },
-    {
-      id: 4,
-      name: 'Thu Hà',
-      role: 'Khách hàng',
-      avatar: 'TH',
-      rating: 5,
-      comment: 'Website rất chuyên nghiệp, sản phẩm đa dạng và giá cả hợp lý. Đội ngũ tư vấn nhiệt tình, giúp tôi chọn được những chai nước hoa phù hợp nhất.',
-      bgColor: '#f7b731'
-    }
-  ];
-
-  // Auto slide effect
+  // Fetch publishers from API
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % testimonials.length);
-    }, 4000);
+    const fetchPublishers = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/publisher');
+        const data = await response.json();
+        if (data.status) {
+          setPublishers(data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching publishers:', error);
+        setPublishers([
+          { id: 19, name: "NXB Dân Trí", image_url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQoBtRquhZ2CHH_QpxL7tpDFD8QaF7sSdm9dA&s" },
+          { id: 17, name: "NXB Hà Nội", image_url: "https://play-lh.googleusercontent.com/J1iTXkL4lWni2x2iyhMJB-THqZnZyuwJyDB52H5DYo09s1AD7yIIFZikv9iiCFl0pg" },
+          { id: 22, name: "NXB Hội Nhà Văn", image_url: "https://www.netabooks.vn/data/author/18246/logo--nxb-hoi-nha-van.jpg" },
+          { id: 20, name: "NXB Lao Động", image_url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQuvopYf5opN1k1TaIyBPhmxIHrZo3hhQ00yA&s" },
+          { id: 21, name: "NXB Thế Giới", image_url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTSdDuCUYMiVxHUd-NhA0gnWoJkXv8MNq6eDw&s" },
+          { id: 18, name: "NXB Văn Học", image_url: "https://bizweb.dktcdn.net/thumb/grande/100/370/339/articles/62546969-logo-nxb-van-hoc-1a3f50ce-15aa-4748-8c11-b7b494553f51.jpg?v=1576158807580" }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    return () => clearInterval(timer);
-  }, [testimonials.length]);
+    fetchPublishers();
+  }, []);
 
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % testimonials.length);
-  };
+  // Advanced GSAP-style animations
+  useEffect(() => {
+    if (!loading && publishers.length > 0 && marqueeRef.current) {
+      const marqueeElement = marqueeRef.current;
+      const cards = marqueeElement.querySelectorAll('.publisher-card');
+      
+      // Stagger animation for initial load
+      cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(50px) scale(0.8)';
+        
+        setTimeout(() => {
+          card.style.transition = 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)';
+          card.style.opacity = '1';
+          card.style.transform = 'translateY(0) scale(1)';
+        }, index * 100);
+      });
 
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + testimonials.length) % testimonials.length);
-  };
+      // Marquee animation
+      const startMarquee = () => {
+        marqueeElement.style.animation = 'none';
+        marqueeElement.offsetHeight;
+        marqueeElement.style.animation = 'advancedMarquee 30s linear infinite';
+      };
 
-  const buttonStyle = {
-    width: '50px',
-    height: '50px',
-    borderRadius: '50%',
-    border: 'none',
-    background: '#fff',
-    boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '20px',
-    color: '#666',
-    transition: 'all 0.3s ease',
-    zIndex: 10
-  };
+      setTimeout(() => {
+        startMarquee();
+      }, 2000);
 
-  return (
-    <div style={{ 
-      background: 'linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%)',
-      padding: '40px 20px',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
-      {/* Decorative elements */}
+      // Advanced hover interactions
+      const handleMouseEnter = () => {
+        marqueeElement.style.animationPlayState = 'paused';
+        marqueeElement.style.filter = 'blur(0px)';
+      };
+
+      const handleMouseLeave = () => {
+        marqueeElement.style.animationPlayState = 'running';
+      };
+
+      marqueeElement.addEventListener('mouseenter', handleMouseEnter);
+      marqueeElement.addEventListener('mouseleave', handleMouseLeave);
+
+      return () => {
+        marqueeElement.removeEventListener('mouseenter', handleMouseEnter);
+        marqueeElement.removeEventListener('mouseleave', handleMouseLeave);
+      };
+    }
+  }, [loading, publishers]);
+
+  if (loading) {
+    return (
       <div style={{
-        position: 'absolute',
-        right: '5%',
-        top: '20%',
-        width: '100px',
-        height: '100px',
-        background: 'rgba(156, 39, 176, 0.1)',
-        borderRadius: '50%',
-        transform: 'rotate(15deg)'
-      }} />
-      <div style={{
-        position: 'absolute',
-        right: '10%',
-        bottom: '30%',
-        width: '80px',
-        height: '80px',
-        background: 'rgba(142, 68, 173, 0.1)',
-        borderRadius: '50%',
-        transform: 'rotate(-20deg)'
-      }} />
-
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        {/* Brand logos section */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '20px',
-          marginBottom: '60px',
-          padding: '20px 0'
-        }}>
-          {brands.map((brand, index) => (
-            <div
-              key={index}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minWidth: '140px',
-                height: '50px',
-                background: '#fff',
-                borderRadius: '25px',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                transition: 'all 0.3s ease',
-                cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: '500',
-                color: '#666',
-                border: '1px solid #f0f0f0',
-                padding: '0 20px'
-              }}
-            >
-              {brand.name}
-            </div>
-          ))}
-        </div>
-
-        {/* Testimonial slider */}
-        <div style={{ 
-          position: 'relative',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '400px'
-        }}>
-          {/* Navigation buttons */}
-          <button
-            onClick={prevSlide}
-            style={{
-              ...buttonStyle,
-              position: 'absolute',
-              left: '20px',
-              top: '50%',
-              transform: 'translateY(-50%)'
-            }}
-          >
-            <LeftOutlined />
-          </button>
-
-          <button
-            onClick={nextSlide}
-            style={{
-              ...buttonStyle,
-              position: 'absolute',
-              right: '20px',
-              top: '50%',
-              transform: 'translateY(-50%)'
-            }}
-          >
-            <RightOutlined />
-          </button>
-
-          {/* Testimonial card container */}
-          <div style={{ 
-            width: '100%',
-            maxWidth: '700px',
-            position: 'relative',
-            overflow: 'hidden'
-          }}>
-            <div style={{
-              display: 'flex',
-              transform: `translateX(-${currentSlide * 100}%)`,
-              transition: 'transform 0.5s ease-in-out'
-            }}>
-              {testimonials.map((testimonial) => (
-                <div
-                  key={testimonial.id}
-                  style={{
-                    minWidth: '100%',
-                    padding: '0 20px'
-                  }}
-                >
-                  <Card
-                    style={{
-                      borderRadius: '20px',
-                      background: '#fff',
-                      boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-                      border: 'none'
-                    }}
-                    bodyStyle={{ 
-                      padding: '40px',
-                      textAlign: 'center'
-                    }}
-                  >
-                    <div style={{ marginBottom: '30px' }}>
-                      <Avatar
-                        size={80}
-                        style={{
-                          backgroundColor: testimonial.bgColor,
-                          fontSize: '24px',
-                          fontWeight: 'bold',
-                          color: '#fff'
-                        }}
-                      >
-                        {testimonial.avatar}
-                      </Avatar>
-                    </div>
-
-                    <div style={{ marginBottom: '20px' }}>
-                      <Rate 
-                        disabled 
-                        defaultValue={testimonial.rating} 
-                        style={{ color: '#ffd700', fontSize: '20px' }} 
-                      />
-                    </div>
-
-                    <p style={{
-                      fontSize: '16px',
-                      lineHeight: '1.8',
-                      color: '#666',
-                      marginBottom: '30px',
-                      fontStyle: 'italic',
-                      textAlign: 'center'
-                    }}>
-                      "{testimonial.comment}"
-                    </p>
-
-                    <div>
-                      <h4 style={{ 
-                        fontSize: '18px', 
-                        color: '#333',
-                        marginBottom: '5px',
-                        fontWeight: 'bold'
-                      }}>
-                        {testimonial.name}
-                      </h4>
-                      <p style={{ 
-                        fontSize: '14px', 
-                        color: '#999',
-                        margin: 0
-                      }}>
-                        {testimonial.role}
-                      </p>
-                    </div>
-                  </Card>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Slide indicators */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '10px',
-          marginTop: '30px'
-        }}>
-          {testimonials.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentSlide(index)}
-              style={{
-                width: index === currentSlide ? '30px' : '10px',
-                height: '10px',
-                borderRadius: '5px',
-                border: 'none',
-                background: index === currentSlide ? '#ff6b6b' : '#ddd',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease'
-              }}
-            />
-          ))}
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '400px',
+        background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #667eea 100%)'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <Spin size="large" />
+          <p style={{ color: 'white', marginTop: '20px', fontSize: '16px' }}>Đang tải nhà xuất bản...</p>
         </div>
       </div>
-    </div>
+    );
+  }
+
+  const triplePublishers = [...publishers, ...publishers, ...publishers];
+
+  return (
+    <>
+      <style jsx>{`
+        .marquee-container {
+          background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #667eea 100%);
+          position: relative;
+          overflow: hidden;
+          padding: 80px 0;
+          min-height: 500px;
+        }
+
+        .marquee-container::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: 
+            radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+        }
+
+        .animated-bg {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+          pointer-events: none;
+        }
+
+        .bg-orb {
+          position: absolute;
+          border-radius: 50%;
+          background: linear-gradient(45deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+          animation: orbFloat 20s infinite ease-in-out;
+          backdrop-filter: blur(40px);
+        }
+
+        .bg-orb:nth-child(1) {
+          width: 200px;
+          height: 200px;
+          top: 10%;
+          left: 80%;
+          animation-delay: 0s;
+        }
+
+        .bg-orb:nth-child(2) {
+          width: 150px;
+          height: 150px;
+          top: 70%;
+          left: 10%;
+          animation-delay: 7s;
+        }
+
+        .bg-orb:nth-child(3) {
+          width: 100px;
+          height: 100px;
+          top: 40%;
+          left: 70%;
+          animation-delay: 14s;
+        }
+
+        .bg-orb:nth-child(4) {
+          width: 120px;
+          height: 120px;
+          top: 20%;
+          left: 30%;
+          animation-delay: 3s;
+        }
+
+        @keyframes orbFloat {
+          0%, 100% {
+            transform: translate(0, 0) rotate(0deg) scale(1);
+          }
+          25% {
+            transform: translate(30px, -30px) rotate(90deg) scale(1.1);
+          }
+          50% {
+            transform: translate(-20px, 20px) rotate(180deg) scale(0.9);
+          }
+          75% {
+            transform: translate(40px, 10px) rotate(270deg) scale(1.05);
+          }
+        }
+
+        .header-section {
+          text-align: center;
+          margin-bottom: 60px;
+          position: relative;
+          z-index: 3;
+        }
+
+        .header-badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 12px 24px;
+          background: rgba(255, 255, 255, 0.15);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 50px;
+          color: white;
+          font-size: 14px;
+          font-weight: 500;
+          margin-bottom: 20px;
+          letter-spacing: 0.5px;
+          animation: badgePulse 3s infinite ease-in-out;
+        }
+
+        @keyframes badgePulse {
+          0%, 100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.3);
+          }
+          50% {
+            transform: scale(1.05);
+            box-shadow: 0 0 0 15px rgba(255, 255, 255, 0);
+          }
+        }
+
+        .header-title {
+          font-size: 48px;
+          font-weight: 800;
+          background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #e2e8f0 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          margin-bottom: 20px;
+          text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+          letter-spacing: -1px;
+          line-height: 1.2;
+        }
+
+        .header-subtitle {
+          font-size: 20px;
+          color: rgba(255, 255, 255, 0.85);
+          max-width: 700px;
+          margin: 0 auto;
+          line-height: 1.7;
+          font-weight: 300;
+        }
+
+        .marquee-track {
+          position: relative;
+          z-index: 2;
+          overflow: hidden;
+          padding: 30px 0;
+        }
+
+        .marquee-content {
+          display: flex;
+          gap: 40px;
+          animation: advancedMarquee 30s linear infinite;
+          width: max-content;
+        }
+
+        @keyframes advancedMarquee {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-33.333%);
+          }
+        }
+
+        .publisher-card {
+          flex-shrink: 0;
+          width: 200px;
+          height: 200px;
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(20px);
+          border-radius: 50%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          border: 3px solid rgba(255, 255, 255, 0.3);
+          box-shadow: 
+            0 20px 60px rgba(0, 0, 0, 0.2),
+            0 8px 30px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+          cursor: pointer;
+          position: relative;
+          overflow: hidden;
+          padding: 30px;
+        }
+
+        .publisher-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: conic-gradient(
+            from 0deg,
+            transparent 0deg,
+            rgba(102, 126, 234, 0.3) 90deg,
+            rgba(118, 75, 162, 0.3) 180deg,
+            transparent 270deg,
+            transparent 360deg
+          );
+          border-radius: 50%;
+          opacity: 0;
+          transition: all 0.6s ease;
+          animation: rotate 10s linear infinite;
+        }
+
+        @keyframes rotate {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        .publisher-card:hover::before {
+          opacity: 1;
+        }
+
+        .publisher-card::after {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 0;
+          height: 0;
+          background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+          border-radius: 50%;
+          transform: translate(-50%, -50%);
+          transition: all 0.6s ease;
+          pointer-events: none;
+        }
+
+        .publisher-card:hover::after {
+          width: 300px;
+          height: 300px;
+        }
+
+        .publisher-card:hover {
+          transform: translateY(-20px) scale(1.15) rotateY(15deg);
+          box-shadow: 
+            0 40px 100px rgba(0, 0, 0, 0.4),
+            0 15px 50px rgba(102, 126, 234, 0.3);
+          border-color: rgba(255, 255, 255, 0.6);
+        }
+
+        .publisher-logo {
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          object-fit: cover;
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+          transition: all 0.4s ease;
+          border: 3px solid rgba(255, 255, 255, 0.9);
+          margin-bottom: 15px;
+          position: relative;
+          z-index: 2;
+        }
+
+        .publisher-card:hover .publisher-logo {
+          transform: scale(1.2) rotateZ(10deg);
+          box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+          border-color: #667eea;
+        }
+
+        .publisher-info {
+          position: relative;
+          z-index: 2;
+        }
+
+        .publisher-name {
+          font-size: 14px;
+          font-weight: 700;
+          color: #2c3e50;
+          margin: 0;
+          line-height: 1.3;
+          transition: all 0.3s ease;
+          letter-spacing: 0.3px;
+        }
+
+        .publisher-card:hover .publisher-name {
+          color: #667eea;
+          transform: translateY(-2px);
+        }
+
+        .publisher-subtitle {
+          font-size: 11px;
+          color: #64748b;
+          margin-top: 8px;
+          font-weight: 500;
+          opacity: 0.8;
+          transition: all 0.3s ease;
+        }
+
+        .publisher-card:hover .publisher-subtitle {
+          color: #475569;
+          opacity: 1;
+        }
+
+        .floating-particles {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+          overflow: hidden;
+        }
+
+        .particle {
+          position: absolute;
+          width: 4px;
+          height: 4px;
+          background: rgba(255, 255, 255, 0.6);
+          border-radius: 50%;
+          animation: particleFloat 15s infinite linear;
+        }
+
+        .particle:nth-child(1) { left: 10%; animation-delay: 0s; }
+        .particle:nth-child(2) { left: 20%; animation-delay: 2s; }
+        .particle:nth-child(3) { left: 30%; animation-delay: 4s; }
+        .particle:nth-child(4) { left: 40%; animation-delay: 6s; }
+        .particle:nth-child(5) { left: 50%; animation-delay: 8s; }
+        .particle:nth-child(6) { left: 60%; animation-delay: 10s; }
+        .particle:nth-child(7) { left: 70%; animation-delay: 12s; }
+        .particle:nth-child(8) { left: 80%; animation-delay: 14s; }
+        .particle:nth-child(9) { left: 90%; animation-delay: 16s; }
+
+        @keyframes particleFloat {
+          0% {
+            transform: translateY(100vh) rotate(0deg);
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          90% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(-100px) rotate(360deg);
+            opacity: 0;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .header-title {
+            font-size: 36px;
+          }
+          
+          .header-subtitle {
+            font-size: 18px;
+            padding: 0 20px;
+          }
+          
+          .publisher-card {
+            width: 160px;
+            height: 160px;
+            padding: 20px;
+          }
+          
+          .publisher-logo {
+            width: 60px;
+            height: 60px;
+          }
+          
+          .publisher-name {
+            font-size: 12px;
+          }
+        }
+      `}</style>
+
+      <div className="marquee-container" ref={containerRef}>
+        {/* Animated Background */}
+        <div className="animated-bg">
+          <div className="bg-orb"></div>
+          <div className="bg-orb"></div>
+          <div className="bg-orb"></div>
+          <div className="bg-orb"></div>
+        </div>
+
+        {/* Floating Particles */}
+        <div className="floating-particles">
+          {[...Array(9)].map((_, i) => (
+            <div key={i} className="particle"></div>
+          ))}
+        </div>
+
+        {/* Header Section */}
+        <div className="header-section">
+          <div className="header-badge">
+            ✨ Đối Tác Uy Tín
+          </div>
+          <h2 className="header-title">Nhà Xuất Bản Hàng Đầu</h2>
+          <p className="header-subtitle">
+            Kết nối với những nhà xuất bản uy tín nhất Việt Nam, 
+            mang đến nguồn tri thức phong phú và chất lượng cao
+          </p>
+        </div>
+
+        {/* Advanced Marquee */}
+        <div className="marquee-track">
+          <div 
+            className="marquee-content" 
+            ref={marqueeRef}
+          >
+            {triplePublishers.map((publisher, index) => (
+              <Card
+                key={`${publisher.id}-${index}`}
+                className="publisher-card"
+                hoverable
+                bordered={false}
+              >
+                <img
+                  src={publisher.image_url}
+                  alt={publisher.name}
+                  className="publisher-logo"
+                  onError={(e) => {
+                    e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iNDAiIGN5PSI0MCIgcj0iNDAiIGZpbGw9IiNmMGY0ZjgiLz4KPHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4PSIyMCIgeT0iMjAiPgo8cGF0aCBkPSJNMTIgMkM2LjQ4IDIgMiA2LjQ4IDIgMTJzNC40OCAxMCAxMCAxMCAxMC00LjQ4IDEwLTEwUzE3LjUyIDIgMTIgMnptMCAxOGMtNC40MSAwLTgtMy41OS04LThzMy41OS04IDgtOCA4IDMuNTkgOCA4LTMuNTkgOC04IDh6bTMuNS02TDEyIDEwbC0zLjUgNGgzVjE2aDFWMTRoM3oiIGZpbGw9IiM5Y2ExYTciLz4KPC9zdmc+Cjwvc3ZnPgo=';
+                  }}
+                />
+                <div className="publisher-info">
+                  <h3 className="publisher-name">{publisher.name}</h3>
+                  <p className="publisher-subtitle">Nhà Xuất Bản</p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+    </>
   );
 };
 
-export default BrandTestimonialSlider;
+export default AdvancedGSAPPublishersMarquee;

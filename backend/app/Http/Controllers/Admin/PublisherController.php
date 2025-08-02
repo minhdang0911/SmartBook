@@ -48,6 +48,8 @@ class PublisherController extends Controller
             ->with('success', '✅ Nhà xuất bản đã được cập nhật.');
     }
 
+    
+
     public function destroy(Publisher $publisher)
     {
         $hasBooks = Book::where('publisher_id', $publisher->id)->exists();
@@ -62,4 +64,19 @@ class PublisherController extends Controller
         return redirect()->route('admin.publishers.index')
             ->with('success', '🗑️ Nhà xuất bản đã bị xóa thành công.');
     }
+
+public function apiIndex()
+{
+    $publishers = Publisher::orderBy('name')
+                           ->orderBy('image_url')
+                           ->get();
+
+    return response()->json([
+        'status' => true,
+        'data' => $publishers,
+    ]);
+}
+
+
+    
 }

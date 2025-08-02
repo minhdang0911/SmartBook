@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\PublisherController;
 use App\Http\Controllers\Api\BookImageController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventProductController;
@@ -78,7 +79,7 @@ Route::prefix('topics')->group(function () {
 
 // Thông tin người dùng
 Route::prefix('user')->group(function () {
-Route::put('/change-password', [UserProfileController::class, 'updatePassword']);
+Route::post('/change-password', [UserProfileController::class, 'updatePassword']);
 Route::put('/profile', [UserProfileController::class, 'update']);
 Route::get('/profile', [UserProfileController::class, 'profile']);
 });
@@ -199,6 +200,11 @@ Route::prefix('coupons')->group(function () {
     Route::patch('{coupon}', [CouponController::class, 'update']); // Sửa {id} thành {coupon}
     Route::post('{coupon}', [CouponController::class, 'destroy']); // Sửa {id} thành {coupon}
 });
+
+
+Route::prefix('publisher')->group(function () {
+        Route::get('/', [PublisherController::class, 'apiIndex']);
+    });
 // Mã giảm giá
 
 // Route lấy danh sách mã giảm giá cho người dùng
