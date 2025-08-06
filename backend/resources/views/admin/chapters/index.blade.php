@@ -19,20 +19,20 @@
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label for="book_title" class="form-label">Tên Sách</label>
-                        <input type="text" 
-                               class="form-control" 
-                               id="book_title" 
-                               name="book_title" 
-                               value="{{ request('book_title') }}" 
+                        <input type="text"
+                               class="form-control"
+                               id="book_title"
+                               name="book_title"
+                               value="{{ request('book_title') }}"
                                placeholder="Tìm theo tên sách...">
                     </div>
                     <div class="col-md-4">
                         <label for="chapter_title" class="form-label">Tên Chương</label>
-                        <input type="text" 
-                               class="form-control" 
-                               id="chapter_title" 
-                               name="chapter_title" 
-                               value="{{ request('chapter_title') }}" 
+                        <input type="text"
+                               class="form-control"
+                               id="chapter_title"
+                               name="chapter_title"
+                               value="{{ request('chapter_title') }}"
                                placeholder="Tìm theo tên chương...">
                     </div>
                     <div class="col-md-4">
@@ -88,7 +88,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="collapse book-chapters" id="chapters-{{ $book->id }}">
                         <div class="card-body p-0">
                             <div class="table-responsive">
@@ -116,7 +116,7 @@
                                                     <span class="badge bg-info">{{ $chapter->chapter_order }}</span>
                                                 </td>
                                                 <td>
-                                                    <span class="badge 
+                                                    <span class="badge
                                                         @switch($chapter->content_type)
                                                             @case('text') bg-primary @break
                                                             @case('video') bg-danger @break
@@ -136,24 +136,24 @@
                                                 </td>
                                                 <td>
                                                     <div class="btn-group btn-group-sm" role="group">
-                                                        <a href="{{ route('admin.chapters.show', $chapter->id) }}" 
-                                                           class="btn btn-info" 
+                                                        <a href="{{ route('admin.chapters.show', $chapter->id) }}"
+                                                           class="btn btn-info"
                                                            title="Xem">
                                                             <i class="bi bi-eye"></i>
                                                         </a>
-                                                        <a href="{{ route('admin.chapters.edit', $chapter->id) }}" 
-                                                           class="btn btn-warning" 
+                                                        <a href="{{ route('admin.chapters.edit', $chapter->id) }}"
+                                                           class="btn btn-warning"
                                                            title="Sửa">
                                                             <i class="bi bi-pencil"></i>
                                                         </a>
-                                                        <form action="{{ route('admin.chapters.destroy', $chapter->id) }}" 
-                                                              method="POST" 
+                                                        <form action="{{ route('admin.chapters.destroy', $chapter->id) }}"
+                                                              method="POST"
                                                               class="d-inline"
                                                               onsubmit="return confirm('Bạn có chắc chắn muốn xóa chương này?')">
                                                             @csrf
                                                             @method('DELETE')
-                                                            <button type="submit" 
-                                                                    class="btn btn-danger" 
+                                                            <button type="submit"
+                                                                    class="btn btn-danger"
                                                                     title="Xóa">
                                                                 <i class="bi bi-trash"></i>
                                                             </button>
@@ -213,7 +213,7 @@
                                             <span class="badge bg-info">{{ $chapter->chapter_order }}</span>
                                         </td>
                                         <td>
-                                            <span class="badge 
+                                            <span class="badge
                                                 @switch($chapter->content_type)
                                                     @case('text') bg-primary @break
                                                     @case('video') bg-danger @break
@@ -233,24 +233,24 @@
                                         </td>
                                         <td>
                                             <div class="btn-group btn-group-sm" role="group">
-                                                <a href="{{ route('admin.chapters.show', $chapter->id) }}" 
-                                                   class="btn btn-info" 
+                                                <a href="{{ route('admin.chapters.show', $chapter->id) }}"
+                                                   class="btn btn-info"
                                                    title="Xem">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
-                                                <a href="{{ route('admin.chapters.edit', $chapter->id) }}" 
-                                                   class="btn btn-warning" 
+                                                <a href="{{ route('admin.chapters.edit', $chapter->id) }}"
+                                                   class="btn btn-warning"
                                                    title="Sửa">
                                                     <i class="bi bi-pencil"></i>
                                                 </a>
-                                                <form action="{{ route('admin.chapters.destroy', $chapter->id) }}" 
-                                                      method="POST" 
+                                                <form action="{{ route('admin.chapters.destroy', $chapter->id) }}"
+                                                      method="POST"
                                                       class="d-inline"
                                                       onsubmit="return confirm('Bạn có chắc chắn muốn xóa chương này?')">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" 
-                                                            class="btn btn-danger" 
+                                                    <button type="submit"
+                                                            class="btn btn-danger"
                                                             title="Xóa">
                                                         <i class="bi bi-trash"></i>
                                                     </button>
@@ -312,7 +312,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function toggleBookChapters(bookId) {
     const chaptersDiv = document.getElementById('chapters-' + bookId);
     const toggleIcon = document.getElementById('toggle-' + bookId);
-    
+
     if (chaptersDiv.classList.contains('show')) {
         chaptersDiv.classList.remove('show');
         toggleIcon.classList.remove('bi-chevron-up');
@@ -373,4 +373,4 @@ function collapseAll() {
     color: white;
 }
 </style>
-@endsectio
+@endsection
