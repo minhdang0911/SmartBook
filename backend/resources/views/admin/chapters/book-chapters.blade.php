@@ -1,144 +1,375 @@
-{{-- Trong view show.blade.php (hiển thị 1 chapter) --}}
-
 @extends('layouts.app')
-
-@section('title', $chapter ? $chapter->title : 'Chọn chương')
+@section('title', 'Danh sách Chương')
 
 @section('content')
 <div class="container py-4">
-    @if($chapter)
-        {{-- Header --}}
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h3 class="mb-1">{{ $chapter->title }}</h3>
-                <p class="text-muted mb-0">
-                    <strong>{{ $chapter->book->title }}</strong> - 
-                    Chương {{ $chapter->chapter_order }}
-                    @if($chapter->book->author)
-                        | Tác giả: {{ $chapter->book->author->name }}
-                    @endif
-                </p>
-            </div>
-            
-            {{-- Navigation --}}
-            <div class="btn-group">
-                @if($previous)
-                    <a href="{{ route('admin.chapters.byBook', ['bookId' => $chapter->book_id, 'chapter_id' => $previous->id]) }}" 
-                       class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> Chương trước
-                    </a>
-                @endif
-                
-                @if($next)
-                    <a href="{{ route('admin.chapters.byBook', ['bookId' => $chapter->book_id, 'chapter_id' => $next->id]) }}" 
-                       class="btn btn-outline-secondary">
-                        Chương sau <i class="bi bi-arrow-right"></i>
-                    </a>
-                @endif
-            </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-book"></i> Danh sách Chương</h2>
+        <div>
+            <a href="{{ route('admin.chapters.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus"></i> Thêm Chương
+            </a>
         </div>
+    </div>
 
-        {{-- Content --}}
-        @if($chapter->isPdfContent())
-            {{-- PDF Content --}}
-            <div class="pdf-viewer-container">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5>📄 Nội dung chương (PDF)</h5>
-                    <div class="btn-group">
-                        <a href="{{ $chapter->getPdfViewUrl() }}" 
-                           target="_blank" 
-                           class="btn btn-primary">
-                            <i class="bi bi-eye"></i> Xem PDF
-                        </a>
-                        <a href="{{ $chapter->getPdfDownloadUrl() }}" 
-                           download="{{ $chapter->getPdfFilename() }}"
-                           class="btn btn-outline-secondary">
-                            <i class="bi bi-download"></i> Tải về
-                        </a>
+    <!-- Search/Filter Form -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ route('admin.chapters.index') }}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="book_title" class="form-label">Tên Sách</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="book_title" 
+                               name="book_title" 
+                               value="{{ request('book_title') }}" 
+                               placeholder="Tìm theo tên sách...">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="chapter_title" class="form-label">Tên Chương</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="chapter_title" 
+                               name="chapter_title" 
+                               value="{{ request('chapter_title') }}" 
+                               placeholder="Tìm theo tên chương...">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="content_type" class="form-label">Loại Nội Dung</label>
+                        <select class="form-select" id="content_type" name="content_type">
+                            <option value="">Tất cả loại</option>
+                            <option value="text" {{ request('content_type') == 'text' ? 'selected' : '' }}>Text</option>
+                            <option value="pdf" {{ request('content_type') == 'pdf' ? 'selected' : '' }}>PDF</option>
+                        </select>
                     </div>
                 </div>
-                
-                {{-- Embed PDF viewer trong page --}}
-                <div class="pdf-embed-container" style="height: 600px; border: 1px solid #ddd; border-radius: 8px;">
-                    <iframe src="{{ $chapter->getPdfViewUrl() }}#toolbar=1&navpanes=1&scrollbar=1" 
-                            width="100%" 
-                            height="100%" 
-                            style="border: none; border-radius: 8px;">
-                        <div class="alert alert-warning m-3">
-                            <h6>Không thể hiển thị PDF</h6>
-                            <p>Trình duyệt của bạn không hỗ trợ hiển thị PDF embedded.</p>
-                            <a href="{{ $chapter->getPdfViewUrl() }}" 
-                               target="_blank" 
-                               class="btn btn-primary">
-                                Mở PDF trong tab mới
-                            </a>
-                        </div>
-                    </iframe>
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> Tìm kiếm
+                    </button>
+                    <a href="{{ route('admin.chapters.index') }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-clockwise"></i> Đặt lại
+                    </a>
                 </div>
-            </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toggle View Button -->
+    <div class="d-flex justify-content-end mb-3">
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-primary active" id="groupedView">
+                <i class="bi bi-folder"></i> Nhóm theo sách
+            </button>
+            <button type="button" class="btn btn-outline-primary" id="listView">
+                <i class="bi bi-list"></i> Danh sách
+            </button>
+        </div>
+    </div>
+
+    <!-- Grouped View (Default) -->
+    <div id="grouped-container">
+        @if($chaptersGrouped->count() > 0)
+            @foreach($chaptersGrouped as $book)
+                <div class="card mb-4 book-folder">
+                    <div class="card-header bg-light" style="cursor: pointer;" onclick="toggleBookChapters({{ $book->id }})">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-folder-fill text-primary me-2"></i>
+                                <h5 class="mb-0">{{ $book->title }}</h5>
+                                <span class="badge bg-secondary ms-2">{{ $book->chapters->count() }} chương</span>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <small class="text-muted me-3">Tác giả: {{ $book->author->name ?? 'N/A' }}</small>
+                                <a href="{{ route('admin.chapters.show', $book->id) }}" 
+                                   class="btn btn-sm btn-outline-primary me-2"
+                                   onclick="event.stopPropagation();">
+                                    <i class="bi bi-eye"></i> Xem chương
+                                </a>
+                                <i class="bi bi-chevron-down toggle-icon" id="toggle-{{ $book->id }}"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="collapse book-chapters" id="chapters-{{ $book->id }}">
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th width="50">#</th>
+                                            <th>Tên Chương</th>
+                                            <th width="80">Thứ tự</th>
+                                            <th width="120">Loại nội dung</th>
+                                            <th width="150">Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($book->chapters->sortBy('chapter_order') as $chapter)
+                                            <tr>
+                                                <td>
+                                                    @if($chapter->content_type === 'pdf')
+                                                        <i class="bi bi-file-pdf text-danger"></i>
+                                                    @else
+                                                        <i class="bi bi-file-text text-info"></i>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    <strong>{{ $chapter->title }}</strong>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-info">{{ $chapter->chapter_order }}</span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge 
+                                                        @if($chapter->content_type === 'text') 
+                                                            bg-primary
+                                                        @elseif($chapter->content_type === 'pdf') 
+                                                            bg-danger
+                                                        @else 
+                                                            bg-secondary
+                                                        @endif">
+                                                        {{ strtoupper($chapter->content_type ?? 'N/A') }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <a href="{{ route('admin.chapters.show', ['id' => $book->id, 'chapter_id' => $chapter->id]) }}" 
+                                                           class="btn btn-info" 
+                                                           title="Xem">
+                                                            <i class="bi bi-eye"></i>
+                                                        </a>
+                                                        <a href="{{ route('admin.chapters.edit', $chapter->id) }}" 
+                                                           class="btn btn-warning" 
+                                                           title="Sửa">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </a>
+                                                        <form action="{{ route('admin.chapters.destroy', $chapter->id) }}" 
+                                                              method="POST" 
+                                                              class="d-inline"
+                                                              onsubmit="return confirm('Bạn có chắc chắn muốn xóa chương này?')">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" 
+                                                                    class="btn btn-danger" 
+                                                                    title="Xóa">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
         @else
-            {{-- Text Content --}}
-            <div class="text-content bg-white p-4 rounded shadow-sm">
-                {!! $chapter->content !!}
+            <div class="text-center py-5">
+                <i class="bi bi-folder text-muted" style="font-size: 4rem;"></i>
+                <h4 class="text-muted mt-3">Không tìm thấy sách nào có chương</h4>
+                <p class="text-muted">Thử thay đổi bộ lọc tìm kiếm hoặc thêm chương mới.</p>
+                <a href="{{ route('admin.chapters.create') }}" class="btn btn-primary">
+                    <i class="bi bi-plus"></i> Thêm Chương Đầu Tiên
+                </a>
             </div>
         @endif
+    </div>
 
-        {{-- Actions --}}
-        <div class="mt-4 pt-3 border-top">
-            <div class="btn-group">
-                <a href="{{ route('admin.chapters.index') }}" 
-                   class="btn btn-secondary">
-                    <i class="bi bi-list"></i> Danh sách chương
-                </a>
-                
-                <a href="{{ route('admin.chapters.edit', $chapter) }}" 
-                   class="btn btn-warning">
-                    <i class="bi bi-pencil"></i> Sửa chương
-                </a>
-                
-                <form action="{{ route('admin.chapters.destroy', $chapter) }}" 
-                      method="POST" 
-                      class="d-inline"
-                      onsubmit="return confirm('Bạn có chắc muốn xóa chương này?')">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-trash"></i> Xóa
-                    </button>
-                </form>
-            </div>
-        </div>
-    @else
-        {{-- No chapter selected or no chapters available --}}
-        <div class="text-center py-5">
-            <div class="mb-4">
-                <i class="bi bi-book" style="font-size: 4rem; color: #6c757d;"></i>
-            </div>
-            <h4 class="text-muted mb-3">Không có chương nào để hiển thị</h4>
-            @if($chapters->count() > 0)
-                <p class="text-muted mb-4">Vui lòng chọn một chương để đọc:</p>
-                <div class="list-group" style="max-width: 600px; margin: 0 auto;">
-                    @foreach($chapters as $chapterItem)
-                        <a href="{{ route('admin.chapters.byBook', ['bookId' => $book->id, 'chapter_id' => $chapterItem->id]) }}" 
-                           class="list-group-item list-group-item-action">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">{{ $chapterItem->title }}</h6>
-                                <small class="text-muted">Chương {{ $chapterItem->chapter_order }}</small>
-                            </div>
-                            <small class="text-muted">
-                                <i class="bi bi-{{ $chapterItem->content_type === 'pdf' ? 'file-pdf' : 'file-text' }}"></i>
-                                {{ $chapterItem->content_type === 'pdf' ? 'PDF' : 'Text' }}
-                            </small>
+    <!-- List View (Hidden by default) -->
+    <div id="list-container" style="display: none;">
+        <div class="card">
+            <div class="card-body">
+                @if($chapters->count() > 0)
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Sách</th>
+                                    <th>Tác giả</th>
+                                    <th>Tên Chương</th>
+                                    <th>Thứ tự</th>
+                                    <th>Loại nội dung</th>
+                                    <th>Trạng thái</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($chapters as $index => $chapter)
+                                    <tr>
+                                        <td>{{ $chapters->firstItem() + $index }}</td>
+                                        <td>
+                                            <strong>{{ $chapter->book->title ?? 'N/A' }}</strong>
+                                        </td>
+                                        <td>{{ $chapter->book->author->name ?? 'N/A' }}</td>
+                                        <td>{{ $chapter->title }}</td>
+                                        <td>
+                                            <span class="badge bg-info">{{ $chapter->chapter_order }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge 
+                                                @switch($chapter->content_type)
+                                                    @case('text') bg-primary @break
+                                                    @case('video') bg-danger @break
+                                                    @case('audio') bg-warning @break
+                                                    @case('mixed') bg-success @break
+                                                    @default bg-secondary
+                                                @endswitch">
+                                                {{ ucfirst($chapter->content_type ?? 'N/A') }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if($chapter->is_published ?? true)
+                                                <span class="badge bg-success">Đã xuất bản</span>
+                                            @else
+                                                <span class="badge bg-warning">Bản nháp</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{{ route('admin.chapters.show', $chapter->id) }}" 
+                                                   class="btn btn-info" 
+                                                   title="Xem">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a href="{{ route('admin.chapters.edit', $chapter->id) }}" 
+                                                   class="btn btn-warning" 
+                                                   title="Sửa">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <form action="{{ route('admin.chapters.destroy', $chapter->id) }}" 
+                                                      method="POST" 
+                                                      class="d-inline"
+                                                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa chương này?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" 
+                                                            class="btn btn-danger" 
+                                                            title="Xóa">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="d-flex justify-content-center mt-4">
+                        {{ $chapters->appends(request()->query())->links() }}
+                    </div>
+                @else
+                    <div class="text-center py-4">
+                        <i class="bi bi-book text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-2">Không tìm thấy chương nào</h5>
+                        <p class="text-muted">Thử thay đổi bộ lọc tìm kiếm hoặc thêm chương mới.</p>
+                        <a href="{{ route('admin.chapters.create') }}" class="btn btn-primary">
+                            <i class="bi bi-plus"></i> Thêm Chương Đầu Tiên
                         </a>
-                    @endforeach
-                </div>
-            @else
-                <p class="text-muted mb-4">Sách này chưa có chương nào.</p>
-                <a href="{{ route('admin.chapters.create') }}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Thêm chương mới
-                </a>
-            @endif
+                    </div>
+                @endif
+            </div>
         </div>
-    @endif
+    </div>
 </div>
+
+<script>
+// Toggle between grouped and list view
+document.getElementById('groupedView').addEventListener('click', function() {
+    document.getElementById('grouped-container').style.display = 'block';
+    document.getElementById('list-container').style.display = 'none';
+    this.classList.add('active');
+    document.getElementById('listView').classList.remove('active');
+    localStorage.setItem('chapterView', 'grouped');
+});
+
+document.getElementById('listView').addEventListener('click', function() {
+    document.getElementById('grouped-container').style.display = 'none';
+    document.getElementById('list-container').style.display = 'block';
+    this.classList.add('active');
+    document.getElementById('groupedView').classList.remove('active');
+    localStorage.setItem('chapterView', 'list');
+});
+
+// Remember user preference
+document.addEventListener('DOMContentLoaded', function() {
+    const savedView = localStorage.getItem('chapterView');
+    if (savedView === 'list') {
+        document.getElementById('listView').click();
+    }
+});
+
+// Toggle book chapters
+function toggleBookChapters(bookId) {
+    const chaptersDiv = document.getElementById('chapters-' + bookId);
+    const toggleIcon = document.getElementById('toggle-' + bookId);
+    
+    if (chaptersDiv.classList.contains('show')) {
+        chaptersDiv.classList.remove('show');
+        toggleIcon.classList.remove('bi-chevron-up');
+        toggleIcon.classList.add('bi-chevron-down');
+    } else {
+        chaptersDiv.classList.add('show');
+        toggleIcon.classList.remove('bi-chevron-down');
+        toggleIcon.classList.add('bi-chevron-up');
+    }
+}
+
+// Expand/Collapse all
+function expandAll() {
+    document.querySelectorAll('.book-chapters').forEach(function(element) {
+        element.classList.add('show');
+    });
+    document.querySelectorAll('.toggle-icon').forEach(function(icon) {
+        icon.classList.remove('bi-chevron-down');
+        icon.classList.add('bi-chevron-up');
+    });
+}
+
+function collapseAll() {
+    document.querySelectorAll('.book-chapters').forEach(function(element) {
+        element.classList.remove('show');
+    });
+    document.querySelectorAll('.toggle-icon').forEach(function(icon) {
+        icon.classList.remove('bi-chevron-up');
+        icon.classList.add('bi-chevron-down');
+    });
+}
+</script>
+
+<style>
+.book-folder {
+    border-left: 4px solid #0d6efd;
+}
+
+.book-folder .card-header:hover {
+    background-color: #f8f9fa !important;
+}
+
+.toggle-icon {
+    transition: transform 0.2s ease;
+}
+
+.book-chapters.show {
+    display: block !important;
+}
+
+.book-chapters:not(.show) {
+    display: none;
+}
+
+.btn-group .btn.active {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+</style>
 @endsection

@@ -32,7 +32,8 @@ class Book extends Model
         'book_images' => 'array',
         'price' => 'decimal:2',
         'discount_price' => 'decimal:2',
-        'is_physical' => 'boolean',
+    'is_physical' => 'integer',
+
         'stock' => 'integer',
         'views' => 'integer',
         'likes' => 'integer',

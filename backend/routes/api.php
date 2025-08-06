@@ -45,7 +45,7 @@ Route::prefix('comments')->group(function () {
 
 // Thêm vào routes/web.php trong nhóm admin routes
 
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
+Route::prefix('admin')->name('admin.')->group(function () {
     
     // Existing chapter routes
     Route::resource('chapters', ChapterController::class);
@@ -54,39 +54,42 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('books/{bookId}/chapters/orders', [ChapterController::class, 'getChapterOrders'])
          ->name('books.chapters.orders');
     
-    Route::get('books/{bookId}/chapters', [ChapterController::class, 'getChaptersByBookId'])
-         ->name('books.chapters.list');
+        Route::get('books/{bookId}/chapters', [ChapterController::class, 'getChaptersByBookId'])
+            ->name('books.chapters.list');
     
     Route::delete('chapters/bulk-delete', [ChapterController::class, 'bulkDelete'])
          ->name('chapters.bulk-delete');
+
+         Route::get('books/{bookId}/chapters/{chapterId}/detail', [ChapterController::class, 'getChapterDetail'])
+     ->name('books.chapters.detail');
     
 });
 
-// API routes (thêm vào routes/api.php)
-Route::prefix('v1')->name('api.')->group(function () {
+// // API routes (thêm vào routes/api.php)
+// Route::prefix('v1')->name('api.')->group(function () {
     
-    // Chapter API routes
-    Route::prefix('chapters')->group(function () {
-        Route::get('/book/{bookId}', [ChapterApiController::class, 'getChaptersByBook'])
-             ->name('chapters.by-book');
+// //     // Chapter API routes
+// //     Route::prefix('chapters')->group(function () {
+// //         Route::get('/book/{bookId}', [ChapterApiController::class, 'getChaptersByBook'])
+// //              ->name('chapters.by-book');
         
-        Route::get('/{id}', [ChapterApiController::class, 'getChapter'])
-             ->name('chapters.show');
+// //         Route::get('/{id}', [ChapterApiController::class, 'getChapter'])
+// //              ->name('chapters.show');
         
-        Route::get('/', [ChapterApiController::class, 'searchChapters'])
-             ->name('chapters.search');
-    });
+// //         Route::get('/', [ChapterApiController::class, 'searchChapters'])
+// //              ->name('chapters.search');
+// //     });
     
-    // Book API routes
-    Route::prefix('books')->group(function () {
-        Route::get('/with-chapters', [ChapterApiController::class, 'getBooksWithChapters'])
-             ->name('books.with-chapters');
+//     // Book API routes
+//     Route::prefix('books')->group(function () {
+//         Route::get('/with-chapters', [ChapterApiController::class, 'getBooksWithChapters'])
+//              ->name('books.with-chapters');
         
-        Route::get('/{bookSlug}/chapters/{chapterSlug}', [ChapterApiController::class, 'getChapterBySlug'])
-             ->name('books.chapters.by-slug');
-    });
+//         Route::get('/{bookSlug}/chapters/{chapterSlug}', [ChapterApiController::class, 'getChapterBySlug'])
+//              ->name('books.chapters.by-slug');
+//     });
     
-});
+// });
 
 Route::prefix('comments')->group(function () {
     Route::post('/{id}/react', [CommentReactionController::class, 'react']);
