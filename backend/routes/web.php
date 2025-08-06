@@ -41,6 +41,13 @@ Route::get('/upload-form', function () {
         <button>Upload</button>
     </form>';
 });
+// Bên trong nhóm admin
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::get('/chapters/book/{bookId}', [ChapterController::class, 'show'])->name('chapters.byBook');
+});
+
+
+
 
 Route::post('/upload-test', function (Request $request) {
     $url = Cloudinary::upload($request->file('image')->getRealPath(), [

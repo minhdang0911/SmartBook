@@ -109,9 +109,10 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
-                                       <a href="{{ route('admin.chapters.byBook', $chapter->book_id) }}" class="btn btn-sm btn-info">
+                                      <a href="{{ route('admin.chapters.byBook', $chapter->book_id) }}" class="btn btn-sm btn-info">
     📚 Xem chương
 </a>
+
 
 
 

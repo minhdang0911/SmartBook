@@ -297,14 +297,50 @@ class ChapterController extends Controller
         return redirect()->route('admin.chapters.index')->with('success', '✅ Cập nhật chương thành công!');
     }
 
-    public function show(BookChapter $chapter)
-    {
-        $chapter->load(['book:id,title,author_id', 'book.author:id,name']);
-        $previous = $chapter->previousChapter();
-        $next = $chapter->nextChapter();
+public function show($id, Request $request)
+{
+    $book = Book::with('author')->findOrFail($id);
 
-        return view('admin.chapters.show', compact('chapter', 'previous', 'next'));
+    $chapters = BookChapter::where('book_id', $id)
+        ->orderBy('chapter_order')
+        ->get();
+
+    $selectedChapterId = $request->input('chapter_id');
+    $chapter = null;
+    $previous = null;
+    $next = null;
+
+    if ($selectedChapterId) {
+        $chapter = BookChapter::with('book.author')
+            ->where('book_id', $id)
+            ->findOrFail($selectedChapterId);
+
+        $previous = BookChapter::where('book_id', $id)
+            ->where('chapter_order', '<', $chapter->chapter_order)
+            ->orderByDesc('chapter_order')
+            ->first();
+
+        $next = BookChapter::where('book_id', $id)
+            ->where('chapter_order', '>', $chapter->chapter_order)
+            ->orderBy('chapter_order')
+            ->first();
+    } else {
+        // If no chapter_id is provided, select the first chapter by default
+        $chapter = BookChapter::with('book.author')
+            ->where('book_id', $id)
+            ->orderBy('chapter_order')
+            ->first();
+            
+        if ($chapter) {
+            $next = BookChapter::where('book_id', $id)
+                ->where('chapter_order', '>', $chapter->chapter_order)
+                ->orderBy('chapter_order')
+                ->first();
+        }
     }
+
+    return view('admin.chapters.book-chapters', compact('book', 'chapters', 'chapter', 'previous', 'next'));
+}
 
     public function destroy(BookChapter $chapter)
     {
@@ -385,15 +421,6 @@ class ChapterController extends Controller
         ]);
     }
 
-    public function listByBook($bookId)
-{
-    $book = Book::with('author')->findOrFail($bookId);
-
-    $chapters = BookChapter::where('book_id', $bookId)
-        ->orderBy('chapter_order')
-        ->get();
-
-    return view('admin.chapters.book-chapters', compact('book', 'chapters'));
-}
+   
 
 }
