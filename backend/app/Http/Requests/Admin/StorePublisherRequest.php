@@ -14,6 +14,7 @@ class StorePublisherRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:100|unique:publishers,name',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ];
     }
 

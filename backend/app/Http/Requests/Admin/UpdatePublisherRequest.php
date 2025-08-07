@@ -14,7 +14,8 @@ class UpdatePublisherRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:100|unique:publishers,name',
+            'name' => 'required|string|max:255|unique:publishers,name,' . $this->publisher->id,
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ];
     }
 
