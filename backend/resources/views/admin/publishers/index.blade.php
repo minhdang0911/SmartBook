@@ -272,29 +272,35 @@
 
         {{-- Search Form and Add Button --}}
         <form method="GET" action="{{ route('admin.publishers.index') }}"
-              class="search-form d-flex align-items-center gap-2 flex-wrap" role="search">
+            class="search-form d-flex align-items-center gap-2 flex-wrap" role="search">
             <input type="text" name="search" class="form-control" placeholder="🔍 Tìm nhà xuất bản..."
-                   value="{{ request('search') }}">
+                value="{{ request('search') }}">
             <button type="submit" class="btn btn-primary">Tìm</button>
             <x-admin.button.modal-button target="addPublisherModal" text="➕ Thêm mới" class="btn-success ms-auto" />
         </form>
 
         {{-- Table --}}
         <div class="table-responsive">
-            <x-admin.table :headers="['STT', 'Tên nhà xuất bản', 'Hành động']">
+            <x-admin.table :headers="['STT', 'Tên nhà xuất bản', 'Hình ảnh', 'Hành động']">
                 @forelse ($publishers as $index => $publisher)
                     <tr>
                         <td>{{ $publishers->firstItem() + $index }}</td>
                         <td>{{ $publisher->name }}</td>
                         <td>
+                            @if ($publisher->image_url)
+                                <img src="{{ $publisher->image_url }}" alt="Image"
+                                    style="max-width: 60px; max-height: 60px; border-radius: 6px;">
+                            @else
+                                <span class="text-muted">(không có)</span>
+                            @endif
+                        </td>
+                        <td>
                             <div class="d-flex flex-wrap gap-2 align-items-center">
-                                <x-admin.button.modal-button
-                                    target="editPublisherModal{{ $publisher->id }}"
-                                    text="Sửa"
+                                <x-admin.button.modal-button target="editPublisherModal{{ $publisher->id }}" text="Sửa"
                                     class="btn-warning btn-sm" />
 
                                 <form action="{{ route('admin.publishers.destroy', $publisher) }}" method="POST"
-                                      onsubmit="return confirm('Bạn chắc chắn muốn xóa?')">
+                                    onsubmit="return confirm('Bạn chắc chắn muốn xóa?')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-danger">Xóa</button>
@@ -304,7 +310,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="3" class="empty-state">
+                        <td colspan="4" class="empty-state">
                             😕 Không tìm thấy nhà xuất bản nào
                             @if (request('search'))
                                 với từ khóa <strong>"{{ request('search') }}"</strong>.

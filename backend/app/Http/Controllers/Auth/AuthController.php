@@ -25,6 +25,16 @@ class AuthController extends Controller
     {
         $credentials = $request->only('email', 'password');
 
+        // Tìm người dùng theo email (cả đã xóa mềm)
+        $user = User::withTrashed()->where('email', $credentials['email'])->first();
+
+        if ($user && $user->trashed()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Tài khoản của bạn đã bị khóa.'
+            ], 403);
+        }
+
         if (!$token = auth()->attempt($credentials)) {
             return response()->json([
                 'status' => false,
@@ -55,6 +65,7 @@ class AuthController extends Controller
             'email_verified_at' => $user->email_verified_at
         ], 200);
     }
+
 
 
 

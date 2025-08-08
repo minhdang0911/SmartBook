@@ -2,201 +2,389 @@
 
 @section('title', 'Danh sách Tác giả')
 
-<!-- Ant Design CDN -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/antd/4.16.13/antd.min.css" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+@push('styles')
+    <style>
+        .container {
+            max-width: 1200px;
+            padding: 24px;
+        }
 
-<style>
-    .ant-container {
-        max-width: 1200px;
-        margin: 40px auto;
-        padding: 0 20px;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-    }
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 32px 24px;
+            text-align: center;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
 
-    .ant-page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 24px;
-    }
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1), transparent);
+            opacity: 0.3;
+        }
 
-    .ant-page-title {
-        font-size: 24px;
-        font-weight: 600;
-        color: #1677ff;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
+        .page-header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+        }
 
-    .ant-table {
-        border: 1px solid #f0f0f0;
-        border-radius: 6px;
-        overflow: hidden;
-    }
+        .search-form {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
 
-    .ant-table th,
-    .ant-table td {
-        padding: 12px 16px;
-        border-bottom: 1px solid #f0f0f0;
-    }
+        .search-form .form-control {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 0.95rem;
+            flex: 1;
+            min-width: 200px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
 
-    .ant-table th {
-        background-color: #fafafa;
-        font-weight: 600;
-        color: #595959;
-    }
+        .search-form .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
+        }
 
-    .ant-table tr:hover {
-        background-color: #f5f5f5;
-    }
+        .search-form .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
 
-    .ant-search-form {
-        display: flex;
-        gap: 12px;
-        margin-bottom: 24px;
-    }
+        .search-form .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
 
-    .ant-search-form input {
-        padding: 8px 12px;
-        border: 1px solid #d9d9d9;
-        border-radius: 4px;
-        width: 280px;
-        transition: border 0.3s, box-shadow 0.3s;
-    }
+        .search-form .btn-success {
+            background: linear-gradient(135deg, #28a745, #34c759);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
 
-    .ant-search-form input:focus {
-        outline: none;
-        border-color: #1677ff;
-        box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.2);
-    }
+        .search-form .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
 
-    .ant-btn {
-        padding: 6px 16px;
-        font-size: 14px;
-        border-radius: 4px;
-        border: none;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
+        .table {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
 
-    .ant-btn-primary {
-        background-color: #1677ff;
-        color: white;
-    }
+        .table thead {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        }
 
-    .ant-btn-primary:hover {
-        background-color: #4096ff;
-    }
+        .table th,
+        .table td {
+            padding: 16px;
+            font-size: 0.95rem;
+            vertical-align: middle;
+            color: #333;
+        }
 
-    .ant-btn-warning {
-        background-color: #faad14;
-        color: white;
-    }
+        .table tr {
+            transition: background 0.2s ease;
+        }
 
-    .ant-btn-danger {
-        background-color: #ff4d4f;
-        color: white;
-    }
+        .table tr:hover {
+            background: #f0f4ff;
+        }
 
-    .ant-btn-danger:hover {
-        background-color: #ff7875;
-    }
+        .btn-sm {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
 
-    .ant-empty {
-        text-align: center;
-        color: #999;
-        padding: 30px;
-        font-size: 14px;
-    }
+        .btn-warning {
+            background: #ffc107;
+            border: none;
+            color: #333;
+        }
 
-    .ant-pagination {
-        margin-top: 24px;
-    }
-</style>
+        .btn-warning:hover {
+            background: #ffca2c;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            border: none;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e4606d;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+        }
+
+        .empty-state {
+            padding: 32px;
+            text-align: center;
+            color: #666;
+            font-size: 1rem;
+        }
+
+        .empty-state i {
+            font-size: 2rem;
+            color: #999;
+        }
+
+        .pagination {
+            justify-content: center;
+            margin-top: 24px;
+        }
+
+        .pagination .page-link {
+            border-radius: 6px;
+            margin: 0 4px;
+            color: #667eea;
+            font-weight: 500;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .pagination .page-link:hover {
+            background: #f0f4ff;
+            color: #764ba2;
+        }
+
+        .pagination .page-item.active .page-link {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-color: #667eea;
+            color: white;
+        }
+
+        .modal-content {
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-bottom: none;
+        }
+
+        .modal-title {
+            font-weight: 700;
+            font-size: 1.25rem;
+        }
+
+        .modal-body .form-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .modal-body .form-control {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 0.95rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .modal-body .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
+        }
+
+        .modal-footer {
+            border-top: none;
+        }
+
+        .modal-footer .btn-secondary {
+            background: #6c757d;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: transform 0.2s ease;
+        }
+
+        .modal-footer .btn-secondary:hover {
+            transform: translateY(-2px);
+        }
+
+        .modal-footer .btn-primary,
+        .modal-footer .btn-success {
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .modal-footer .btn-primary:hover,
+        .modal-footer .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .search-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .table th,
+            .table td {
+                padding: 12px;
+                font-size: 0.85rem;
+            }
+
+            .btn-sm {
+                padding: 5px 10px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+@endpush
 
 @section('content')
-<div class="ant-container">
+    <div class="container">
+        <div class="page-header">
+            <h1><i class="bi bi-person"></i> Danh sách Tác giả</h1>
+        </div>
 
-    <!-- Header -->
-    <div class="ant-page-header">
-        <h1 class="ant-page-title">
-            <i class="fas fa-user"></i> Danh sách Tác giả
-        </h1>
-        <x-admin.button.modal-button
-            target="addAuthorModal"
-            text="➕ Thêm mới"
-            class="ant-btn ant-btn-primary" />
-    </div>
+        @include('components.alert')
 
-    @include('components.alert')
+        <form method="GET" action="{{ route('admin.authors.index') }}" class="search-form">
+            <input type="text" name="search" class="form-control" placeholder="🔍 Tìm tác giả..." value="{{ request('search') }}">
+            <button type="submit" class="btn btn-primary">Tìm</button>
+            <x-admin.button.modal-button target="addAuthorModal" text="➕ Thêm mới" class="btn-success ms-auto" />
+        </form>
 
-    <!-- Form tìm kiếm -->
-    <form method="GET" action="{{ route('admin.authors.index') }}" class="ant-search-form">
-        <input
-            type="text"
-            name="search"
-            placeholder="🔍 Tìm tác giả..."
-            value="{{ request('search') }}">
-        <button type="submit" class="ant-btn ant-btn-primary">Tìm</button>
-    </form>
-
-    <!-- Bảng dữ liệu -->
-    <div class="ant-table">
-        <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr>
-                    <th>STT</th>
-                    <th>Tên Tác giả</th>
-                    <th>Hành động</th>
-                </tr>
-            </thead>
-            <tbody>
+        <div class="table-responsive">
+            <x-admin.table :headers="['STT', 'Tên Tác giả', 'Hành động']">
                 @forelse ($authors as $index => $author)
                     <tr>
                         <td>{{ $authors->firstItem() + $index }}</td>
                         <td>{{ $author->name }}</td>
                         <td>
-                            <div style="display: flex; gap: 8px;">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
                                 <x-admin.button.modal-button
                                     target="editAuthorModal{{ $author->id }}"
                                     text="Sửa"
-                                    class="ant-btn ant-btn-warning" />
+                                    class="btn-warning btn-sm" />
                                 <form action="{{ route('admin.authors.destroy', $author) }}" method="POST"
                                       onsubmit="return confirm('Bạn chắc chắn muốn xóa?')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="ant-btn ant-btn-danger">Xóa</button>
+                                    <button type="submit" class="btn btn-sm btn-danger">Xóa</button>
                                 </form>
                             </div>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="3" class="ant-empty">
+                        <td colspan="3" class="empty-state">
+                            <i class="bi bi-folder-x"></i><br>
                             😕 Không tìm thấy tác giả nào
                             @if (request('search'))
                                 với từ khóa <strong>"{{ request('search') }}"</strong>.
                             @endif
-                            <p>Hãy thử lại với từ khoá khác.</p>
+                            <p class="text-muted">Hãy thử lại với từ khóa khác.</p>
                         </td>
                     </tr>
                 @endforelse
-            </tbody>
-        </table>
+            </x-admin.table>
+        </div>
+
+        <div class="pagination">
+            {{ $authors->appends(['search' => request('search')])->links('pagination::bootstrap-5') }}
+        </div>
+
+        @foreach ($authors as $author)
+            <div class="modal fade" id="editAuthorModal{{ $author->id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <form action="{{ route('admin.authors.update', $author) }}" method="POST">
+                            @csrf
+                            @method('PUT')
+                            <div class="modal-header">
+                                <h5 class="modal-title">Sửa Tác giả</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Tên tác giả</label>
+                                    <input type="text" name="name" class="form-control"
+                                           value="{{ old('name', $author->name) }}">
+                                    @error('name')
+                                        <div class="text-danger mt-1 small">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                <button type="submit" class="btn btn-primary">Lưu</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        @endforeach
+
+        <div class="modal fade" id="addAuthorModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <form action="{{ route('admin.authors.store') }}" method="POST">
+                        @csrf
+                        <div class="modal-header">
+                            <h5 class="modal-title">Thêm Tác giả</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Tên tác giả</label>
+                                <input type="text" name="name" class="form-control" value="{{ old('name') }}">
+                                @error('name')
+                                    <div class="text-danger mt-1 small">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-success">Thêm</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <!-- Pagination -->
-    <div class="ant-pagination">
-        {{ $authors->appends(['search' => request('search')])->links('pagination::bootstrap-5') }}
-    </div>
-
-    <!-- Modal -->
-    @foreach ($authors as $author)
-        <x-admin.modal.edit-author :author="$author" />
-    @endforeach
-
-    <x-admin.modal.add-author />
-</div>
 @endsection

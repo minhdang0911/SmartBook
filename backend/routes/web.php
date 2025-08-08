@@ -92,17 +92,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::put('/{user}/lock', [UserController::class, 'lock'])->name('lock');
         Route::put('/{user}/unlock', [UserController::class, 'unlock'])->name('unlock');
     });
-
-    // Book Images
-    Route::prefix('book-images')->name('book_images.')->group(function () {
-        Route::get('/', [BookImageController::class, 'index'])->name('index');
-        Route::get('/create', [BookImageController::class, 'create'])->name('create');
-        Route::post('/', [BookImageController::class, 'store'])->name('store');
-        Route::get('/{book_image}/edit', [BookImageController::class, 'edit'])->name('edit');
-        Route::put('/{book_image}', [BookImageController::class, 'update'])->name('update');
-        Route::delete('/{book_image}', [BookImageController::class, 'destroy'])->name('destroy');
-    });
-
     // Resource controllers
     Route::resource('authors', AuthorController::class);
     Route::resource('publishers', PublisherController::class);
