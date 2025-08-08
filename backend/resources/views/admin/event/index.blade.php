@@ -1,3 +1,4 @@
+    @extends('layouts.app')
 <!DOCTYPE html>
 <html lang="vi">
 
@@ -463,6 +464,7 @@
             margin-bottom: 16px;
         }
     </style>
+
 </head>
 
 <body>

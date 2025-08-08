@@ -942,7 +942,7 @@
         function updateShippingButton(order) {
             const btn = document.getElementById('create-shipping-btn');
             
-            const canCreateShipping = ['ready_to_pick', 'picking', 'picked'].includes(order.status);
+            const canCreateShipping = ['pending','ready_to_pick', 'picking', 'picked'].includes(order.status);
             
             if (canCreateShipping) {
                 btn.disabled = false;

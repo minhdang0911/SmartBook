@@ -109,6 +109,7 @@ public function store(Request $request): JsonResponse
             'user_id' => $user->id,
             'order_code' => $orderCode,
             'sonha' => $request->input('sonha'),
+             'phone' => $request->input('phone'),
             'street' => $request->input('street'),
             'district_id' => $request->input('district_id'),
             'ward_id' => $request->input('ward_id'),
