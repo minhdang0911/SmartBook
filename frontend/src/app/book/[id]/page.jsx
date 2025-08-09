@@ -294,13 +294,13 @@ const BookCard = ({ book, router, getNames, isMobile = false }) => {
                 <div
                     style={{
                         position: 'relative',
-                        paddingTop: `${COVER_RATIO}%`, // 2:3 ratio
+                        paddingTop: `${COVER_RATIO}%`,
                         overflow: 'hidden',
                         backgroundColor: '#f8f9fa',
                         borderRadius: '8px 8px 0 0',
                     }}
                 >
-                    {/* Inner frame to ensure full image visible and fixed */}
+                    
                     <div
                         style={{
                             position: 'absolute',
@@ -320,7 +320,7 @@ const BookCard = ({ book, router, getNames, isMobile = false }) => {
                             style={{
                                 maxWidth: '100%',
                                 maxHeight: '100%',
-                                objectFit: 'contain', // ✅ show whole cover, never cropped
+                                objectFit: 'contain',
                                 display: 'block',
                             }}
                             onError={(e) => {

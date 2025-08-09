@@ -3,424 +3,383 @@
 @section('title', 'Danh sách Chủ đề')
 
 @push('styles')
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'slide-up': 'slideUp 0.4s ease-out',
+                        'scale-in': 'scaleIn 0.2s ease-out',
+                        'shake': 'shake 0.5s ease-in-out'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        .container {
-            max-width: 1200px;
-            padding: 24px;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes scaleIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
 
-        .page-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 32px 24px;
-            text-align: center;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            margin-bottom: 24px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .page-header::before {
-            content: '';
-            position: absolute;
+        .modal-overlay {
+            position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.1), transparent);
-            opacity: 0.3;
-        }
-
-        .page-header h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            position: relative;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
         }
 
-        .search-form {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-        }
-
-        .search-form .form-control {
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 10px 16px;
-            font-size: 0.95rem;
-            flex: 1;
-            min-width: 200px;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .search-form .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            outline: none;
-        }
-
-        .search-form .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .search-form .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        }
-
-        .search-form .btn-success {
-            background: linear-gradient(135deg, #28a745, #34c759);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .search-form .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
-        }
-
-        .table {
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-
-        .table thead {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-        }
-
-        .table th,
-        .table td {
-            padding: 16px;
-            font-size: 0.95rem;
-            vertical-align: middle;
-            color: #333;
-        }
-
-        .table tr {
-            transition: background 0.2s ease;
-        }
-
-        .table tr:hover {
-            background: #f0f4ff;
-        }
-
-        .btn-sm {
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .btn-warning {
-            background: #ffc107;
-            border: none;
-            color: #333;
-        }
-
-        .btn-warning:hover {
-            background: #ffca2c;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
-        }
-
-        .btn-danger {
-            background: #dc3545;
-            border: none;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #e4606d;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
-        }
-
-        .empty-state {
-            padding: 32px;
-            text-align: center;
-            color: #666;
-            font-size: 1rem;
-        }
-
-        .empty-state i {
-            font-size: 2rem;
-            color: #999;
-        }
-
-        .pagination {
-            justify-content: center;
-            margin-top: 24px;
-        }
-
-        .pagination .page-link {
-            border-radius: 6px;
-            margin: 0 4px;
-            color: #667eea;
-            font-weight: 500;
-            transition: background 0.2s ease, color 0.2s ease;
-        }
-
-        .pagination .page-link:hover {
-            background: #f0f4ff;
-            color: #764ba2;
-        }
-
-        .pagination .page-item.active .page-link {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-color: #667eea;
-            color: white;
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
         }
 
         .modal-content {
+            background: white;
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.7);
+            transition: transform 0.3s ease;
         }
 
-        .modal-header {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            border-bottom: none;
-        }
-
-        .modal-title {
-            font-weight: 700;
-            font-size: 1.25rem;
-        }
-
-        .modal-body .form-label {
-            font-weight: 600;
-            color: #333;
-        }
-
-        .modal-body .form-control {
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 10px 16px;
-            font-size: 0.95rem;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .modal-body .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            outline: none;
-        }
-
-        .modal-footer {
-            border-top: none;
-        }
-
-        .modal-footer .btn-secondary {
-            background: #6c757d;
-            border: none;
-            border-radius: 8px;
-            padding: 10px 20px;
-            transition: transform 0.2s ease;
-        }
-
-        .modal-footer .btn-secondary:hover {
-            transform: translateY(-2px);
-        }
-
-        .modal-footer .btn-primary,
-        .modal-footer .btn-success {
-            border-radius: 8px;
-            padding: 10px 20px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .modal-footer .btn-primary:hover,
-        .modal-footer .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        @media (max-width: 768px) {
-            .search-form {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .table th,
-            .table td {
-                padding: 12px;
-                font-size: 0.85rem;
-            }
-
-            .btn-sm {
-                padding: 5px 10px;
-                font-size: 0.8rem;
-            }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
         }
     </style>
 @endpush
 
 @section('content')
-    <div class="container">
-        <div class="page-header">
-            <h1><i class="bi bi-grid-fill"></i> Danh sách Chủ đề</h1>
-        </div>
-
-        @include('components.alert')
-
-        <form method="GET" action="{{ route('admin.topics.index') }}" class="search-form">
-            <input type="text" name="keyword" class="form-control" placeholder="🔍 Tìm chủ đề..." value="{{ request('keyword') }}">
-            <button type="submit" class="btn btn-primary">Tìm</button>
-            <x-admin.button.modal-button target="addTopicModal" text="➕ Thêm mới" class="btn-success ms-auto" />
-        </form>
-
-        <div class="table-responsive">
-            <x-admin.table :headers="['STT', 'Tên chủ đề', 'Slug', 'Ngày tạo', 'Hành động']">
-                @forelse ($topics as $index => $topic)
-                    <tr>
-                        <td>{{ $topics->firstItem() + $index }}</td>
-                        <td>{{ $topic->name }}</td>
-                        <td>{{ $topic->slug }}</td>
-                        <td>{{ $topic->created_at->format('d/m/Y') }}</td>
-                        <td>
-                            <div class="d-flex flex-wrap gap-2 align-items-center">
-                                <x-admin.button.modal-button
-                                    target="editTopicModal{{ $topic->id }}"
-                                    text="Sửa"
-                                    class="btn-warning btn-sm" />
-                                <form action="{{ route('admin.topics.destroy', $topic) }}" method="POST"
-                                      onsubmit="return confirm('Bạn chắc chắn muốn xóa?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-danger">Xóa</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="5" class="empty-state">
-                            <i class="bi bi-folder-x"></i><br>
-                            😕 Không tìm thấy chủ đề nào
-                            @if (request('keyword'))
-                                với từ khóa <strong>"{{ request('keyword') }}"</strong>.
-                            @endif
-                            <p class="text-muted">Hãy thử lại với từ khóa khác.</p>
-                        </td>
-                    </tr>
-                @endforelse
-            </x-admin.table>
-        </div>
-
-        <div class="pagination">
-            {{ $topics->appends(['keyword' => request('keyword')])->links('pagination::bootstrap-5') }}
-        </div>
-
-        @foreach ($topics as $topic)
-            <div class="modal fade" id="editTopicModal{{ $topic->id }}" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <form action="{{ route('admin.topics.update', $topic) }}" method="POST">
-                            @csrf
-                            @method('PUT')
-                            <input type="hidden" name="_form" value="edit">
-                            <input type="hidden" name="_edit_id" value="{{ $topic->id }}">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Sửa Chủ đề</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="mb-3">
-                                    <label class="form-label">Tên chủ đề</label>
-                                    <input type="text" name="name" class="form-control"
-                                           value="{{ old('_form') === 'edit' && old('_edit_id') == $topic->id ? old('name') : $topic->name }}">
-                                    @if(old('_form') === 'edit' && old('_edit_id') == $topic->id)
-                                        @error('name')
-                                            <div class="text-danger mt-1 small">{{ $message }}</div>
-                                        @enderror
-                                    @endif
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Slug</label>
-                                    <input type="text" name="slug" class="form-control"
-                                           value="{{ old('_form') === 'edit' && old('_edit_id') == $topic->id ? old('slug') : $topic->slug }}">
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                                <button type="submit" class="btn btn-primary">Lưu</button>
-                            </div>
-                        </form>
+    <div class="min-h-screen bg-white transition-all duration-300">
+        <!-- Header -->
+        <div class="bg-white border-b border-gray-200 sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-6">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Quản lý Chủ đề</h1>
+                        <p class="text-sm text-gray-600 mt-1">Quản lý chủ đề sách trong hệ thống</p>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            @include('components.alert')
+
+            <!-- Search & Actions -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6 animate-fade-in">
+                <form method="GET" action="{{ route('admin.topics.index') }}" class="flex flex-col sm:flex-row gap-4">
+                    <div class="flex-1">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                            <input 
+                                type="text" 
+                                name="keyword" 
+                                class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-black focus:border-transparent" 
+                                placeholder="Tìm kiếm chủ đề..." 
+                                value="{{ request('keyword') }}"
+                            >
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button type="submit" class="bg-black text-white px-4 py-2.5 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            Tìm kiếm
+                        </button>
+                        
+                        <button type="button" onclick="openModal('addTopicModal')" class="bg-black text-white px-4 py-2.5 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            Thêm mới
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Table -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden animate-slide-up">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">STT</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên Chủ đề</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slug</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @forelse ($topics as $index => $topic)
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                        {{ $topics->firstItem() + $index }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="h-10 w-10 flex-shrink-0">
+                                                <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                                    <svg class="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900">{{ $topic->name }}</div>
+                                                <div class="text-sm text-gray-500">Chủ đề</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                            {{ $topic->slug }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ $topic->created_at->format('d/m/Y') }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <div class="flex justify-end gap-2">
+                                            <button onclick="openModal('editTopicModal{{ $topic->id }}')" class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors">
+                                                Sửa
+                                            </button>
+                                            <button onclick="confirmDelete('{{ $topic->name }}', '{{ route('admin.topics.destroy', $topic) }}')" class="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm hover:bg-red-200 transition-colors">
+                                                Xóa
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="px-6 py-12 text-center">
+                                        <div class="flex flex-col items-center">
+                                            <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                            </svg>
+                                            <h3 class="text-lg font-medium text-gray-900 mb-1">Không có chủ đề</h3>
+                                            <p class="text-gray-500 text-sm">
+                                                @if (request('keyword'))
+                                                    Không tìm thấy kết quả cho "{{ request('keyword') }}"
+                                                @else
+                                                    Chưa có chủ đề nào trong hệ thống
+                                                @endif
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            @if($topics->hasPages())
+                <div class="mt-6 flex justify-center">
+                    {{ $topics->appends(['keyword' => request('keyword')])->links() }}
+                </div>
+            @endif
+        </div>
+
+        <!-- Add Modal -->
+        <div id="addTopicModal" class="modal-overlay">
+            <div class="modal-content">
+                <form id="addTopicForm" action="{{ route('admin.topics.store') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="_form" value="add">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-gray-900">Thêm Chủ đề Mới</h3>
+                            <button type="button" onclick="closeModal('addTopicModal')" class="text-gray-400 hover:text-gray-600">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tên chủ đề</label>
+                            <input type="text" name="name" id="addTopicName" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-black focus:border-transparent" placeholder="Nhập tên chủ đề..." value="{{ old('_form') === 'add' ? old('name') : '' }}" required>
+                            @if(old('_form') === 'add')
+                                @error('name')
+                                    <div class="text-red-500 text-sm mt-1">{{ $message }}</div>
+                                @enderror
+                            @endif
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Slug</label>
+                            <input type="text" name="slug" id="addTopicSlug" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-black focus:border-transparent" placeholder="Slug sẽ được tạo tự động..." value="{{ old('_form') === 'add' ? old('slug') : '' }}">
+                        </div>
+                    </div>
+                    <div class="p-6 border-t border-gray-200 flex justify-end gap-3">
+                        <button type="button" onclick="closeModal('addTopicModal')" class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                            Hủy
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">
+                            Thêm mới
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Modals -->
+        @foreach ($topics as $topic)
+            <div id="editTopicModal{{ $topic->id }}" class="modal-overlay">
+                <div class="modal-content">
+                    <form action="{{ route('admin.topics.update', $topic) }}" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="_form" value="edit">
+                        <input type="hidden" name="_edit_id" value="{{ $topic->id }}">
+                        <div class="p-6 border-b border-gray-200">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-900">Chỉnh sửa Chủ đề</h3>
+                                <button type="button" onclick="closeModal('editTopicModal{{ $topic->id }}')" class="text-gray-400 hover:text-gray-600">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Tên chủ đề</label>
+                                <input type="text" name="name" class="editTopicName w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-black focus:border-transparent" value="{{ old('_form') === 'edit' && old('_edit_id') == $topic->id ? old('name') : $topic->name }}" required>
+                                @if(old('_form') === 'edit' && old('_edit_id') == $topic->id)
+                                    @error('name')
+                                        <div class="text-red-500 text-sm mt-1">{{ $message }}</div>
+                                    @enderror
+                                @endif
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Slug</label>
+                                <input type="text" name="slug" class="editTopicSlug w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-black focus:border-transparent" value="{{ old('_form') === 'edit' && old('_edit_id') == $topic->id ? old('slug') : $topic->slug }}">
+                            </div>
+                        </div>
+                        <div class="p-6 border-t border-gray-200 flex justify-end gap-3">
+                            <button type="button" onclick="closeModal('editTopicModal{{ $topic->id }}')" class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                                Hủy
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">
+                                Lưu thay đổi
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         @endforeach
 
-        <div class="modal fade" id="addTopicModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <form action="{{ route('admin.topics.store') }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="_form" value="add">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Thêm Chủ đề</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <!-- Custom Confirm Dialog -->
+        <div id="confirmModal" class="modal-overlay">
+            <div class="modal-content max-w-md">
+                <div class="p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                            <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
                         </div>
-                        <div class="modal-body">
-                            <div class="mb-3">
-                                <label class="form-label">Tên chủ đề</label>
-                                <input type="text" name="name" class="form-control"
-                                       value="{{ old('_form') === 'add' ? old('name') : '' }}">
-                                @if(old('_form') === 'add')
-                                    @error('name')
-                                        <div class="text-danger mt-1 small">{{ $message }}</div>
-                                    @enderror
-                                @endif
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Slug</label>
-                                <input type="text" name="slug" class="form-control"
-                                       value="{{ old('_form') === 'add' ? old('slug') : '' }}">
-                            </div>
+                    </div>
+                    <div class="text-center">
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Xác nhận xóa</h3>
+                        <p class="text-sm text-gray-500 mb-6">
+                            Bạn có chắc chắn muốn xóa chủ đề <span id="confirmTopicName" class="font-semibold"></span>? Hành động này không thể hoàn tác.
+                        </p>
+                        <div class="flex gap-3 justify-center">
+                            <button type="button" onclick="closeModal('confirmModal')" class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                                Hủy
+                            </button>
+                            <button type="button" id="confirmDeleteBtn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                                Xóa
+                            </button>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                            <button type="submit" class="btn btn-success">Thêm</button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    @if($errors->any())
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                @if(old('_form') === 'add')
-                    new bootstrap.Modal(document.getElementById('addTopicModal')).show();
-                @elseif(old('_form') === 'edit' && old('_edit_id'))
-                    new bootstrap.Modal(document.getElementById('editTopicModal{{ old('_edit_id') }}')).show();
-                @endif
-            });
-        </script>
-    @endif
-
     <script>
+        // Modal functions
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Confirm delete
+        function confirmDelete(topicName, deleteUrl) {
+            document.getElementById('confirmTopicName').textContent = topicName;
+            document.getElementById('confirmDeleteBtn').onclick = function() {
+                // Create and submit form
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = deleteUrl;
+                
+                const csrfToken = document.createElement('input');
+                csrfToken.type = 'hidden';
+                csrfToken.name = '_token';
+                csrfToken.value = '{{ csrf_token() }}';
+                
+                const methodField = document.createElement('input');
+                methodField.type = 'hidden';
+                methodField.name = '_method';
+                methodField.value = 'DELETE';
+                
+                form.appendChild(csrfToken);
+                form.appendChild(methodField);
+                document.body.appendChild(form);
+                form.submit();
+            };
+            openModal('confirmModal');
+        }
+
+        // Slug generator
         function slugify(text) {
             return text.toString().toLowerCase()
                 .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -430,20 +389,54 @@
                 .replace(/^-+|-+$/g, '');
         }
 
+        // Auto-generate slug for add form
         document.addEventListener('DOMContentLoaded', () => {
-            const addName = document.querySelector('#addTopicModal input[name="name"]');
-            const addSlug = document.querySelector('#addTopicModal input[name="slug"]');
+            const addName = document.getElementById('addTopicName');
+            const addSlug = document.getElementById('addTopicSlug');
             if (addName && addSlug) {
-                addName.addEventListener('input', () => addSlug.value = slugify(addName.value));
+                addName.addEventListener('input', () => {
+                    addSlug.value = slugify(addName.value);
+                });
             }
 
-            document.querySelectorAll('[id^="editTopicModal"]').forEach(modal => {
-                const name = modal.querySelector('input[name="name"]');
-                const slug = modal.querySelector('input[name="slug"]');
-                if (name && slug) {
-                    name.addEventListener('input', () => slug.value = slugify(name.value));
+            // Auto-generate slug for edit forms
+            document.querySelectorAll('.editTopicName').forEach((nameInput, index) => {
+                const slugInput = document.querySelectorAll('.editTopicSlug')[index];
+                if (nameInput && slugInput) {
+                    nameInput.addEventListener('input', () => {
+                        slugInput.value = slugify(nameInput.value);
+                    });
                 }
             });
+        });
+
+        // Show modal on validation errors
+        @if($errors->any())
+            document.addEventListener('DOMContentLoaded', function () {
+                @if(old('_form') === 'add')
+                    openModal('addTopicModal');
+                @elseif(old('_form') === 'edit' && old('_edit_id'))
+                    openModal('editTopicModal{{ old('_edit_id') }}');
+                @endif
+            });
+        @endif
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-overlay')) {
+                e.target.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+        });
+
+        // ESC key to close modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay.active').forEach(modal => {
+                    modal.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                });
+            }
         });
     </script>
 @endsection

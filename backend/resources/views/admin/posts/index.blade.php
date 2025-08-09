@@ -3,361 +3,557 @@
 @section('title', 'Danh sách Bài viết')
 
 @push('styles')
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'slide-up': 'slideUp 0.4s ease-out',
+                        'scale-in': 'scaleIn 0.2s ease-out',
+                        'shake': 'shake 0.5s ease-in-out'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        .container {
-            max-width: 1200px;
-            padding: 24px;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes scaleIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
 
-        .page-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 32px 24px;
-            text-align: center;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            margin-bottom: 24px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .page-header::before {
-            content: '';
-            position: absolute;
+        .modal-overlay {
+            position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.1), transparent);
-            opacity: 0.3;
-        }
-
-        .page-header h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            position: relative;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
         }
 
-        .search-form {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
         }
 
-        .search-form .form-control,
-        .search-form .form-select {
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 10px 16px;
-            font-size: 0.95rem;
-            flex: 1;
-            min-width: 200px;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .search-form .form-control:focus,
-        .search-form .form-select:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            outline: none;
-        }
-
-        .search-form .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .search-form .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        }
-
-        .search-form .btn-success {
-            background: linear-gradient(135deg, #28a745, #34c759);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .search-form .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
-        }
-
-        .table {
-            background: #fff;
+        .modal-content {
+            background: white;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
+            max-width: 400px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.7);
+            transition: transform 0.3s ease;
         }
 
-        .table thead {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
         }
 
-        .table th,
-        .table td {
-            padding: 16px;
-            font-size: 0.95rem;
-            vertical-align: middle;
-            color: #333;
-        }
-
-        .table tr {
-            transition: background 0.2s ease;
-        }
-
-        .table tr:hover {
-            background: #f0f4ff;
-        }
-
-        .btn-sm {
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.85rem;
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            rounded: 6px;
+            font-size: 0.75rem;
             font-weight: 500;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .btn-warning {
-            background: #ffc107;
-            border: none;
-            color: #333;
+        .status-published { 
+            background-color: #dcfce7; 
+            color: #166534; 
         }
-
-        .btn-warning:hover {
-            background: #ffca2c;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+        .status-draft { 
+            background-color: #f3f4f6; 
+            color: #374151; 
         }
-
-        .btn-danger {
-            background: #dc3545;
-            border: none;
-            color: white;
+        .pin-badge { 
+            background-color: #fef3c7; 
+            color: #92400e; 
         }
-
-        .btn-danger:hover {
-            background: #e4606d;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
-        }
-
-        .empty-state {
-            padding: 32px;
-            text-align: center;
-            color: #666;
-            font-size: 1rem;
-        }
-
-        .empty-state i {
-            font-size: 2rem;
-            color: #999;
-        }
-
-        .pagination {
-            justify-content: center;
-            margin-top: 24px;
-        }
-
-        .pagination .page-link {
-            border-radius: 6px;
-            margin: 0 4px;
-            color: #667eea;
-            font-weight: 500;
-            transition: background 0.2s ease, color 0.2s ease;
-        }
-
-        .pagination .page-link:hover {
-            background: #f0f4ff;
-            color: #764ba2;
-        }
-
-        .pagination .page-item.active .page-link {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-color: #667eea;
-            color: white;
-        }
-
-        .badge {
-            font-size: 0.85rem;
-            padding: 6px 12px;
-            border-radius: 6px;
-            transition: transform 0.2s ease;
-        }
-
-        .badge:hover {
-            transform: scale(1.05);
-        }
-
-        .badge.bg-warning {
-            background: #ffc107;
-            color: #333;
-        }
-
-        .badge.bg-success {
-            background: #28a745;
-            color: white;
-        }
-
-        .badge.bg-secondary {
-            background: #6c757d;
-            color: white;
-        }
-
-        .thumbnail-img {
-            height: 70px;
-            object-fit: cover;
-            border-radius: 6px;
-            transition: transform 0.2s ease;
-        }
-
-        .thumbnail-img:hover {
-            transform: scale(1.1);
-        }
-
-        @media (max-width: 768px) {
-            .search-form {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .table th,
-            .table td {
-                padding: 12px;
-                font-size: 0.85rem;
-            }
-
-            .btn-sm {
-                padding: 5px 10px;
-                font-size: 0.8rem;
-            }
-
-            .thumbnail-img {
-                height: 50px;
-            }
+        .topic-badge { 
+            background-color: #dbeafe; 
+            color: #1e40af; 
         }
     </style>
 @endpush
 
 @section('content')
-    <div class="container">
-        <div class="page-header">
-            <h1><i class="bi bi-journal-text"></i> Danh sách Bài viết</h1>
+    <div class="min-h-screen bg-white transition-all duration-300">
+        <!-- Header -->
+        <div class="bg-white border-b border-gray-200 sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-6">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Quản lý Bài viết</h1>
+                        <p class="text-sm text-gray-600 mt-1">Quản lý danh sách bài viết trong hệ thống</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        @include('components.alert')
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            @include('components.alert')
 
-        <form method="GET" action="{{ route('admin.posts.index') }}" class="search-form">
-            <input type="text" name="keyword" class="form-control" placeholder="🔍 Tìm theo tiêu đề..." value="{{ request('keyword') }}">
-            <select name="topic_id" class="form-select">
-                <option value="">-- Tất cả chủ đề --</option>
-                @foreach ($topics as $topic)
-                    <option value="{{ $topic->id }}" {{ request('topic_id') == $topic->id ? 'selected' : '' }}>
-                        {{ $topic->name }}
-                    </option>
-                @endforeach
-            </select>
-            <select name="status" class="form-select">
-                <option value="">-- Tất cả trạng thái --</option>
-                <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>Nháp</option>
-                <option value="published" {{ request('status') == 'published' ? 'selected' : '' }}>Xuất bản</option>
-            </select>
-            <button type="submit" class="btn btn-primary">Tìm</button>
-            <a href="{{ route('admin.posts.create') }}" class="btn btn-success ms-auto">
-                ➕ Thêm mới
-            </a>
-        </form>
+            <!-- Search & Filters -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6 animate-fade-in">
+                <form method="GET" action="{{ route('admin.posts.index') }}" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tìm kiếm</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                </div>
+                                <input 
+                                    type="text" 
+                                    name="keyword" 
+                                    class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-black focus:border-transparent" 
+                                    placeholder="Tìm theo tiêu đề..." 
+                                    value="{{ request('keyword') }}"
+                                >
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Chủ đề</label>
+                            <select name="topic_id" class="block w-full py-2.5 px-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-black focus:border-transparent">
+                                <option value="">-- Tất cả chủ đề --</option>
+                                @foreach ($topics as $topic)
+                                    <option value="{{ $topic->id }}" {{ request('topic_id') == $topic->id ? 'selected' : '' }}>
+                                        {{ $topic->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Trạng thái</label>
+                            <select name="status" class="block w-full py-2.5 px-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-black focus:border-transparent">
+                                <option value="">-- Tất cả trạng thái --</option>
+                                <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>Nháp</option>
+                                <option value="published" {{ request('status') == 'published' ? 'selected' : '' }}>Xuất bản</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button type="submit" class="bg-black text-white px-4 py-2.5 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            Tìm kiếm
+                        </button>
+                        
+                        <a href="{{ route('admin.posts.create') }}" class="bg-black text-white px-4 py-2.5 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            Thêm mới
+                        </a>
+                    </div>
+                </form>
+            </div>
 
-        <div class="table-responsive">
-            <x-admin.table :headers="['STT', 'Ảnh', 'Tiêu đề', 'Ghim', 'Chủ đề', 'Trạng thái', 'Ngày tạo', 'Hành động']">
-                @forelse($posts as $index => $post)
-                    <tr>
-                        <td>{{ $posts->firstItem() + $index }}</td>
-                        <td>
-                            @if ($post->thumbnail)
-                                <img src="{{ $post->thumbnail }}" alt="thumb" class="thumbnail-img shadow-sm">
-                            @else
-                                <span class="text-muted">Không có</span>
-                            @endif
-                        </td>
-                        <td class="text-start">
-                            <strong>{{ $post->title }}</strong><br>
-                            <small class="text-muted">{{ $post->slug }}</small>
-                        </td>
-                        <td>
-                            @if ($post->is_pinned)
-                                <span class="badge bg-warning"><i class="bi bi-pin-angle-fill me-1"></i>Ghim</span>
-                            @else
-                                <span class="text-muted"><i class="bi bi-dash-circle"></i></span>
-                            @endif
-                        </td>
-                        <td>
-                            @forelse($post->topics as $topic)
-                                <span class="badge bg-primary me-1">{{ $topic->name }}</span>
+            <!-- Desktop Table -->
+            <div class="hidden lg:block bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden animate-slide-up">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">STT</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ảnh</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiêu đề</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ghim</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chủ đề</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @forelse($posts as $index => $post)
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                        {{ $posts->firstItem() + $index }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        @if ($post->thumbnail)
+                                            <img src="{{ $post->thumbnail }}" alt="Thumbnail" class="h-16 w-16 rounded-lg object-cover border border-gray-200">
+                                        @else
+                                            <div class="h-16 w-16 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200">
+                                                <svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                </svg>
+                                            </div>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm font-medium text-gray-900">{{ Str::limit($post->title, 50) }}</div>
+                                        <div class="text-sm text-gray-500">{{ Str::limit($post->slug, 40) }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        @if ($post->is_pinned)
+                                            <span class="status-badge pin-badge">
+                                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"></path>
+                                                    <path fill-rule="evenodd" d="M3 8a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                Ghim
+                                            </span>
+                                        @else
+                                            <span class="text-gray-400">—</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-wrap gap-1">
+                                            @forelse($post->topics as $topic)
+                                                <span class="status-badge topic-badge">{{ $topic->name }}</span>
+                                            @empty
+                                                <span class="text-gray-400">—</span>
+                                            @endforelse
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="status-badge {{ $post->status === 'published' ? 'status-published' : 'status-draft' }}">
+                                            {{ $post->status === 'published' ? 'Xuất bản' : 'Nháp' }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ $post->created_at->format('d/m/Y') }}</div>
+                                        <div class="text-sm text-gray-500 flex items-center gap-3">
+                                            <div class="flex items-center gap-1">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                                </svg>
+                                                {{ $post->views ?? 0 }}
+                                            </div>
+                                            <div class="flex items-center gap-1">
+                                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                {{ $post->likes ?? 0 }}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <div class="flex justify-end gap-2">
+                                            <a href="{{ route('admin.posts.edit', $post) }}" class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors">
+                                                Sửa
+                                            </a>
+                                            <button onclick="confirmDelete('{{ $post->title }}', '{{ route('admin.posts.destroy', $post) }}')" class="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm hover:bg-red-200 transition-colors">
+                                                Xóa
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
                             @empty
-                                <span class="text-muted">-</span>
+                                <tr>
+                                    <td colspan="8" class="px-6 py-12 text-center">
+                                        <div class="flex flex-col items-center">
+                                            <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                            <h3 class="text-lg font-medium text-gray-900 mb-1">Không có bài viết</h3>
+                                            <p class="text-gray-500 text-sm">
+                                                @if (request('keyword'))
+                                                    Không tìm thấy kết quả cho "{{ request('keyword') }}"
+                                                @else
+                                                    Chưa có bài viết nào trong hệ thống
+                                                @endif
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
                             @endforelse
-                        </td>
-                        <td>
-                            <span class="badge {{ $post->status === 'published' ? 'bg-success' : 'bg-secondary' }}">
-                                {{ $post->status === 'published' ? 'Xuất bản' : 'Nháp' }}
-                            </span>
-                        </td>
-                        <td>
-                            <div>{{ $post->created_at->format('d/m/Y') }}</div>
-                            <div class="small text-muted">
-                                👁️ {{ $post->views ?? 0 }} | ❤️ {{ $post->likes ?? 0 }}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Mobile Cards -->
+            <div class="lg:hidden space-y-4">
+                @forelse($posts as $post)
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                        <div class="flex space-x-3 mb-3">
+                            <div class="flex-shrink-0">
+                                @if ($post->thumbnail)
+                                    <img src="{{ $post->thumbnail }}" alt="Thumbnail" class="h-16 w-16 rounded-lg object-cover border border-gray-200">
+                                @else
+                                    <div class="h-16 w-16 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200">
+                                        <svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        </svg>
+                                    </div>
+                                @endif
                             </div>
-                        </td>
-                        <td>
-                            <div class="d-flex flex-wrap gap-2 align-items-center">
-                                <a href="{{ route('admin.posts.edit', $post) }}" class="btn btn-sm btn-warning">
-                                    <i class="bi bi-pencil"></i> Sửa
-                                </a>
-                                <form action="{{ route('admin.posts.destroy', $post) }}" method="POST"
-                                      onsubmit="return confirm('Bạn chắc chắn muốn xóa?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-danger">
-                                        <i class="bi bi-trash"></i> Xóa
-                                    </button>
-                                </form>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-sm font-medium text-gray-900 truncate">{{ $post->title }}</h3>
+                                <p class="text-sm text-gray-500 truncate">{{ $post->slug }}</p>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="status-badge {{ $post->status === 'published' ? 'status-published' : 'status-draft' }}">
+                                        {{ $post->status === 'published' ? 'Xuất bản' : 'Nháp' }}
+                                    </span>
+                                    @if ($post->is_pinned)
+                                        <span class="status-badge pin-badge">Ghim</span>
+                                    @endif
+                                </div>
                             </div>
-                        </td>
-                    </tr>
+                        </div>
+
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Chủ đề:</span>
+                                <div class="flex flex-wrap gap-1">
+                                    @forelse($post->topics as $topic)
+                                        <span class="status-badge topic-badge">{{ $topic->name }}</span>
+                                    @empty
+                                        <span class="text-gray-400">—</span>
+                                    @endforelse
+                                </div>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Ngày tạo:</span>
+                                <span class="text-gray-900">{{ $post->created_at->format('d/m/Y') }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Thống kê:</span>
+                                <div class="flex items-center gap-3">
+                                    <div class="flex items-center gap-1">
+                                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                        <span class="text-gray-900">{{ $post->views ?? 0 }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-1">
+                                        <svg class="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <span class="text-gray-900">{{ $post->likes ?? 0 }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 mt-4 pt-3 border-t border-gray-200">
+                            <a href="{{ route('admin.posts.edit', $post) }}" class="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm text-center hover:bg-gray-200 transition-colors">
+                                Sửa
+                            </a>
+                            <button onclick="confirmDelete('{{ $post->title }}', '{{ route('admin.posts.destroy', $post) }}')" class="flex-1 bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm hover:bg-red-200 transition-colors">
+                                Xóa
+                            </button>
+                        </div>
+                    </div>
                 @empty
-                    <tr>
-                        <td colspan="8" class="empty-state">
-                            <i class="bi bi-folder-x"></i><br>
-                            😕 Không tìm thấy bài viết nào
+                    <div class="text-center py-12">
+                        <svg class="h-12 w-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <h3 class="text-lg font-medium text-gray-900 mb-1">Không có bài viết</h3>
+                        <p class="text-gray-500 text-sm">
                             @if (request('keyword'))
-                                với từ khóa <strong>"{{ request('keyword') }}"</strong>.
+                                Không tìm thấy kết quả cho "{{ request('keyword') }}"
+                            @else
+                                Chưa có bài viết nào trong hệ thống
                             @endif
-                            <p class="text-muted">Hãy thử lại với từ khóa khác.</p>
-                        </td>
-                    </tr>
+                        </p>
+                    </div>
                 @endforelse
-            </x-admin.table>
+            </div>
+
+            <!-- Custom Pagination -->
+            @if($posts->hasPages())
+                <div class="mt-8 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg">
+                    <div class="flex flex-1 justify-between sm:hidden">
+                        @if ($posts->onFirstPage())
+                            <span class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-500">Trước</span>
+                        @else
+                            <a href="{{ $posts->appends(['keyword' => request('keyword'), 'topic_id' => request('topic_id'), 'status' => request('status')])->previousPageUrl() }}" class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Trước</a>
+                        @endif
+
+                        @if ($posts->hasMorePages())
+                            <a href="{{ $posts->appends(['keyword' => request('keyword'), 'topic_id' => request('topic_id'), 'status' => request('status')])->nextPageUrl() }}" class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Sau</a>
+                        @else
+                            <span class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-500">Sau</span>
+                        @endif
+                    </div>
+
+                    <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                        <div>
+                            <p class="text-sm text-gray-700">
+                                Hiển thị
+                                <span class="font-medium">{{ $posts->firstItem() }}</span>
+                                đến
+                                <span class="font-medium">{{ $posts->lastItem() }}</span>
+                                trong tổng số
+                                <span class="font-medium">{{ $posts->total() }}</span>
+                                kết quả
+                            </p>
+                        </div>
+                        <div>
+                            <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                                {{-- Previous Page Link --}}
+                                @if ($posts->onFirstPage())
+                                    <span class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 focus:z-20 focus:outline-offset-0">
+                                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                            <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+                                        </svg>
+                                    </span>
+                                @else
+                                    <a href="{{ $posts->appends(['keyword' => request('keyword'), 'topic_id' => request('topic_id'), 'status' => request('status')])->previousPageUrl() }}" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">
+                                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                            <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+                                        </svg>
+                                    </a>
+                                @endif
+
+                                {{-- Pagination Elements --}}
+                                @foreach ($posts->appends(['keyword' => request('keyword'), 'topic_id' => request('topic_id'), 'status' => request('status')])->getUrlRange(1, $posts->lastPage()) as $page => $url)
+                                    @if ($page == $posts->currentPage())
+                                        <span class="relative z-10 inline-flex items-center bg-black px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black">{{ $page }}</span>
+                                    @else
+                                        <a href="{{ $url }}" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">{{ $page }}</a>
+                                    @endif
+                                @endforeach
+
+                                {{-- Next Page Link --}}
+                                @if ($posts->hasMorePages())
+                                    <a href="{{ $posts->appends(['keyword' => request('keyword'), 'topic_id' => request('topic_id'), 'status' => request('status')])->nextPageUrl() }}" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">
+                                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                            <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                                        </svg>
+                                    </a>
+                                @else
+                                    <span class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 focus:z-20 focus:outline-offset-0">
+                                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                            <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                                        </svg>
+                                    </a>
+                                @endif
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            @endif
         </div>
 
-        <div class="pagination">
-            {{ $posts->appends(['keyword' => request('keyword'), 'topic_id' => request('topic_id'), 'status' => request('status')])->links('pagination::bootstrap-5') }}
+        <!-- Custom Confirm Dialog -->
+        <div id="confirmModal" class="modal-overlay">
+            <div class="modal-content max-w-md">
+                <div class="p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                            <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Xác nhận xóa</h3>
+                        <p class="text-sm text-gray-500 mb-6">
+                            Bạn có chắc chắn muốn xóa bài viết <span id="confirmPostTitle" class="font-semibold"></span>? Hành động này không thể hoàn tác.
+                        </p>
+                        <div class="flex gap-3 justify-center">
+                            <button type="button" onclick="closeModal('confirmModal')" class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                                Hủy
+                            </button>
+                            <button type="button" id="confirmDeleteBtn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                                Xóa
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+
+    <script>
+        // Modal functions
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Confirm delete
+        function confirmDelete(postTitle, deleteUrl) {
+            document.getElementById('confirmPostTitle').textContent = '"' + postTitle + '"';
+            document.getElementById('confirmDeleteBtn').onclick = function() {
+                // Create and submit form
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = deleteUrl;
+                
+                const csrfToken = document.createElement('input');
+                csrfToken.type = 'hidden';
+                csrfToken.name = '_token';
+                csrfToken.value = '{{ csrf_token() }}';
+                
+                const methodField = document.createElement('input');
+                methodField.type = 'hidden';
+                methodField.name = '_method';
+                methodField.value = 'DELETE';
+                
+                form.appendChild(csrfToken);
+                form.appendChild(methodField);
+                document.body.appendChild(form);
+                form.submit();
+            };
+            openModal('confirmModal');
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-overlay')) {
+                e.target.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+        });
+
+        // ESC key to close modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay.active').forEach(modal => {
+                    modal.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                });
+            }
+        });
+    </script>
 @endsection

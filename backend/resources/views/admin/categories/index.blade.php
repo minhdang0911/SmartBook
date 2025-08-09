@@ -3,379 +3,393 @@
 @section('title', 'Danh sách Danh mục')
 
 @push('styles')
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'slide-up': 'slideUp 0.4s ease-out',
+                        'scale-in': 'scaleIn 0.2s ease-out',
+                        'shake': 'shake 0.5s ease-in-out'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        /* Container */
-        .container {
-            max-width: 1200px;
-            padding: 24px;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes scaleIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
 
-        /* Header */
-        .page-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 32px 24px;
-            text-align: center;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            margin-bottom: 24px;
-        }
-
-        .page-header h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 0;
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-        }
-
-        /* Search Form */
-        .search-form {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            max-width: 500px;
-            margin-bottom: 24px;
-        }
-
-        .search-form .form-control {
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 10px 16px;
-            font-size: 0.95rem;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .search-form .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            outline: none;
-        }
-
-        .search-form .btn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
             transition: all 0.3s ease;
         }
 
-        .search-form .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
         }
 
-        /* Add New Button */
-        .btn-success {
-            background: linear-gradient(135deg, #28a745, #34c759);
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-        }
-
-        .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
-        }
-
-        /* Table */
-        .table {
-            background: #fff;
+        .modal-content {
+            background: white;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
+            max-width: 400px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.7);
+            transition: transform 0.3s ease;
         }
 
-        .table thead {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        .dark .modal-content {
+            background: #1f2937;
         }
 
-        .table th {
-            font-weight: 600;
-            color: #333;
-            padding: 16px;
-            font-size: 0.95rem;
-        }
-
-        .table td {
-            padding: 16px;
-            vertical-align: middle;
-            font-size: 0.9rem;
-            color: #333;
-        }
-
-        .table tr {
-            transition: background 0.3s ease;
-        }
-
-        .table tr:hover {
-            background: #f0f4ff;
-        }
-
-        /* Action Buttons */
-        .btn-sm {
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .btn-warning {
-            background: #ffc107;
-            border: none;
-            color: #333;
-        }
-
-        .btn-warning:hover {
-            background: #ffca2c;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
-        }
-
-        .btn-danger {
-            background: #dc3545;
-            border: none;
-        }
-
-        .btn-danger:hover {
-            background: #e4606d;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
-        }
-
-        /* Empty State */
-        .empty-state {
-            padding: 24px;
-            text-align: center;
-            color: #666;
-            font-size: 1rem;
-        }
-
-        .empty-state strong {
-            color: #333;
-        }
-
-        .empty-state .text-muted {
-            font-size: 0.85rem;
-            margin-top: 8px;
-        }
-
-        /* Pagination */
-        .pagination {
-            justify-content: center;
-            margin-top: 24px;
-        }
-
-        .pagination .page-link {
-            border-radius: 6px;
-            margin: 0 4px;
-            color: #667eea;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .pagination .page-link:hover {
-            background: #f0f4ff;
-            color: #764ba2;
-        }
-
-        .pagination .page-item.active .page-link {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-color: #667eea;
-            color: white;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .page-header {
-                padding: 24px;
-            }
-
-            .page-header h1 {
-                font-size: 1.5rem;
-            }
-
-            .search-form {
-                flex-direction: column;
-                align-items: stretch;
-                max-width: 100%;
-            }
-
-            .search-form .form-control,
-            .search-form .btn {
-                width: 100%;
-            }
-
-            .table-responsive {
-                overflow-x: auto;
-            }
-
-            .table th,
-            .table td {
-                font-size: 0.85rem;
-                padding: 12px;
-            }
-
-            .btn-sm {
-                padding: 5px 10px;
-                font-size: 0.8rem;
-            }
-        }
-
-        @media (max-width: 576px) {
-            .page-header {
-                padding: 16px;
-            }
-
-            .page-header h1 {
-                font-size: 1.2rem;
-            }
-
-            .table th,
-            .table td {
-                font-size: 0.8rem;
-                padding: 10px;
-            }
-
-            .btn-success {
-                padding: 10px 16px;
-                font-size: 0.9rem;
-            }
-
-            .empty-state {
-                font-size: 0.9rem;
-            }
-        }
-
-        .search-form {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            max-width: 100%;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-        }
-
-        .search-form .form-control {
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 10px 16px;
-            font-size: 0.95rem;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .search-form .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            outline: none;
-        }
-
-        .search-form .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .search-form .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-
-        .search-form .btn-success {
-            background: linear-gradient(135deg, #28a745, #34c759);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-        }
-
-        .search-form .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
         }
     </style>
 @endpush
 
 @section('content')
-    <div class="container">
-        <div class="page-header">
-            <h1><i class="bi bi-tags"></i> Danh sách Danh mục</h1>
+    <div class="min-h-screen bg-white dark:bg-gray-900 transition-all duration-300">
+        <!-- Header -->
+        <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-6">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Quản lý Danh mục</h1>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Quản lý danh mục sách trong hệ thống</p>
+                    </div>
+                    
+                    <!-- Dark Mode Toggle -->
+                    <button onclick="toggleDarkMode()" class="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                        </svg>
+                        <svg class="w-5 h-5 text-yellow-500 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
         </div>
 
-        {{-- Flash messages --}}
-        @include('components.alert')
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            @include('components.alert')
 
-        {{-- Search Form and Add Button for Category --}}
-        <form method="GET" action="{{ route('admin.categories.index') }}"
-            class="search-form d-flex align-items-center gap-2 flex-wrap" role="search">
-            <input type="text" name="search" class="form-control" placeholder="🔍 Tìm danh mục..."
-                value="{{ request('search') }}">
-            <button type="submit" class="btn btn-primary">Tìm</button>
-            <x-admin.button.modal-button target="addCategoryModal" text="➕ Thêm mới" class="btn-success ms-auto" />
-        </form>
+            <!-- Search & Actions -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6 animate-fade-in">
+                <form method="GET" action="{{ route('admin.categories.index') }}" class="flex flex-col sm:flex-row gap-4">
+                    <div class="flex-1">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                            <input 
+                                type="text" 
+                                name="search" 
+                                class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent" 
+                                placeholder="Tìm kiếm danh mục..." 
+                                value="{{ request('search') }}"
+                            >
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button type="submit" class="bg-black dark:bg-white text-white dark:text-black px-4 py-2.5 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            Tìm kiếm
+                        </button>
+                        
+                        <button type="button" onclick="openModal('addCategoryModal')" class="bg-black dark:bg-white text-white dark:text-black px-4 py-2.5 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            Thêm mới
+                        </button>
+                    </div>
+                </form>
+            </div>
 
+            <!-- Table -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden animate-slide-up">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-900">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">STT</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tên Danh mục</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            @forelse ($categories as $index => $category)
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
+                                        {{ $categories->firstItem() + $index }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="h-10 w-10 flex-shrink-0">
+                                                <div class="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                                                    <svg class="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $category->name }}</div>
+                                                <div class="text-sm text-gray-500 dark:text-gray-400">Danh mục</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <div class="flex justify-end gap-2">
+                                            <button onclick="openModal('editCategoryModal{{ $category->id }}')" class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                                Sửa
+                                            </button>
+                                            <button onclick="confirmDelete('{{ $category->name }}', '{{ route('admin.categories.destroy', $category) }}')" class="bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 px-3 py-2 rounded-lg text-sm hover:bg-red-200 dark:hover:bg-red-800 transition-colors">
+                                                Xóa
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="3" class="px-6 py-12 text-center">
+                                        <div class="flex flex-col items-center">
+                                            <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                            </svg>
+                                            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">Không có danh mục</h3>
+                                            <p class="text-gray-500 dark:text-gray-400 text-sm">
+                                                @if (request('search'))
+                                                    Không tìm thấy kết quả cho "{{ request('search') }}"
+                                                @else
+                                                    Chưa có danh mục nào trong hệ thống
+                                                @endif
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-
-        {{-- Table categories --}}
-        <div class="table-responsive">
-            <x-admin.table :headers="['STT', 'Tên danh mục', 'Hành động']">
-                @forelse ($categories as $index => $category)
-                    <tr>
-                        <td>{{ $categories->firstItem() + $index }}</td>
-                        <td>{{ $category->name }}</td>
-                        <td>
-                            <x-admin.button.modal-button target="editCategoryModal{{ $category->id }}" text="Sửa"
-                                class="btn-warning btn-sm" />
-
-                            <form action="{{ route('admin.categories.destroy', $category) }}" method="POST"
-                                class="d-inline" onsubmit="return confirm('Bạn chắc chắn muốn xóa?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger">Xóa</button>
-                            </form>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="3" class="empty-state">
-                            😕 Không tìm thấy danh mục nào
-                            @if (request('search'))
-                                với từ khóa <strong>"{{ request('search') }}"</strong>.
-                            @endif
-                            <p class="text-muted">Hãy thử tên khác hoặc kiểm tra lại chính tả!</p>
-                        </td>
-                    </tr>
-                @endforelse
-            </x-admin.table>
+            <!-- Pagination -->
+            @if($categories->hasPages())
+                <div class="mt-6 flex justify-center">
+                    {{ $categories->appends(['search' => request('search')])->links() }}
+                </div>
+            @endif
         </div>
 
-        {{-- Pagination --}}
-        <div class="pagination">
-            {{ $categories->appends(['search' => request('search')])->links('pagination::bootstrap-5') }}
+        <!-- Add Modal -->
+        <div id="addCategoryModal" class="modal-overlay">
+            <div class="modal-content">
+                <form id="addCategoryForm" action="{{ route('admin.categories.store') }}" method="POST">
+                    @csrf
+                    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Thêm Danh mục Mới</h3>
+                            <button type="button" onclick="closeModal('addCategoryModal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tên danh mục</label>
+                            <input type="text" name="name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent" placeholder="Nhập tên danh mục..." required>
+                        </div>
+                    </div>
+                    <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+                        <button type="button" onclick="closeModal('addCategoryModal')" class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                            Hủy
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
+                            Thêm mới
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
 
-        {{-- Edit modals --}}
+        <!-- Edit Modals -->
         @foreach ($categories as $category)
-            <x-admin.modal.edit-category :category="$category" />
+            <div id="editCategoryModal{{ $category->id }}" class="modal-overlay">
+                <div class="modal-content">
+                    <form action="{{ route('admin.categories.update', $category) }}" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Chỉnh sửa Danh mục</h3>
+                                <button type="button" onclick="closeModal('editCategoryModal{{ $category->id }}')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tên danh mục</label>
+                                <input type="text" name="name" value="{{ old('name', $category->name) }}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent" required>
+                            </div>
+                        </div>
+                        <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+                            <button type="button" onclick="closeModal('editCategoryModal{{ $category->id }}')" class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                Hủy
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
+                                Lưu thay đổi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         @endforeach
 
-        {{-- Add modal --}}
-        <x-admin.modal.add-category />
+        <!-- Custom Confirm Dialog -->
+        <div id="confirmModal" class="modal-overlay">
+            <div class="modal-content max-w-md">
+                <div class="p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900">
+                            <svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Xác nhận xóa</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                            Bạn có chắc chắn muốn xóa danh mục <span id="confirmCategoryName" class="font-semibold"></span>? Hành động này không thể hoàn tác.
+                        </p>
+                        <div class="flex gap-3 justify-center">
+                            <button type="button" onclick="closeModal('confirmModal')" class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                Hủy
+                            </button>
+                            <button type="button" id="confirmDeleteBtn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                                Xóa
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <script>
+        // Dark mode toggle
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+        }
+
+        // Initialize dark mode
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.classList.add('dark');
+        }
+
+        // Modal functions
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Confirm delete
+        function confirmDelete(categoryName, deleteUrl) {
+            document.getElementById('confirmCategoryName').textContent = categoryName;
+            document.getElementById('confirmDeleteBtn').onclick = function() {
+                // Create and submit form
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = deleteUrl;
+                
+                const csrfToken = document.createElement('input');
+                csrfToken.type = 'hidden';
+                csrfToken.name = '_token';
+                csrfToken.value = '{{ csrf_token() }}';
+                
+                const methodField = document.createElement('input');
+                methodField.type = 'hidden';
+                methodField.name = '_method';
+                methodField.value = 'DELETE';
+                
+                form.appendChild(csrfToken);
+                form.appendChild(methodField);
+                document.body.appendChild(form);
+                form.submit();
+            };
+            openModal('confirmModal');
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-overlay')) {
+                e.target.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+        });
+
+        // ESC key to close modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay.active').forEach(modal => {
+                    modal.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                });
+            }
+        });
+    </script>
 @endsection

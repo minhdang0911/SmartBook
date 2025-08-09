@@ -3,462 +3,479 @@
 @section('title', 'Quản lý Người dùng')
 
 @push('styles')
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'slide-up': 'slideUp 0.4s ease-out',
+                        'scale-in': 'scaleIn 0.2s ease-out',
+                        'shake': 'shake 0.5s ease-in-out'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        /* Layout chuẩn SmartBook */
-        .container-fluid {
-            max-width: 1200px;
-            padding: 24px;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes scaleIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
 
-        .page-header {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-
-        .page-header h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 0;
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
         }
 
-        .search-form {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.7);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .status-badge {
+            display: inline-flex;
             align-items: center;
-        }
-
-        .search-form input.form-control {
-            border-radius: 8px;
-            padding: 10px 14px;
-            font-size: 0.95rem;
-            flex: 1;
-        }
-
-        .search-form button.btn {
-            border-radius: 8px;
-            padding: 10px 20px;
-            font-weight: 600;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-        }
-
-        .search-form button.btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-
-        .table {
-            background: #fff;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-        }
-
-        .table thead {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-        }
-
-        .table th,
-        .table td {
-            padding: 12px;
-            vertical-align: middle;
-            font-size: 0.9rem;
-            color: #333;
-        }
-
-        .table tr:hover {
-            background: #f0f4ff;
-        }
-
-        .badge {
-            font-size: 0.85rem;
-            padding: 6px 10px;
-            border-radius: 0.5rem;
-        }
-
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 0.85rem;
-            border-radius: 6px;
-            font-weight: 500;
-            line-height: 1.2;
-        }
-
-        .btn-warning {
-            background: #ffc107;
-            color: #333;
-            border: none;
-        }
-
-        .btn-warning:hover {
-            background: #ffca2c;
-            transform: translateY(-1px);
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-            color: #fff;
-            border: none;
-        }
-
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-
-        .btn-success {
-            background: #28a745;
-            color: white;
-            border: none;
-        }
-
-        .btn-success:hover {
-            background: #218838;
-        }
-
-        .rounded-circle {
-            border: 2px solid #ccc;
-            width: 40px;
-            height: 40px;
-            object-fit: cover;
-        }
-
-        .pagination {
-            margin-top: 20px;
-            font-size: 0.9rem;
-        }
-
-        /* Card Mobile View */
-        .user-card {
-            border: 1px solid #ddd;
-            border-radius: 12px;
-            padding: 16px;
-            background: #fff;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-        }
-
-        .user-card h6 {
-            margin-bottom: 6px;
-            font-weight: bold;
-        }
-
-        .user-card img {
-            border: 2px solid #ccc;
-            width: 48px;
-            height: 48px;
-            object-fit: cover;
-        }
-
-        .user-card .badge {
+            padding: 4px 8px;
+            rounded: 6px;
             font-size: 0.75rem;
+            font-weight: 500;
         }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            .page-header h1 {
-                font-size: 1.5rem;
-                flex-direction: column;
-            }
-
-            .search-form input.form-control {
-                font-size: 0.9rem;
-                padding: 8px;
-            }
-
-            .search-form button.btn {
-                font-size: 0.9rem;
-                padding: 8px 16px;
-            }
-
-            .table th,
-            .table td {
-                font-size: 0.85rem;
-                padding: 10px;
-            }
-
-            .btn-sm {
-                padding: 5px 10px;
-                font-size: 0.8rem;
-            }
-
-            .badge {
-                font-size: 0.8rem;
-                padding: 5px 8px;
-            }
-
-            .rounded-circle {
-                width: 32px;
-                height: 32px;
-            }
+        .role-admin { 
+            background-color: #fee2e2; 
+            color: #991b1b; 
         }
-
-        @media (max-width: 576px) {
-            .container-fluid {
-                padding: 16px;
-            }
-
-            .page-header {
-                padding: 16px;
-            }
-
-            .page-header h1 {
-                font-size: 1.3rem;
-                flex-direction: column;
-                text-align: center;
-            }
-
-            .search-form {
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .table th,
-            .table td {
-                font-size: 0.78rem;
-                padding: 8px;
-            }
-
-            .btn-sm {
-                padding: 4px 8px;
-                font-size: 0.75rem;
-            }
-
-            .pagination {
-                font-size: 0.85rem;
-            }
-
-            .rounded-circle {
-                width: 28px;
-                height: 28px;
-            }
-
-            .desktop-table {
-                display: none;
-            }
+        .role-user { 
+            background-color: #f3f4f6; 
+            color: #374151; 
         }
-
-        @media (max-width: 390px) {
-            .page-header h1 {
-                font-size: 1.2rem;
-            }
-
-            .search-form input.form-control {
-                font-size: 0.85rem;
-                padding: 6px;
-            }
-
-            .search-form button.btn {
-                font-size: 0.85rem;
-                padding: 6px 12px;
-            }
-
-            .table th,
-            .table td {
-                font-size: 0.75rem;
-                padding: 6px;
-            }
-
-            .btn-sm {
-                padding: 3px 6px;
-                font-size: 0.7rem;
-            }
-
-            .badge {
-                font-size: 0.75rem;
-                padding: 4px 6px;
-            }
-
-            .rounded-circle {
-                width: 24px;
-                height: 24px;
-            }
-
-            .action-buttons {
-                gap: 4px;
-            }
+        .status-active { 
+            background-color: #dcfce7; 
+            color: #166534; 
         }
-
-        @media (min-width: 577px) {
-            .mobile-cards {
-                display: none;
-            }
+        .status-locked { 
+            background-color: #f3f4f6; 
+            color: #374151; 
+        }
+        .verified-yes { 
+            background-color: #dbeafe; 
+            color: #1e40af; 
+        }
+        .verified-no { 
+            background-color: #fef3c7; 
+            color: #92400e; 
         }
     </style>
 @endpush
 
-
 @section('content')
-    <div class="container-fluid mt-4">
-        <div class="page-header bg-gradient-primary text-white p-4 rounded shadow mb-4">
-            <h1 class="mb-0"><i class="bi bi-people"></i> Danh sách người dùng</h1>
-        </div>
-
-        @include('components.alert')
-
-        <form method="GET" action="{{ route('admin.users.index') }}" class="search-form mb-3 d-flex gap-2 flex-wrap">
-            <input type="text" name="search" class="form-control" placeholder="🔍 Tìm theo tên hoặc email..."
-                value="{{ $search }}">
-            <button type="submit" class="btn btn-primary">Tìm</button>
-        </form>
-
-        {{-- Bảng desktop --}}
-        <div class="table-responsive desktop-table">
-            <table class="table table-bordered table-hover align-middle text-center">
-                <thead class="table-light">
-                    <tr>
-                        <th>STT</th>
-                        <th>Họ tên</th>
-                        <th>Email</th>
-                        <th>SĐT</th>
-                        <th>Vai trò</th>
-                        <th>Trạng thái</th>
-                        <th>Xác thực</th>
-                        <th>Hành động</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($users as $index => $user)
-                        <tr class="{{ $user->deleted_at ? 'table-warning' : '' }}">
-                            <td>{{ $users->firstItem() + $index }}</td>
-                            <td>{{ $user->name }}</td>
-                            <td>{{ $user->email }}</td>
-                            <td>{{ $user->phone ?? '—' }}</td>
-                            <td>
-                                <span class="badge bg-{{ $user->role === 'admin' ? 'danger' : 'secondary' }}">
-                                    {{ ucfirst($user->role) }}
-                                </span>
-                            </td>
-                            <td>
-                                @if ($user->deleted_at)
-                                    <span class="badge bg-dark">Đã khóa</span>
-                                @else
-                                    <span class="badge bg-success">Hoạt động</span>
-                                @endif
-                            </td>
-                            <td>
-                                @if ($user->email_verified_at)
-                                    <span class="badge bg-primary">Đã xác thực</span>
-                                @else
-                                    <span class="badge bg-warning text-dark">Chưa xác thực</span>
-                                @endif
-                            </td>
-                            <td>
-                                <div class="d-flex justify-content-center gap-2">
-                                    @if (!$user->deleted_at)
-                                        <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-warning">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        @if ($user->role !== 'admin')
-                                            <form action="{{ route('admin.users.lock', $user) }}" method="POST"
-                                                class="d-inline">
-                                                @csrf @method('PUT')
-                                                <button type="submit" class="btn btn-sm btn-secondary">
-                                                    <i class="bi bi-lock"></i>
-                                                </button>
-                                            </form>
-                                        @endif
-                                    @else
-                                        <form action="{{ route('admin.users.unlock', $user->id) }}" method="POST"
-                                            class="d-inline">
-                                            @csrf @method('PUT')
-                                            <button type="submit" class="btn btn-sm btn-success">
-                                                <i class="bi bi-unlock"></i>
-                                            </button>
-                                        </form>
-                                    @endif
-                                    {{-- Nút xoá (vĩnh viễn) nếu không phải admin --}}
-                                    @if ($user->role !== 'admin')
-                                        <form action="{{ route('admin.users.destroy', $user) }}" method="POST"
-                                            onsubmit="return confirm('Xóa vĩnh viễn tài khoản này? Dữ liệu sẽ không thể khôi phục!')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger">
-                                                <i class="bi bi-trash3-fill"></i>
-                                            </button>
-                                        </form>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="9" class="text-center text-muted py-4">😕 Không tìm thấy người dùng nào.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        {{-- Card mobile --}}
-        <div class="mobile-cards">
-            @forelse ($users as $user)
-                <div class="user-card mb-3">
-                    <div class="d-flex gap-3 align-items-center mb-2">
-                        <div>
-                            <h6 class="mb-0">{{ $user->name }}</h6>
-                            <small class="text-muted">{{ $user->email }}</small>
-                        </div>
-                    </div>
-                    <div class="small">
-                        📱 <strong>SĐT:</strong> {{ $user->phone ?? '—' }}<br>
-                        🛡️ <strong>Vai trò:</strong>
-                        <span
-                            class="badge bg-{{ $user->role === 'admin' ? 'danger' : 'secondary' }}">{{ ucfirst($user->role) }}</span><br>
-                        🔒 <strong>Trạng thái:</strong>
-                        @if ($user->deleted_at)
-                            <span class="badge bg-dark">Đã khóa</span>
-                        @else
-                            <span class="badge bg-success">Hoạt động</span>
-                        @endif
-                        <br>
-                        ✅ <strong>Xác thực:</strong>
-                        @if ($user->email_verified_at)
-                            <span class="badge bg-primary">Đã xác thực</span>
-                        @else
-                            <span class="badge bg-warning text-dark">Chưa xác thực</span>
-                        @endif
-                    </div>
-
-                    <div class="d-flex gap-2 mt-2">
-                        @if (!$user->deleted_at)
-                            <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-warning">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            @if ($user->role !== 'admin')
-                                <form action="{{ route('admin.users.lock', $user) }}" method="POST" class="d-inline">
-                                    @csrf @method('PUT')
-                                    <button type="submit" class="btn btn-sm btn-secondary">
-                                        <i class="bi bi-lock"></i>
-                                    </button>
-                                </form>
-                            @endif
-                        @else
-                            <form action="{{ route('admin.users.unlock', $user->id) }}" method="POST" class="d-inline">
-                                @csrf @method('PUT')
-                                <button type="submit" class="btn btn-sm btn-success">
-                                    <i class="bi bi-unlock"></i>
-                                </button>
-                            </form>
-                        @endif
+    <div class="min-h-screen bg-white transition-all duration-300">
+        <!-- Header -->
+        <div class="bg-white border-b border-gray-200 sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-6">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Quản lý Người dùng</h1>
+                        <p class="text-sm text-gray-600 mt-1">Quản lý danh sách người dùng trong hệ thống</p>
                     </div>
                 </div>
-            @empty
-                <div class="text-muted text-center py-4">😕 Không tìm thấy người dùng nào.</div>
-            @endforelse
+            </div>
         </div>
 
-        <div class="pagination justify-content-center mt-4">
-            {{ $users->appends(['search' => $search])->links('pagination::bootstrap-5') }}
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            @include('components.alert')
+
+            <!-- Search Form -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6 animate-fade-in">
+                <form method="GET" action="{{ route('admin.users.index') }}" class="flex flex-col sm:flex-row gap-4">
+                    <div class="flex-1">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                            <input 
+                                type="text" 
+                                name="search" 
+                                class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-black focus:border-transparent" 
+                                placeholder="Tìm theo tên hoặc email..." 
+                                value="{{ $search }}"
+                            >
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button type="submit" class="bg-black text-white px-4 py-2.5 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            Tìm kiếm
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Desktop Table -->
+            <div class="hidden lg:block bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden animate-slide-up">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">STT</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Họ tên</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SĐT</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vai trò</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Xác thực</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @forelse ($users as $index => $user)
+                                <tr class="hover:bg-gray-50 transition-colors {{ $user->deleted_at ? 'bg-yellow-50' : '' }}">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                        {{ $users->firstItem() + $index }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="h-10 w-10 flex-shrink-0">
+                                                <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                                    <svg class="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900">{{ $user->name }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $user->email }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $user->phone ?? '—' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="status-badge {{ $user->role === 'admin' ? 'role-admin' : 'role-user' }}">
+                                            {{ ucfirst($user->role) }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        @if ($user->deleted_at)
+                                            <span class="status-badge status-locked">Đã khóa</span>
+                                        @else
+                                            <span class="status-badge status-active">Hoạt động</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        @if ($user->email_verified_at)
+                                            <span class="status-badge verified-yes">Đã xác thực</span>
+                                        @else
+                                            <span class="status-badge verified-no">Chưa xác thực</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <div class="flex justify-end gap-2">
+                                            @if (!$user->deleted_at)
+                                                <a href="{{ route('admin.users.edit', $user) }}" class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors">
+                                                    Sửa
+                                                </a>
+                                                @if ($user->role !== 'admin')
+                                                    <button onclick="confirmAction('lock', '{{ $user->name }}', '{{ route('admin.users.lock', $user) }}')" class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors">
+                                                        Khóa
+                                                    </button>
+                                                @endif
+                                            @else
+                                                <button onclick="confirmAction('unlock', '{{ $user->name }}', '{{ route('admin.users.unlock', $user->id) }}')" class="bg-green-100 text-green-700 px-3 py-2 rounded-lg text-sm hover:bg-green-200 transition-colors">
+                                                    Mở khóa
+                                                </button>
+                                            @endif
+                                            @if ($user->role !== 'admin')
+                                                <button onclick="confirmAction('delete', '{{ $user->name }}', '{{ route('admin.users.destroy', $user) }}')" class="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm hover:bg-red-200 transition-colors">
+                                                    Xóa
+                                                </button>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="8" class="px-6 py-12 text-center">
+                                        <div class="flex flex-col items-center">
+                                            <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                                            </svg>
+                                            <h3 class="text-lg font-medium text-gray-900 mb-1">Không có người dùng</h3>
+                                            <p class="text-gray-500 text-sm">
+                                                @if (request('search'))
+                                                    Không tìm thấy kết quả cho "{{ request('search') }}"
+                                                @else
+                                                    Chưa có người dùng nào trong hệ thống
+                                                @endif
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Mobile Cards -->
+            <div class="lg:hidden space-y-4">
+                @forelse ($users as $user)
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 {{ $user->deleted_at ? 'bg-yellow-50' : '' }}">
+                        <div class="flex items-center space-x-3 mb-3">
+                            <div class="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                <svg class="h-6 w-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-sm font-medium text-gray-900 truncate">{{ $user->name }}</h3>
+                                <p class="text-sm text-gray-500 truncate">{{ $user->email }}</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">SĐT:</span>
+                                <span class="text-gray-900">{{ $user->phone ?? '—' }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Vai trò:</span>
+                                <span class="status-badge {{ $user->role === 'admin' ? 'role-admin' : 'role-user' }}">
+                                    {{ ucfirst($user->role) }}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Trạng thái:</span>
+                                @if ($user->deleted_at)
+                                    <span class="status-badge status-locked">Đã khóa</span>
+                                @else
+                                    <span class="status-badge status-active">Hoạt động</span>
+                                @endif
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Xác thực:</span>
+                                @if ($user->email_verified_at)
+                                    <span class="status-badge verified-yes">Đã xác thực</span>
+                                @else
+                                    <span class="status-badge verified-no">Chưa xác thực</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 mt-4 pt-3 border-t border-gray-200">
+                            @if (!$user->deleted_at)
+                                <a href="{{ route('admin.users.edit', $user) }}" class="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm text-center hover:bg-gray-200 transition-colors">
+                                    Sửa
+                                </a>
+                                @if ($user->role !== 'admin')
+                                    <button onclick="confirmAction('lock', '{{ $user->name }}', '{{ route('admin.users.lock', $user) }}')" class="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors">
+                                        Khóa
+                                    </button>
+                                @endif
+                            @else
+                                <button onclick="confirmAction('unlock', '{{ $user->name }}', '{{ route('admin.users.unlock', $user->id) }}')" class="flex-1 bg-green-100 text-green-700 px-3 py-2 rounded-lg text-sm hover:bg-green-200 transition-colors">
+                                    Mở khóa
+                                </button>
+                            @endif
+                            @if ($user->role !== 'admin')
+                                <button onclick="confirmAction('delete', '{{ $user->name }}', '{{ route('admin.users.destroy', $user) }}')" class="flex-1 bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm hover:bg-red-200 transition-colors">
+                                    Xóa
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                @empty
+                    <div class="text-center py-12">
+                        <svg class="h-12 w-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                        </svg>
+                        <h3 class="text-lg font-medium text-gray-900 mb-1">Không có người dùng</h3>
+                        <p class="text-gray-500 text-sm">
+                            @if (request('search'))
+                                Không tìm thấy kết quả cho "{{ request('search') }}"
+                            @else
+                                Chưa có người dùng nào trong hệ thống
+                            @endif
+                        </p>
+                    </div>
+                @endforelse
+            </div>
+
+            <!-- Pagination -->
+            @if($users->hasPages())
+                <div class="mt-6 flex justify-center">
+                    {{ $users->appends(['search' => request('search')])->links() }}
+                </div>
+            @endif
+        </div>
+
+        <!-- Custom Confirm Dialog -->
+        <div id="confirmModal" class="modal-overlay">
+            <div class="modal-content max-w-md">
+                <div class="p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full" id="confirmIcon">
+                            <!-- Icon will be set by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <h3 class="text-lg font-medium text-gray-900 mb-2" id="confirmTitle">Xác nhận</h3>
+                        <p class="text-sm text-gray-500 mb-6" id="confirmMessage">
+                            <!-- Message will be set by JavaScript -->
+                        </p>
+                        <div class="flex gap-3 justify-center">
+                            <button type="button" onclick="closeModal('confirmModal')" class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                                Hủy
+                            </button>
+                            <button type="button" id="confirmActionBtn" class="px-4 py-2 rounded-lg transition-colors">
+                                Xác nhận
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+
+    <script>
+        // Modal functions
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Confirm action
+        function confirmAction(action, userName, actionUrl) {
+            const icon = document.getElementById('confirmIcon');
+            const title = document.getElementById('confirmTitle');
+            const message = document.getElementById('confirmMessage');
+            const actionBtn = document.getElementById('confirmActionBtn');
+
+            // Set content based on action type
+            if (action === 'lock') {
+                icon.className = 'mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100';
+                icon.innerHTML = '<svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>';
+                title.textContent = 'Xác nhận khóa tài khoản';
+                message.innerHTML = `Bạn có chắc chắn muốn khóa tài khoản của <span class="font-semibold">${userName}</span>?`;
+                actionBtn.className = 'px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors';
+                actionBtn.textContent = 'Khóa';
+            } else if (action === 'unlock') {
+                icon.className = 'mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100';
+                icon.innerHTML = '<svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path></svg>';
+                title.textContent = 'Xác nhận mở khóa tài khoản';
+                message.innerHTML = `Bạn có chắc chắn muốn mở khóa tài khoản của <span class="font-semibold">${userName}</span>?`;
+                actionBtn.className = 'px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors';
+                actionBtn.textContent = 'Mở khóa';
+            } else if (action === 'delete') {
+                icon.className = 'mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100';
+                icon.innerHTML = '<svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>';
+                title.textContent = 'Xác nhận xóa tài khoản';
+                message.innerHTML = `Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản của <span class="font-semibold">${userName}</span>? Hành động này không thể hoàn tác.`;
+                actionBtn.className = 'px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors';
+                actionBtn.textContent = 'Xóa';
+            }
+
+            actionBtn.onclick = function() {
+                // Create and submit form
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = actionUrl;
+                
+                const csrfToken = document.createElement('input');
+                csrfToken.type = 'hidden';
+                csrfToken.name = '_token';
+                csrfToken.value = '{{ csrf_token() }}';
+                
+                const methodField = document.createElement('input');
+                methodField.type = 'hidden';
+                methodField.name = '_method';
+                
+                if (action === 'delete') {
+                    methodField.value = 'DELETE';
+                } else {
+                    methodField.value = 'PUT';
+                }
+                
+                form.appendChild(csrfToken);
+                form.appendChild(methodField);
+                document.body.appendChild(form);
+                form.submit();
+            };
+
+            openModal('confirmModal');
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-overlay')) {
+                e.target.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+        });
+
+        // ESC key to close modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay.active').forEach(modal => {
+                    modal.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                });
+            }
+        });
+    </script>
 @endsection

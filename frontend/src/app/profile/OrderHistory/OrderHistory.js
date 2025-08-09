@@ -70,7 +70,7 @@ const OrderHistory = ({ token, enabled }) => {
                     backdropFilter: 'blur(10px)',
                 }}
             >
-                {/* Header */}
+ 
                 <div
                     style={{
                         textAlign: 'center',
@@ -104,7 +104,6 @@ const OrderHistory = ({ token, enabled }) => {
                     </p>
                 </div>
 
-                {/* Modern Tabs */}
                 <div style={{ marginBottom: '32px' }}>
                     <Tabs
                         activeKey={activeTab}
