@@ -58,8 +58,9 @@ Route::post('/upload-test', function (Request $request) {
 });
 // ===================== Public Routes =====================
 Route::get('/', function () {
-    return view('welcome');
+    return redirect('/login');
 });
+
 
 Route::get('/check-cloud', function () {
     return Configuration::instance()->cloud;
