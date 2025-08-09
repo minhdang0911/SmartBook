@@ -2,146 +2,246 @@
 
 @section('title', 'Thêm bài viết mới')
 
-@section('content')
-    <div class="container" style="max-width: 800px; padding: 24px">
-        {{-- HEADER --}}
-        <div class="page-header mb-4 p-3 rounded text-white" style="background: linear-gradient(to right, #00c6ff, #0072ff);">
-            <h4 class="mb-0 fw-bold">➕ Thêm bài viết mới</h4>
-        </div>
-
-        {{-- ERROR MESSAGES --}}
-        @if ($errors->any())
-            <div class="alert alert-danger" id="formErrorAlert">
-                <ul class="mb-0 small">
-                    @foreach ($errors->all() as $err)
-                        <li>{{ $err }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
-        <form action="{{ route('admin.posts.store') }}" method="POST" enctype="multipart/form-data">
-            @csrf
-
-            {{-- Tiêu đề --}}
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Tiêu đề</label>
-                <input type="text" name="title" id="titleInput"
-                    class="form-control @error('title') is-invalid @enderror" value="{{ old('title') }}" autofocus>
-                @error('title')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-
-            {{-- Slug --}}
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Slug (tuỳ chọn)</label>
-                <input type="text" name="slug" id="slugInput" class="form-control @error('slug') is-invalid @enderror"
-                    value="{{ old('slug') }}">
-                <div class="form-text">Không nhập sẽ tự sinh từ tiêu đề. Bạn có thể sửa slug theo ý muốn.</div>
-                @error('slug')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-
-            {{-- Tóm tắt --}}
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Tóm tắt (excerpt)</label>
-                <textarea name="excerpt" class="form-control @error('excerpt') is-invalid @enderror" rows="3">{{ old('excerpt') }}</textarea>
-                @error('excerpt')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-
-            {{-- Nội dung --}}
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Nội dung</label>
-                <textarea name="content" id="contentEditor" class="form-control">{{ old('content', $post->content ?? '') }}</textarea>
-            </div>
-
-
-            {{-- Chủ đề --}}
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Chủ đề</label>
-                <select name="topics[]" id="topicSelect" class="form-select" multiple>
-                    @foreach ($topics as $topic)
-                        <option value="{{ $topic->id }}"
-                            {{ collect(old('topics'))->contains($topic->id) ? 'selected' : '' }}>
-                            {{ $topic->name }}
-                        </option>
-                    @endforeach
-                </select>
-                <div class="form-text">Giữ Ctrl (hoặc Cmd) để chọn nhiều chủ đề.</div>
-            </div>
-
-            {{-- Ảnh đại diện --}}
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Ảnh đại diện (thumbnail)</label>
-                <input type="file" name="thumbnail" class="form-control @error('thumbnail') is-invalid @enderror"
-                    accept="image/*" id="thumbnailInput">
-                @error('thumbnail')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-
-                <div class="mt-3">
-                    <img id="thumbnailPreview" src="#" alt="Preview thumbnail" class="img-thumbnail d-none"
-                        style="max-height: 200px; object-fit: cover;">
-                </div>
-            </div>
-
-            {{-- Trạng thái --}}
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Trạng thái</label>
-                <select name="status" class="form-select @error('status') is-invalid @enderror" required>
-                    <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }}>Nháp</option>
-                    <option value="published" {{ old('status') == 'published' ? 'selected' : '' }}>Xuất bản</option>
-                </select>
-                @error('status')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-
-            {{-- Ghim bài --}}
-            <div class="form-check mb-3">
-                <input type="checkbox" name="is_pinned" class="form-check-input" id="isPinned"
-                    {{ old('is_pinned') ? 'checked' : '' }}>
-                <label class="form-check-label" for="isPinned">Ghim bài viết</label>
-            </div>
-
-            {{-- Nút --}}
-            <div class="d-flex justify-content-between">
-                <a href="{{ route('admin.posts.index') }}" class="btn btn-secondary">Quay lại</a>
-                <button class="btn btn-success">Lưu bài viết</button>
-            </div>
-        </form>
-    </div>
-@endsection
-
 @push('styles')
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'fade-out': 'fadeOut 0.5s ease-out'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; visibility: hidden; }
+        }
+        .fade-out {
+            animation: fadeOut 0.5s ease-out forwards;
+        }
         .ck-editor__editable_inline {
             min-height: 400px !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 0.5rem !important;
+            background: #ffffff !important;
+        }
+        .dark .ck-editor__editable_inline {
+            background: #374151 !important;
+            border-color: #4b5563 !important;
+            color: #ffffff !important;
+        }
+        .select2-container--default .select2-selection--multiple {
+            border: 1px solid #d1d5db !important;
+            border-radius: 0.5rem !important;
+            background: #ffffff !important;
+            padding: 0.5rem !important;
+        }
+        .dark .select2-container--default .select2-selection--multiple {
+            background: #374151 !important;
+            border-color: #4b5563 !important;
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+            padding: 0 !important;
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background: #e5e7eb !important;
+            color: #1f2937 !important;
+            border-radius: 0.375rem !important;
+            padding: 0.25rem 0.5rem !important;
+            font-size: 0.75rem !important;
+        }
+        .dark .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background: #4b5563 !important;
+            color: #e5e7eb !important;
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+            color: #6b7280 !important;
+        }
+        .dark .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+            color: #9ca3af !important;
+        }
+        .select2-container--default .select2-search--inline .select2-search__field {
+            font-size: 0.875rem !important;
+            color: #1f2937 !important;
+        }
+        .dark .select2-container--default .select2-search--inline .select2-search__field {
+            color: #e5e7eb !important;
         }
     </style>
 @endpush
 
+@section('content')
+    <div class="min-h-screen bg-white dark:bg-gray-900 transition-all duration-300">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Header -->
+            <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6 mb-6 flex justify-between items-center animate-fade-in">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Thêm bài viết mới</h1>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Tạo bài viết mới trong hệ thống</p>
+                </div>
+                <button onclick="toggleDarkMode()" class="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                    </svg>
+                    <svg class="w-5 h-5 text-yellow-500 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Error Messages -->
+            @if ($errors->any())
+                <div id="formErrorAlert" class="bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg p-4 mb-6 animate-fade-in">
+                    <ul class="mb-0 text-sm">
+                        @foreach ($errors->all() as $err)
+                            <li>{{ $err }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <form action="{{ route('admin.posts.store') }}" method="POST" enctype="multipart/form-data" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-fade-in">
+                @csrf
+
+                <!-- Tiêu đề -->
+                <div class="mb-4">
+                    <label class="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">Tiêu đề</label>
+                    <input type="text" name="title" id="titleInput"
+                        class="block w-full py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent transition"
+                        value="{{ old('title') }}" placeholder="Nhập tiêu đề bài viết..." autofocus>
+                    @error('title')
+                        <div class="text-red-600 dark:text-red-400 text-sm mt-1">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <!-- Slug -->
+                <div class="mb-4">
+                    <label class="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">Slug (tuỳ chọn)</label>
+                    <input type="text" name="slug" id="slugInput"
+                        class="block w-full py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent transition"
+                        value="{{ old('slug') }}" placeholder="Tự sinh từ tiêu đề hoặc nhập slug tùy chỉnh...">
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Không nhập sẽ tự sinh từ tiêu đề. Bạn có thể sửa slug theo ý muốn.</div>
+                    @error('slug')
+                        <div class="text-red-600 dark:text-red-400 text-sm mt-1">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <!-- Tóm tắt -->
+                <div class="mb-4">
+                    <label class="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">Tóm tắt (excerpt)</label>
+                    <textarea name="excerpt"
+                        class="block w-full py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent transition"
+                        rows="4" placeholder="Nhập tóm tắt bài viết...">{{ old('excerpt') }}</textarea>
+                    @error('excerpt')
+                        <div class="text-red-600 dark:text-red-400 text-sm mt-1">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <!-- Nội dung -->
+                <div class="mb-4">
+                    <label class="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">Nội dung</label>
+                    <textarea name="content" id="contentEditor"
+                        class="block w-full py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent transition">{{ old('content', $post->content ?? '') }}</textarea>
+                    @error('content')
+                        <div class="text-red-600 dark:text-red-400 text-sm mt-1">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <!-- Chủ đề -->
+                <div class="mb-4">
+                    <label class="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">Chủ đề</label>
+                    <select name="topics[]" id="topicSelect" class="block w-full" multiple>
+                        @foreach ($topics as $topic)
+                            <option value="{{ $topic->id }}"
+                                {{ collect(old('topics'))->contains($topic->id) ? 'selected' : '' }}>
+                                {{ $topic->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Giữ Ctrl (hoặc Cmd) để chọn nhiều chủ đề.</div>
+                    @error('topics')
+                        <div class="text-red-600 dark:text-red-400 text-sm mt-1">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <!-- Ảnh đại diện -->
+                <div class="mb-4">
+                    <label class="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">Ảnh đại diện (thumbnail)</label>
+                    <input type="file" name="thumbnail" id="thumbnailInput"
+                        class="block w-full py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent transition"
+                        accept="image/*">
+                    @error('thumbnail')
+                        <div class="text-red-600 dark:text-red-400 text-sm mt-1">{{ $message }}</div>
+                    @enderror
+                    <div class="mt-3">
+                        <img id="thumbnailPreview" src="#" alt="Preview thumbnail"
+                            class="rounded-lg border border-gray-200 dark:border-gray-600 max-h-[150px] object-cover hidden">
+
+                    </div>
+                </div>
+
+                <!-- Trạng thái -->
+                <div class="mb-4">
+                    <label class="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">Trạng thái</label>
+                    <select name="status"
+                        class="block w-full py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent transition">
+                        <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }}>Nháp</option>
+                        <option value="published" {{ old('status') == 'published' ? 'selected' : '' }}>Xuất bản</option>
+                    </select>
+                    @error('status')
+                        <div class="text-red-600 dark:text-red-400 text-sm mt-1">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <!-- Ghim bài -->
+                <div class="mb-4">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" name="is_pinned" id="isPinned"
+                            class="h-4 w-4 text-black dark:text-white focus:ring-black dark:focus:ring-white border-gray-300 dark:border-gray-600 rounded"
+                            {{ old('is_pinned') ? 'checked' : '' }}>
+                        <span class="text-base font-medium text-gray-700 dark:text-gray-300">Ghim bài viết</span>
+                    </label>
+                </div>
+
+                <!-- Nút -->
+                <div class="flex gap-3 justify-end">
+                    <a href="{{ route('admin.posts.index') }}"
+                        class="w-full sm:w-auto bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center">
+                        Quay lại
+                    </a>
+                    <button type="submit"
+                        class="w-full sm:w-auto bg-black dark:bg-white text-white dark:text-black px-4 py-2.5 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
+                        Lưu bài viết
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+@endsection
+
 @push('scripts')
-    {{-- jQuery --}}
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-    {{-- Select2 --}}
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-    {{-- CKEditor 5 --}}
     <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
-
     <script>
         $(document).ready(function() {
             // Khởi tạo Select2
             $('#topicSelect').select2({
                 placeholder: 'Chọn chủ đề...',
-                width: '100%'
+                width: '100%',
+                theme: 'default',
+                dropdownCssClass: 'dark:bg-gray-800 dark:text-white'
             });
 
             // Auto tạo slug
@@ -158,36 +258,60 @@
 
             // Thumbnail preview
             const preview = document.getElementById('thumbnailPreview');
+            const placeholder = document.getElementById('thumbnailPlaceholder');
             document.getElementById('thumbnailInput').addEventListener('change', function() {
                 const file = this.files[0];
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         preview.src = e.target.result;
-                        preview.classList.remove('d-none');
+                        preview.classList.remove('hidden');
+                        placeholder.classList.add('hidden');
                     }
                     reader.readAsDataURL(file);
                 } else {
                     preview.src = '#';
-                    preview.classList.add('d-none');
+                    preview.classList.add('hidden');
+                    placeholder.classList.remove('hidden');
                 }
             });
 
-            // Auto scroll alert lỗi
-            if (document.getElementById('formErrorAlert')) {
-                document.getElementById('formErrorAlert').scrollIntoView({
-                    behavior: 'smooth'
-                });
+            // Auto scroll alert lỗi và tự ẩn sau 5s
+            const errorAlert = document.getElementById('formErrorAlert');
+            if (errorAlert) {
+                errorAlert.scrollIntoView({ behavior: 'smooth' });
+                setTimeout(() => {
+                    errorAlert.classList.add('fade-out');
+                }, 5000);
             }
 
             // Khởi tạo CKEditor
-            ClassicEditor.create(document.querySelector('textarea[name="content"]'), {
+            ClassicEditor.create(document.querySelector('#contentEditor'), {
                 ckfinder: {
                     uploadUrl: '{{ route('admin.upload-image') . '?_token=' . csrf_token() }}'
+                },
+                toolbar: {
+                    items: [
+                        'heading', '|',
+                        'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|',
+                        'outdent', 'indent', '|',
+                        'imageUpload', 'blockQuote', 'insertTable', 'mediaEmbed', 'undo', 'redo'
+                    ]
                 }
             }).catch(error => {
                 console.error(error);
             });
+
+            // Dark mode toggle
+            function toggleDarkMode() {
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+            }
+
+            // Initialize dark mode
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.documentElement.classList.add('dark');
+            }
         });
 
         function toSlug(str) {
