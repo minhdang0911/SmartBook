@@ -28,23 +28,24 @@ class PublisherController extends Controller
     }
 
     public function store(StorePublisherRequest $request)
-    {
-        $data = $request->validated();
+{
+    $data = $request->validated();
 
-        if ($request->hasFile('image')) {
-            $cloudinaryService = new CloudinaryService();
-            $imageUrl = $cloudinaryService->uploadImage(
-                $request->file('image'), // Truyền đúng file, KHÔNG dùng getRealPath ở đây
-                'publishers'
-            );
-            $data['image_url'] = $imageUrl;
-        }
-
-        Publisher::create($data);
-
-        return redirect()->route('admin.publishers.index')
-            ->with('success', '✅ Nhà xuất bản đã được thêm thành công!');
+    if ($request->hasFile('image')) {
+        $cloudinaryService = new CloudinaryService();
+        $imageUrl = $cloudinaryService->uploadImageAvoidDuplicate(
+            $request->file('image'),
+            'publishers'
+        );
+        $data['image_url'] = $imageUrl;
     }
+
+    Publisher::create($data);
+
+    return redirect()->route('admin.publishers.index')
+        ->with('success', 'Nhà xuất bản đã được thêm thành công!');
+}
+
 
     public function edit(Publisher $publisher)
     {
@@ -58,7 +59,7 @@ class PublisherController extends Controller
         if ($request->hasFile('image')) {
             $cloudinaryService = new CloudinaryService();
             $imageUrl = $cloudinaryService->uploadImage(
-                $request->file('image'), // Truyền đúng file object
+                $request->file('image'),
                 'publishers'
             );
             $data['image_url'] = $imageUrl;
@@ -67,10 +68,8 @@ class PublisherController extends Controller
         $publisher->update($data);
 
         return redirect()->route('admin.publishers.index')
-            ->with('success', '✅ Nhà xuất bản đã được cập nhật.');
+            ->with('success', 'Nhà xuất bản đã được cập nhật.');
     }
-
-
 
     public function destroy(Publisher $publisher)
     {
@@ -78,13 +77,38 @@ class PublisherController extends Controller
 
         if ($hasBooks) {
             return redirect()->route('admin.publishers.index')
-                ->with('error', '❌ Không thể xóa nhà xuất bản vì đang có sách thuộc nhà xuất bản này.');
+                ->with('error', 'Không thể xóa nhà xuất bản vì đang có sách thuộc nhà xuất bản này.');
         }
 
+        // Xóa ảnh trên Cloudinary nếu có
+        if (!empty($publisher->image_url)) {
+            try {
+                $cloudinaryService = new CloudinaryService();
+
+                // Detect resource_type từ URL (image / video / raw)
+                $resourceType = 'image';
+                if (preg_match('/\/video\/upload\//', $publisher->image_url)) {
+                    $resourceType = 'video';
+                } elseif (preg_match('/\/raw\/upload\//', $publisher->image_url)) {
+                    $resourceType = 'raw';
+                }
+
+                // Xóa ảnh
+                $cloudinaryService->deleteImageByPublicId($publisher->image_url, $resourceType);
+
+            } catch (\Exception $e) {
+                \Log::error('Không thể xóa ảnh trên Cloudinary', [
+                    'error' => $e->getMessage(),
+                    'url' => $publisher->image_url
+                ]);
+            }
+        }
+
+        // Xóa publisher trong DB
         $publisher->delete();
 
         return redirect()->route('admin.publishers.index')
-            ->with('success', '🗑️ Nhà xuất bản đã bị xóa thành công.');
+            ->with('success', 'Nhà xuất bản đã bị xóa thành công.');
     }
 
     public function apiIndex()

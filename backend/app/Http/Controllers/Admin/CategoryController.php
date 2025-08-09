@@ -32,7 +32,7 @@ class CategoryController extends Controller
         Category::create($request->validated());
 
         return redirect()->route('admin.categories.index')
-            ->with('success', '✅ Danh mục đã được thêm thành công!');
+            ->with('success', 'Danh mục đã được thêm thành công!');
     }
 
     public function edit(Category $category)
@@ -45,7 +45,7 @@ class CategoryController extends Controller
         $category->update($request->validated());
 
         return redirect()->route('admin.categories.index')
-            ->with('success', '✅ Danh mục đã được cập nhật.');
+            ->with('success', 'Danh mục đã được cập nhật.');
     }
 
     public function destroy(Category $category)
@@ -54,12 +54,12 @@ class CategoryController extends Controller
 
         if ($hasBooks) {
             return redirect()->route('admin.categories.index')
-                ->with('error', '❌ Không thể xóa danh mục vì đang có sách thuộc danh mục này.');
+                ->with('error', 'Không thể xóa danh mục vì đang có sách thuộc danh mục này.');
         }
 
         $category->delete();
 
         return redirect()->route('admin.categories.index')
-            ->with('success', '🗑️ Danh mục đã bị xóa thành công.');
+            ->with('success', 'Danh mục đã bị xóa thành công.');
     }
 }

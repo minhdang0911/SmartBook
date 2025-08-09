@@ -33,7 +33,7 @@ class AuthorController extends Controller
         Author::create($request->validated());
 
         return redirect()->route('admin.authors.index')
-            ->with('success', '✅ Tác giả đã được thêm thành công!');
+            ->with('success', 'Tác giả đã được thêm thành công!');
     }
 
     public function edit(Author $author)
@@ -46,7 +46,7 @@ class AuthorController extends Controller
         $author->update($request->validated());
 
         return redirect()->route('admin.authors.index')
-            ->with('success', '✅ Tác giả đã được cập nhật.');
+            ->with('success', 'Tác giả đã được cập nhật.');
     }
 
     public function destroy(Author $author)
@@ -55,12 +55,12 @@ class AuthorController extends Controller
 
         if ($hasBooks) {
             return redirect()->route('admin.authors.index')
-                ->with('error', '❌ Không thể xóa tác giả vì đang có sách thuộc tác giả này.');
+                ->with('error', 'Không thể xóa tác giả vì đang có sách thuộc tác giả này.');
         }
 
         $author->delete();
 
         return redirect()->route('admin.authors.index')
-            ->with('success', '🗑️ Tác giả đã bị xóa thành công.');
+            ->with('success', 'Tác giả đã bị xóa thành công.');
     }
 }

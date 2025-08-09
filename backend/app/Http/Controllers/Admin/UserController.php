@@ -40,17 +40,17 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:100',
-            'phone' => 'nullable|string|max:20|regex:/^[0-9]+$/',
+            'phone' => 'nullable|string|max:10|regex:/^[0-9]+$/',
             'role' => 'required|in:user,admin',
         ], [
-            'phone.max' => '📱 Số điện thoại không được vượt quá 20 ký tự.',
-            'phone.regex' => '📵 Số điện thoại chỉ được chứa các chữ số (0-9).',
-            'name.required' => '⚠️ Vui lòng nhập tên người dùng.',
+            'phone.max' => 'Số điện thoại không được vượt quá 10 ký tự.',
+            'phone.regex' => 'Số điện thoại chỉ được chứa các chữ số (0-9).',
+            'name.required' => 'Vui lòng nhập tên người dùng.',
         ]);
 
         $user->update($request->only('name', 'phone', 'role'));
 
-        return redirect()->route('admin.users.index')->with('success', '✅ Đã cập nhật thông tin người dùng!');
+        return redirect()->route('admin.users.index')->with('success', 'Đã cập nhật thông tin người dùng!');
     }
 
 
@@ -60,17 +60,17 @@ class UserController extends Controller
             'email_verified_at' => $user->email_verified_at ? null : now()
         ]);
 
-        return back()->with('success', '⚙️ Đã cập nhật trạng thái xác thực email!');
+        return back()->with('success', 'Đã cập nhật trạng thái xác thực email!');
     }
 
     public function lock(User $user)
     {
         if ($user->role === 'admin') {
-            return back()->with('error', '❌ Không thể khóa tài khoản admin.');
+            return back()->with('error', 'Không thể khóa tài khoản admin.');
         }
 
         $user->delete(); // Soft delete
-        return back()->with('success', '🔒 Tài khoản đã bị khóa.');
+        return back()->with('success', 'Tài khoản đã bị khóa.');
     }
 
     public function unlock($id)
@@ -79,10 +79,10 @@ class UserController extends Controller
 
         if ($user->trashed()) {
             $user->restore();
-            return back()->with('success', '🔓 Tài khoản đã được mở khóa.');
+            return back()->with('success', 'Tài khoản đã được mở khóa.');
         }
 
-        return back()->with('info', '⚠️ Tài khoản này không bị khóa.');
+        return back()->with('info', 'Tài khoản này không bị khóa.');
     }
 
     public function destroy($id)
@@ -108,7 +108,7 @@ class UserController extends Controller
             }
         }
 
-        $user->forceDelete(); // ← Xóa vĩnh viễn
+        $user->forceDelete();
         return redirect()->route('admin.users.index')->with('success', 'Tài khoản đã được xóa vĩnh viễn!');
     }
 }

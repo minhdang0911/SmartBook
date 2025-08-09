@@ -149,7 +149,7 @@ public function related($topicId)
 {
     // Kiểm tra topic có tồn tại không
     $topic = Topic::find($topicId);
-    
+
     if (!$topic) {
         return response()->json([
             'success' => false,
@@ -262,7 +262,7 @@ public function related($topicId)
         // Kiểm tra đã like chưa (nếu có user đăng nhập)
         $hasLiked = false;
         if ($user) {
-            $hasLiked = \App\Models\PostLike::where('user_id', $user->id)
+            $hasLiked = PostLike::where('user_id', $user->id)
                 ->where('post_id', $post->id)
                 ->exists();
         }

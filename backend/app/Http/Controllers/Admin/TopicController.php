@@ -31,12 +31,20 @@ class TopicController extends Controller
             'name.max' => 'Tên chủ đề không được vượt quá 100 ký tự.',
         ]);
 
-        // Lấy slug từ request nếu có, không thì tạo từ name
         $slug = $request->slug ? Str::slug($request->slug) : Str::slug($request->name);
 
+        // Check trùng slug
         if (Topic::where('slug', $slug)->exists()) {
             return redirect()->back()
                 ->withErrors(['name' => 'Slug đã tồn tại.'])
+                ->withInput()
+                ->with('_form', 'add');
+        }
+
+        // Check trùng tên
+        if (Topic::where('name', $request->name)->exists()) {
+            return redirect()->back()
+                ->withErrors(['name' => 'Tên chủ đề đã tồn tại.'])
                 ->withInput()
                 ->with('_form', 'add');
         }
@@ -49,6 +57,7 @@ class TopicController extends Controller
         return redirect()->back()->with('success', 'Thêm chủ đề thành công!');
     }
 
+
     public function update(Request $request, Topic $topic)
     {
         $request->validate([
@@ -60,9 +69,19 @@ class TopicController extends Controller
 
         $slug = $request->slug ? Str::slug($request->slug) : Str::slug($request->name);
 
+        // Check trùng slug
         if (Topic::where('slug', $slug)->where('id', '!=', $topic->id)->exists()) {
             return redirect()->back()
                 ->withErrors(['name' => 'Slug đã tồn tại.'])
+                ->withInput()
+                ->with('_form', 'edit')
+                ->with('_edit_id', $topic->id);
+        }
+
+        // Check trùng tên
+        if (Topic::where('name', $request->name)->where('id', '!=', $topic->id)->exists()) {
+            return redirect()->back()
+                ->withErrors(['name' => 'Tên chủ đề đã tồn tại.'])
                 ->withInput()
                 ->with('_form', 'edit')
                 ->with('_edit_id', $topic->id);

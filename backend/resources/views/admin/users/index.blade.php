@@ -23,17 +23,17 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        
+
         @keyframes slideUp {
             from { transform: translateY(30px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
-        
+
         @keyframes scaleIn {
             from { transform: scale(0.95); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
         }
-        
+
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -80,35 +80,51 @@
             display: inline-flex;
             align-items: center;
             padding: 4px 8px;
-            rounded: 6px;
+            border-radius: 6px;
             font-size: 0.75rem;
             font-weight: 500;
         }
 
-        .role-admin { 
-            background-color: #fee2e2; 
-            color: #991b1b; 
+        .role-admin {
+            background-color: #fee2e2;
+            color: #991b1b;
         }
-        .role-user { 
-            background-color: #f3f4f6; 
-            color: #374151; 
+        .role-user {
+            background-color: #f3f4f6;
+            color: #374151;
         }
-        .status-active { 
-            background-color: #dcfce7; 
-            color: #166534; 
+        .status-active {
+            background-color: #dcfce7;
+            color: #166534;
         }
-        .status-locked { 
-            background-color: #f3f4f6; 
-            color: #374151; 
+        .status-locked {
+            background-color: #f3f4f6;
+            color: #374151;
         }
-        .verified-yes { 
-            background-color: #dbeafe; 
-            color: #1e40af; 
+        .verified-yes {
+            background-color: #dbeafe;
+            color: #1e40af;
         }
-        .verified-no { 
-            background-color: #fef3c7; 
-            color: #92400e; 
+        .verified-no {
+            background-color: #fef3c7;
+            color: #92400e;
         }
+
+        /* Giới hạn chiều rộng cột */
+        .table-fixed th, .table-fixed td {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .table-fixed th:nth-child(1), .table-fixed td:nth-child(1) { width: 10%; } /* STT */
+        .table-fixed th:nth-child(2), .table-fixed td:nth-child(2) { width: 20%; } /* Họ tên */
+        .table-fixed th:nth-child(3), .table-fixed td:nth-child(3) { width: 20%; } /* Email */
+        .table-fixed th:nth-child(4), .table-fixed td:nth-child(4) { width: 15%; } /* SĐT */
+        .table-fixed th:nth-child(5), .table-fixed td:nth-child(5) { width: 15%; } /* Vai trò */
+        .table-fixed th:nth-child(6), .table-fixed td:nth-child(6) { width: 10%; } /* Trạng thái */
+        .table-fixed th:nth-child(7), .table-fixed td:nth-child(7) { width: 10%; } /* Xác thực */
+        .table-fixed th:nth-child(8), .table-fixed td:nth-child(8) { width: 20%; } /* Hành động */
     </style>
 @endpush
 
@@ -139,16 +155,16 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                                 </svg>
                             </div>
-                            <input 
-                                type="text" 
-                                name="search" 
-                                class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-black focus:border-transparent" 
-                                placeholder="Tìm theo tên hoặc email..." 
+                            <input
+                                type="text"
+                                name="search"
+                                class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-black focus:border-transparent"
+                                placeholder="Tìm theo tên hoặc email..."
                                 value="{{ $search }}"
                             >
                         </div>
                     </div>
-                    
+
                     <div class="flex gap-3">
                         <button type="submit" class="bg-black text-white px-4 py-2.5 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -161,28 +177,28 @@
             </div>
 
             <!-- Desktop Table -->
-            <div class="hidden lg:block bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden animate-slide-up">
+            <div class="hidden lg:block bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden animate-slide-up max-w-full">
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200 table-fixed">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">STT</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Họ tên</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SĐT</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vai trò</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Xác thực</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">STT</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Họ tên</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SĐT</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vai trò</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Xác thực</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             @forelse ($users as $index => $user)
                                 <tr class="hover:bg-gray-50 transition-colors {{ $user->deleted_at ? 'bg-yellow-50' : '' }}">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">
                                         {{ $users->firstItem() + $index }}
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
+                                    <td class="px-4 py-3 whitespace-nowrap truncate">
                                         <div class="flex items-center">
                                             <div class="h-10 w-10 flex-shrink-0">
                                                 <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
@@ -191,50 +207,50 @@
                                                     </svg>
                                                 </div>
                                             </div>
-                                            <div class="ml-4">
+                                            <div class="ml-3 truncate">
                                                 <div class="text-sm font-medium text-gray-900">{{ $user->name }}</div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $user->email }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $user->phone ?? '—' }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 truncate">{{ $user->email }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 truncate">{{ $user->phone ?? '—' }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
                                         <span class="status-badge {{ $user->role === 'admin' ? 'role-admin' : 'role-user' }}">
                                             {{ ucfirst($user->role) }}
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
+                                    <td class="px-4 py-3 whitespace-nowrap">
                                         @if ($user->deleted_at)
                                             <span class="status-badge status-locked">Đã khóa</span>
                                         @else
                                             <span class="status-badge status-active">Hoạt động</span>
                                         @endif
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
+                                    <td class="px-4 py-3 whitespace-nowrap">
                                         @if ($user->email_verified_at)
                                             <span class="status-badge verified-yes">Đã xác thực</span>
                                         @else
                                             <span class="status-badge verified-no">Chưa xác thực</span>
                                         @endif
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <div class="flex justify-end gap-2">
+                                    <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                                        <div class="flex justify-end gap-2 flex-wrap">
                                             @if (!$user->deleted_at)
-                                                <a href="{{ route('admin.users.edit', $user) }}" class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors">
+                                                <a href="{{ route('admin.users.edit', $user) }}" class="bg-gray-100 text-gray-700 px-2 py-1 rounded-lg text-xs hover:bg-gray-200 transition-colors">
                                                     Sửa
                                                 </a>
                                                 @if ($user->role !== 'admin')
-                                                    <button onclick="confirmAction('lock', '{{ $user->name }}', '{{ route('admin.users.lock', $user) }}')" class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors">
+                                                    <button onclick="confirmAction('lock', '{{ $user->name }}', '{{ route('admin.users.lock', $user) }}')" class="bg-gray-100 text-gray-700 px-2 py-1 rounded-lg text-xs hover:bg-gray-200 transition-colors">
                                                         Khóa
                                                     </button>
                                                 @endif
                                             @else
-                                                <button onclick="confirmAction('unlock', '{{ $user->name }}', '{{ route('admin.users.unlock', $user->id) }}')" class="bg-green-100 text-green-700 px-3 py-2 rounded-lg text-sm hover:bg-green-200 transition-colors">
+                                                <button onclick="confirmAction('unlock', '{{ $user->name }}', '{{ route('admin.users.unlock', $user->id) }}')" class="bg-green-100 text-green-700 px-2 py-1 rounded-lg text-xs hover:bg-green-200 transition-colors">
                                                     Mở khóa
                                                 </button>
                                             @endif
                                             @if ($user->role !== 'admin')
-                                                <button onclick="confirmAction('delete', '{{ $user->name }}', '{{ route('admin.users.destroy', $user) }}')" class="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm hover:bg-red-200 transition-colors">
+                                                <button onclick="confirmAction('delete', '{{ $user->name }}', '{{ route('admin.users.destroy', $user) }}')" class="bg-red-100 text-red-700 px-2 py-1 rounded-lg text-xs hover:bg-red-200 transition-colors">
                                                     Xóa
                                                 </button>
                                             @endif
@@ -243,7 +259,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="px-6 py-12 text-center">
+                                    <td colspan="8" class="px-4 py-12 text-center">
                                         <div class="flex flex-col items-center">
                                             <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
@@ -284,7 +300,7 @@
                         <div class="space-y-2 text-sm">
                             <div class="flex justify-between">
                                 <span class="text-gray-500">SĐT:</span>
-                                <span class="text-gray-900">{{ $user->phone ?? '—' }}</span>
+                                <span class="text-gray-900 truncate">{{ $user->phone ?? '—' }}</span>
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-gray-500">Vai trò:</span>
@@ -310,23 +326,23 @@
                             </div>
                         </div>
 
-                        <div class="flex gap-2 mt-4 pt-3 border-t border-gray-200">
+                        <div class="flex gap-2 mt-4 pt-3 border-t border-gray-200 flex-wrap">
                             @if (!$user->deleted_at)
-                                <a href="{{ route('admin.users.edit', $user) }}" class="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm text-center hover:bg-gray-200 transition-colors">
+                                <a href="{{ route('admin.users.edit', $user) }}" class="flex-1 bg-gray-100 text-gray-700 px-2 py-1 rounded-lg text-xs text-center hover:bg-gray-200 transition-colors">
                                     Sửa
                                 </a>
                                 @if ($user->role !== 'admin')
-                                    <button onclick="confirmAction('lock', '{{ $user->name }}', '{{ route('admin.users.lock', $user) }}')" class="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors">
+                                    <button onclick="confirmAction('lock', '{{ $user->name }}', '{{ route('admin.users.lock', $user) }}')" class="flex-1 bg-gray-100 text-gray-700 px-2 py-1 rounded-lg text-xs hover:bg-gray-200 transition-colors">
                                         Khóa
                                     </button>
                                 @endif
                             @else
-                                <button onclick="confirmAction('unlock', '{{ $user->name }}', '{{ route('admin.users.unlock', $user->id) }}')" class="flex-1 bg-green-100 text-green-700 px-3 py-2 rounded-lg text-sm hover:bg-green-200 transition-colors">
+                                <button onclick="confirmAction('unlock', '{{ $user->name }}', '{{ route('admin.users.unlock', $user->id) }}')" class="flex-1 bg-green-100 text-green-700 px-2 py-1 rounded-lg text-xs hover:bg-green-200 transition-colors">
                                     Mở khóa
                                 </button>
                             @endif
                             @if ($user->role !== 'admin')
-                                <button onclick="confirmAction('delete', '{{ $user->name }}', '{{ route('admin.users.destroy', $user) }}')" class="flex-1 bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm hover:bg-red-200 transition-colors">
+                                <button onclick="confirmAction('delete', '{{ $user->name }}', '{{ route('admin.users.destroy', $user) }}')" class="flex-1 bg-red-100 text-red-700 px-2 py-1 rounded-lg text-xs hover:bg-red-200 transition-colors">
                                     Xóa
                                 </button>
                             @endif
@@ -435,22 +451,22 @@
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = actionUrl;
-                
+
                 const csrfToken = document.createElement('input');
                 csrfToken.type = 'hidden';
                 csrfToken.name = '_token';
                 csrfToken.value = '{{ csrf_token() }}';
-                
+
                 const methodField = document.createElement('input');
                 methodField.type = 'hidden';
                 methodField.name = '_method';
-                
+
                 if (action === 'delete') {
                     methodField.value = 'DELETE';
                 } else {
                     methodField.value = 'PUT';
                 }
-                
+
                 form.appendChild(csrfToken);
                 form.appendChild(methodField);
                 document.body.appendChild(form);
@@ -475,6 +491,14 @@
                     modal.classList.remove('active');
                     document.body.style.overflow = 'auto';
                 });
+            }
+        });
+
+        // Ensure table layout consistency on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const table = document.querySelector('table');
+            if (table) {
+                table.classList.add('table-fixed');
             }
         });
     </script>
