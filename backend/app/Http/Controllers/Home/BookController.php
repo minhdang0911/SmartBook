@@ -9,10 +9,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Book;
 use Illuminate\Http\Request;
 use App\Models\Banner;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\BookTemplateExport;
 
 class BookController extends Controller
 {
-       public function index()
+    public function index()
     {
         // 5 sách giấy được đánh giá cao nhiều nhất
         $topRatedBooks = Book::with(['author', 'category', 'publisher'])
@@ -20,8 +24,6 @@ class BookController extends Controller
             ->orderByDesc('rating_avg')
             ->take(6)
             ->get();
-
-
 
         // 5 sách giấy được xem nhiều nhất
         $topViewedBooks = Book::with(['author', 'category', 'publisher'])
@@ -52,7 +54,6 @@ class BookController extends Controller
             'latest_ebooks' => $latestEbooks             // 10 sách điện tử mới
         ]);
     }
-
 
     public function getAllIds()
     {
@@ -255,6 +256,7 @@ class BookController extends Controller
 
         return response()->json($result);
     }
+
     // Helper function để hiển thị các filter đã áp dụng
     private function getAppliedFilters(Request $request)
     {
@@ -315,7 +317,6 @@ class BookController extends Controller
         return $filters;
     }
 
-
     // Chi tiết sách
     public function show($id)
     {
@@ -353,9 +354,8 @@ class BookController extends Controller
                 'stock' => $book->stock,
                 'views' => $book->views,
                 'likes' => $book->likes,
-                 'is_physical' => $book->is_physical,
+                'is_physical' => $book->is_physical,
                 'format' => 'paper',
-               
             ]);
         } elseif ($book->is_physical == 0) {
             // Sách điện tử
@@ -379,32 +379,473 @@ class BookController extends Controller
                 'views' => $book->views,
                 'likes' => $book->likes,
                 'format' => 'ebook',
-                 'is_physical' => $book->is_physical,
+                'is_physical' => $book->is_physical,
             ]);
         } else {
             return response()->json(['message' => 'Unknown book type'], 400);
         }
     }
+
     //view update 
     public function increaseView($id)
-{
-    $book = \App\Models\Book::find($id);
+    {
+        $book = \App\Models\Book::find($id);
 
-    if (!$book) {
+        if (!$book) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy sách.',
+            ], 404);
+        }
+
+        // Tăng view lên 1
+        $book->increment('views');
+
         return response()->json([
-            'success' => false,
-            'message' => 'Không tìm thấy sách.',
-        ], 404);
+            'success' => true,
+            'message' => 'Lượt xem đã được cập nhật.',
+            'views' => $book->views,
+        ]);
     }
 
-    // Tăng view lên 1
-    $book->increment('views');
+    /**
+     * Import sách từ file Excel
+     */
+    public function importBooks(Request $request)
+    {
+        // Validate file upload
+        $validator = Validator::make($request->all(), [
+            'excel_file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
+        ]);
 
-    return response()->json([
-        'success' => true,
-        'message' => 'Lượt xem đã được cập nhật.',
-        'views' => $book->views,
-    ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'File không hợp lệ',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $file = $request->file('excel_file');
+            
+            // Import data using Maatwebsite Excel
+            $data = Excel::toArray([], $file)[0]; // Lấy sheet đầu tiên
+            
+            // Bỏ qua dòng header (dòng đầu tiên)
+            array_shift($data);
+            
+            $successCount = 0;
+            $errorCount = 0;
+            $errors = [];
+            $duplicates = [];
+
+            DB::beginTransaction();
+            
+            foreach ($data as $rowIndex => $row) {
+                try {
+                    // Kiểm tra nếu dòng trống
+                    if (empty(array_filter($row))) {
+                        continue;
+                    }
+
+                    // Map dữ liệu từ Excel
+                    $bookData = $this->mapExcelRowToBookData($row);
+                    
+                    // Validate dữ liệu
+                    $validationResult = $this->validateBookData($bookData, $rowIndex + 2);
+                    
+                    if (!$validationResult['valid']) {
+                        $errors[] = $validationResult['error'];
+                        $errorCount++;
+                        continue;
+                    }
+
+                    // Kiểm tra trùng lặp
+                    $existingBook = Book::where('title', $bookData['title'])->first();
+                    if ($existingBook) {
+                        $duplicates[] = [
+                            'row' => $rowIndex + 2,
+                            'title' => $bookData['title'],
+                            'message' => 'Sách đã tồn tại'
+                        ];
+                        continue;
+                    }
+
+                    // Tạo sách mới với ID trực tiếp
+                    Book::create([
+                        'title' => $bookData['title'],
+                        'description' => $bookData['description'],
+                        'author_id' => $bookData['author_id'],
+                        'category_id' => $bookData['category_id'],
+                        'publisher_id' => $bookData['publisher_id'],
+                        'price' => $bookData['price'],
+                        'discount_price' => $bookData['discount_price'],
+                        'stock' => $bookData['stock'],
+                        'is_physical' => $bookData['is_physical'],
+                        'cover_image' => $bookData['cover_image'],
+                        'views' => 0,
+                        'likes' => 0,
+                        'rating_avg' => 0,
+                    ]);
+
+                    $successCount++;
+
+                } catch (\Exception $e) {
+                    $errors[] = [
+                        'row' => $rowIndex + 2,
+                        'message' => 'Lỗi xử lý: ' . $e->getMessage()
+                    ];
+                    $errorCount++;
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Import hoàn tất',
+                'summary' => [
+                    'total_rows' => count($data),
+                    'success_count' => $successCount,
+                    'error_count' => $errorCount,
+                    'duplicate_count' => count($duplicates)
+                ],
+                 
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Lỗi khi xử lý file: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Lấy template Excel để import  
+     */
+  public function downloadTemplate()
+{
+    try {
+        $fileName = 'book_import_template_' . date('Y-m-d_H-i-s') . '.xlsx';
+        
+        // ✅ Không cần truyền data vào constructor nữa, lấy trực tiếp trong Export class
+        return Excel::download(new BookTemplateExport(), $fileName);
+
+    } catch (\Exception $e) {
+        \Log::error('Template Download Error: ' . $e->getMessage());
+        
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Lỗi khi tạo template: ' . $e->getMessage()
+        ], 500);
+    }
 }
 
+    /**
+     * Xem trước dữ liệu từ file Excel
+     */
+    public function previewImport(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'excel_file' => 'required|file|mimes:xlsx,xls,csv|max:10240',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'File không hợp lệ',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $file = $request->file('excel_file');
+            
+            // Import với heading row để lấy header
+            $data = Excel::toArray([], $file)[0];
+            
+            // Lấy header
+            $headers = array_shift($data);
+            
+            // Lấy tối đa 10 dòng để preview
+            $previewData = array_slice($data, 0, 10);
+            
+            $preview = [];
+            $validationErrors = [];
+            
+            foreach ($previewData as $rowIndex => $row) {
+                if (empty(array_filter($row))) {
+                    continue;
+                }
+
+                $bookData = $this->mapExcelRowToBookData($row);
+                $validationResult = $this->validateBookData($bookData, $rowIndex + 2);
+                
+                $preview[] = [
+                    'row' => $rowIndex + 2,
+                    'data' => $bookData,
+                    'valid' => $validationResult['valid']
+                ];
+                
+                if (!$validationResult['valid']) {
+                    $validationErrors[] = $validationResult['error'];
+                }
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'headers' => $headers,
+                'preview_data' => $preview,
+                'total_rows' => count($data) + count($previewData), // +previewData vì đã shift header
+                'preview_rows' => count($preview),
+                'validation_errors' => $validationErrors
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Lỗi khi xử lý file: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Lấy danh sách Authors, Categories, Publishers để tạo dropdown
+     */
+    public function getDropdownData()
+    {
+        try {
+            $data = [
+                'authors' => Author::select('id', 'name')->orderBy('name')->get(),
+                'categories' => Category::select('id', 'name')->orderBy('name')->get(), 
+                'publishers' => Publisher::select('id', 'name')->orderBy('name')->get(),
+                'book_types' => [
+                    ['value' => 'paper', 'label' => 'Sách giấy'],
+                    ['value' => 'ebook', 'label' => 'Sách điện tử']
+                ]
+            ];
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Lấy dữ liệu dropdown thành công',
+                'data' => $data
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Lỗi khi lấy dữ liệu dropdown: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    public function getImportStats()
+    {
+        try {
+            $stats = [
+                'total_books' => Book::count(),
+                'total_authors' => Author::count(),
+                'total_categories' => Category::count(),
+                'total_publishers' => Publisher::count(),
+                'recent_imports' => Book::orderBy('created_at', 'desc')->take(10)->get(['id', 'title', 'created_at']),
+                'books_by_type' => [
+                    'paper_books' => Book::where('is_physical', 1)->count(),
+                    'ebooks' => Book::where('is_physical', 0)->count()
+                ]
+            ];
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $stats
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Lỗi khi lấy thống kê: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Map dữ liệu từ Excel row sang book data - CẬP NHẬT ĐỂ SỬ DỤNG ID
+     */
+    private function mapExcelRowToBookData($row)
+    {
+        return [
+            'title' => trim($row[0] ?? ''),                    // Cột A
+            'description' => trim($row[1] ?? ''),              // Cột B
+            'author_id' => $this->parseIdFromDropdown($row[2] ?? ''),     // Cột C - ID tác giả
+            'category_id' => $this->parseIdFromDropdown($row[3] ?? ''),   // Cột D - ID thể loại
+            'publisher_id' => $this->parseIdFromDropdown($row[4] ?? ''),  // Cột E - ID nhà xuất bản
+            'price' => $this->parseNumber($row[5] ?? 0),       // Cột F
+            'discount_price' => $this->parseNumber($row[6] ?? null), // Cột G
+            'stock' => (int)($row[7] ?? 0),                    // Cột H
+            'is_physical' => $this->parseBookType($row[8] ?? ''), // Cột I
+            'cover_image' => trim($row[9] ?? ''),              // Cột J
+        ];
+    }
+
+    /**
+     * Validate dữ liệu sách - CẬP NHẬT ĐỂ VALIDATE ID
+     */
+    private function validateBookData($data, $rowNumber)
+    {
+        $errors = [];
+
+        if (empty($data['title'])) {
+            $errors[] = 'Tên sách không được để trống';
+        }
+
+        if (empty($data['author_id']) || $data['author_id'] <= 0) {
+            $errors[] = 'ID tác giả không hợp lệ';
+        } else {
+            // Kiểm tra author có tồn tại không
+            if (!Author::find($data['author_id'])) {
+                $errors[] = 'Không tìm thấy tác giả với ID: ' . $data['author_id'];
+            }
+        }
+
+        if (empty($data['category_id']) || $data['category_id'] <= 0) {
+            $errors[] = 'ID thể loại không hợp lệ';
+        } else {
+            // Kiểm tra category có tồn tại không
+            if (!Category::find($data['category_id'])) {
+                $errors[] = 'Không tìm thấy thể loại với ID: ' . $data['category_id'];
+            }
+        }
+
+        if (empty($data['publisher_id']) || $data['publisher_id'] <= 0) {
+            $errors[] = 'ID nhà xuất bản không hợp lệ';
+        } else {
+            // Kiểm tra publisher có tồn tại không
+            if (!Publisher::find($data['publisher_id'])) {
+                $errors[] = 'Không tìm thấy nhà xuất bản với ID: ' . $data['publisher_id'];
+            }
+        }
+
+        if ($data['price'] < 0) {
+            $errors[] = 'Giá không hợp lệ';
+        }
+
+        if ($data['stock'] < 0) {
+            $errors[] = 'Số lượng không hợp lệ';
+        }
+
+        if (!in_array($data['is_physical'], [0, 1])) {
+            $errors[] = 'Loại sách không hợp lệ (paper/ebook)';
+        }
+
+        if (empty($errors)) {
+            return ['valid' => true];
+        }
+
+        return [
+            'valid' => false,
+            'error' => [
+                'row' => $rowNumber,
+                'messages' => $errors
+            ]
+        ];
+    }
+
+    /**
+     * Parse số từ string
+     */
+    private function parseNumber($value)
+    {
+        if (empty($value)) {
+            return null;
+        }
+        
+        // Xóa ký tự không phải số
+        $cleaned = preg_replace('/[^\d.]/', '', $value);
+        
+        return is_numeric($cleaned) ? (float)$cleaned : 0;
+    }
+
+    /**
+     * Parse loại sách
+     */
+    private function parseBookType($value)
+    {
+        $value = strtolower(trim($value));
+        
+        if (in_array($value, ['paper', 'giấy', 'sách giấy', '1'])) {
+            return 1;
+        } elseif (in_array($value, ['ebook', 'điện tử', 'sách điện tử', '0'])) {
+            return 0;
+        }
+        
+        return 1; // Default là sách giấy
+    }
+
+    /**
+     * Parse ID từ dropdown value (format: "ID - Name")
+     */
+    private function parseIdFromDropdown($value)
+    {
+        $value = trim($value);
+        
+        // Nếu là số thuần túy
+        if (is_numeric($value)) {
+            return (int)$value;
+        }
+        
+        // Nếu format "ID - Name", lấy phần ID
+        if (strpos($value, ' - ') !== false) {
+            $parts = explode(' - ', $value);
+            $id = trim($parts[0]);
+            return is_numeric($id) ? (int)$id : 0;
+        }
+        
+        // Nếu format "ID-Name" (không có khoảng trắng)
+        if (strpos($value, '-') !== false) {
+            $parts = explode('-', $value);
+            $id = trim($parts[0]);
+            return is_numeric($id) ? (int)$id : 0;
+        }
+        
+        return 0;
+    }
+
+    /**
+     * METHODS KHÔNG CẦN DÙNG NỮA VÌ ĐÃ SỬ DỤNG ID TRỰC TIẾP
+     */
+    
+    // /**
+    //  * Tìm hoặc tạo tác giả
+    //  */
+    // private function findOrCreateAuthor($name)
+    // {
+    //     return Author::firstOrCreate(
+    //         ['name' => $name],
+    //         ['bio' => '', 'avatar' => '']
+    //     );
+    // }
+
+    // /**
+    //  * Tìm hoặc tạo thể loại
+    //  */
+    // private function findOrCreateCategory($name)
+    // {
+    //     return Category::firstOrCreate(
+    //         ['name' => $name],
+    //         ['description' => '']
+    //     );
+    // }
+
+    // /**
+    //  * Tìm hoặc tạo nhà xuất bản
+    //  */
+    // private function findOrCreatePublisher($name)
+    // {
+    //     return Publisher::firstOrCreate(
+    //         ['name' => $name],
+    //         ['description' => '', 'address' => '', 'phone' => '', 'email' => '']
+    //     );
+    // }
 }

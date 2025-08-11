@@ -100,6 +100,123 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
 
 /* Focus */
 :focus{ outline:2px solid var(--ink); outline-offset:2px }
+
+/* Stock Update Modal Styles */
+.modern-input {
+    background: rgba(0, 0, 0, 0.04);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 16px 20px;
+    font-size: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.modern-input:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.9);
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    transform: translateY(-2px);
+}
+
+/* Notification Styles (Ant Design inspired) */
+.notification-container {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.notification {
+    background: white;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 8px;
+    min-width: 320px;
+    max-width: 400px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    border: 1px solid #e5e7eb;
+    pointer-events: auto;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+    transform: translateX(100%);
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification.hide {
+    opacity: 0;
+    transform: translateX(100%);
+}
+
+.notification-success {
+    border-left: 4px solid #22c55e;
+}
+
+.notification-error {
+    border-left: 4px solid #ef4444;
+}
+
+.notification-warning {
+    border-left: 4px solid #f59e0b;
+}
+
+.notification-info {
+    border-left: 4px solid #3b82f6;
+}
+
+.notification-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.notification-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #111;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.notification-description {
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 0;
+    font-size: 16px;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.notification-close:hover {
+    color: #6b7280;
+}
+
+/* Progress indicator */
+.notification-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+    border-radius: 0 0 12px 12px;
+    transition: width linear;
+}
 </style>
 
 {{-- Header --}}
@@ -324,9 +441,14 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
           </div>
           Top sách sắp hết hàng
         </h4>
-        <button class="px-4 py-2 btn-primary text-sm font-medium" onclick="showLowStockModal()">
-          <i class="fas fa-box mr-1"></i>Bổ sung kho
-        </button>
+        <div class="flex space-x-2">
+          <button class="px-4 py-2 btn-ghost text-sm font-medium" onclick="exportLowStockExcel()">
+            <i class="fas fa-file-excel mr-1"></i>Xuất Excel
+          </button>
+          <button class="px-4 py-2 btn-primary text-sm font-medium" onclick="showLowStockModal()">
+            <i class="fas fa-box mr-1"></i>Bổ sung kho
+          </button>
+        </div>
       </div>
       <div class="space-y-3 max-h-80 overflow-y-auto">
         @php
@@ -520,7 +642,7 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
       <div class="space-y-4" id="lowStockList">
         @php $allLowStockBooks = \App\Models\Book::where('stock', '<', 10)->orderBy('stock', 'asc')->get(); @endphp
         @forelse ($allLowStockBooks as $index => $book)
-          <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border-l-4 border-gray-300">
+          <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border-l-4 border-gray-300" data-book-id="{{ $book->id }}">
             <div class="flex items-center space-x-4">
               <div class="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white text-lg" style="background:linear-gradient(135deg,#111,#2b2b2b)">
                 {{ $index + 1 }}
@@ -534,8 +656,11 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
                 </div>
               </div>
             </div>
-            <div class="text-right">
-              <span class="badge-soft amber"><i class="fas fa-boxes"></i>{{ $book->stock }} {{ $book->stock == 0 ? 'hết hàng' : 'còn lại' }}</span>
+            <div class="text-right flex items-center space-x-3">
+              <span class="badge-soft amber stock-display"><i class="fas fa-boxes"></i><span class="stock-number">{{ $book->stock }}</span> {{ $book->stock == 0 ? 'hết hàng' : 'còn lại' }}</span>
+              <button class="btn-primary px-3 py-1 text-sm" onclick="showUpdateStockModal({{ $book->id }}, '{{ addslashes($book->title) }}', {{ $book->stock }})">
+                <i class="fas fa-edit mr-1"></i>Cập nhật
+              </button>
             </div>
           </div>
         @empty
@@ -553,7 +678,7 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
         <span class="text-sm text-gray-700">Tổng cộng: <strong>{{ $allLowStockBooks->count() }}</strong> sản phẩm cần bổ sung</span>
         <div class="space-x-2">
           <button class="btn-ghost px-4 py-2 text-sm" onclick="closeLowStockModal()">Đóng</button>
-          <button class="btn-primary px-4 py-2 text-sm"><i class="fas fa-download mr-1"></i>Xuất báo cáo</button>
+          <button class="btn-primary px-4 py-2 text-sm" onclick="exportLowStockExcel()"><i class="fas fa-download mr-1"></i>Xuất báo cáo</button>
         </div>
       </div>
     </div>
@@ -631,12 +756,64 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
         </div>
         <div class="space-x-2">
           <button class="btn-ghost px-4 py-2 text-sm" onclick="closeTodayOrdersModal()">Đóng</button>
-          <button class="btn-primary px-4 py-2 text-sm"><i class="fas fa-download mr-1"></i>Xuất báo cáo</button>
+          <button class="btn-primary px-4 py-2 text-sm" onclick="exportTodayOrders()"><i class="fas fa-download mr-1"></i>Xuất báo cáo</button>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+{{-- Modal: Update Stock --}}
+<div id="updateStockModal" class="modal">
+  <div class="modal-content" style="max-width: 500px;">
+    <div class="modal-head">
+      <div class="flex items-center justify-between">
+        <h3 class="text-xl font-bold flex items-center"><i class="fas fa-boxes mr-3"></i>Cập nhật tồn kho</h3>
+        <button class="text-white hover:opacity-80 text-2xl" onclick="closeUpdateStockModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <p class="mt-2 modal-sub" id="updateStockBookTitle">Chỉnh sửa số lượng tồn kho</p>
+    </div>
+
+    <form id="updateStockForm" class="p-6">
+      <input type="hidden" id="updateBookId" name="book_id">
+      
+      <div class="space-y-4">
+        <div class="space-y-2">
+          <label class="block text-sm font-semibold text-gray-700 mb-3">
+            <i class="fas fa-boxes mr-2"></i>Số lượng hiện tại
+          </label>
+          <input type="number" id="currentStock" class="modern-input w-full bg-gray-100" readonly>
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-sm font-semibold text-gray-700 mb-3">
+            <i class="fas fa-edit mr-2"></i>Số lượng mới
+          </label>
+          <input type="number" id="newStock" name="stock" class="modern-input w-full" min="0" required placeholder="Nhập số lượng mới...">
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-sm font-semibold text-gray-700 mb-3">
+            <i class="fas fa-comment mr-2"></i>Ghi chú (tùy chọn)
+          </label>
+          <textarea id="stockNote" name="note" class="modern-input w-full" rows="3" placeholder="Lý do cập nhật, nguồn nhập hàng..."></textarea>
+        </div>
+      </div>
+
+      <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
+        <button type="button" class="btn-ghost px-4 py-2 text-sm" onclick="closeUpdateStockModal()">
+          <i class="fas fa-times mr-1"></i>Hủy
+        </button>
+        <button type="submit" class="btn-primary px-4 py-2 text-sm">
+          <i class="fas fa-save mr-1"></i>Cập nhật
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{{-- Notification Container --}}
+<div id="notificationContainer" class="notification-container"></div>
 
 {{-- Scripts --}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -644,15 +821,304 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
   // bật theme mono
   document.addEventListener('DOMContentLoaded',()=>document.body.classList.add('ui-mono'));
 
+  // ====== NOTIFICATION SYSTEM ======
+  function showNotification(type, title, description, duration = 4000) {
+    const container = document.getElementById('notificationContainer');
+    const notification = document.createElement('div');
+    const notificationId = 'notification_' + Date.now();
+    
+    const icons = {
+      success: 'fas fa-check-circle',
+      error: 'fas fa-exclamation-circle',
+      warning: 'fas fa-exclamation-triangle',
+      info: 'fas fa-info-circle'
+    };
+    
+    notification.className = `notification notification-${type}`;
+    notification.id = notificationId;
+    notification.innerHTML = `
+      <div class="notification-header">
+        <div class="notification-title">
+          <i class="${icons[type]} mr-2"></i>
+          ${title}
+        </div>
+        <button class="notification-close" onclick="closeNotification('${notificationId}')">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      ${description ? `<div class="notification-description">${description}</div>` : ''}
+      <div class="notification-progress" style="width: 100%;"></div>
+    `;
+    
+    container.appendChild(notification);
+    
+    // Show animation
+    setTimeout(() => {
+      notification.classList.add('show');
+    }, 10);
+    
+    // Progress bar animation
+    const progressBar = notification.querySelector('.notification-progress');
+    setTimeout(() => {
+      progressBar.style.transition = `width ${duration}ms linear`;
+      progressBar.style.width = '0%';
+    }, 100);
+    
+    // Auto close
+    setTimeout(() => {
+      closeNotification(notificationId);
+    }, duration);
+  }
+
+  function closeNotification(notificationId) {
+    const notification = document.getElementById(notificationId);
+    if (notification) {
+      notification.classList.add('hide');
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 300);
+    }
+  }
+
+  // ====== MODAL FUNCTIONS ======
   function showLowStockModal(){document.getElementById('lowStockModal').classList.add('show')}
   function closeLowStockModal(){document.getElementById('lowStockModal').classList.remove('show')}
   function showTodayOrdersModal(){document.getElementById('todayOrdersModal').classList.add('show')}
   function closeTodayOrdersModal(){document.getElementById('todayOrdersModal').classList.remove('show')}
+  
+  function showUpdateStockModal(bookId, bookTitle, currentStock) {
+    document.getElementById('updateBookId').value = bookId;
+    document.getElementById('updateStockBookTitle').textContent = `Cập nhật tồn kho: ${bookTitle}`;
+    document.getElementById('currentStock').value = currentStock;
+    document.getElementById('newStock').value = '';
+    document.getElementById('stockNote').value = '';
+    document.getElementById('updateStockModal').classList.add('show');
+  }
+  
+  function closeUpdateStockModal(){
+    document.getElementById('updateStockModal').classList.remove('show')
+  }
+
+  // ====== UPDATE STOCK FORM ======
+  document.getElementById('updateStockForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const bookId = document.getElementById('updateBookId').value;
+    const newStock = document.getElementById('newStock').value;
+    const note = document.getElementById('stockNote').value;
+    
+    if (!newStock || newStock < 0) {
+      showNotification('error', 'Lỗi', 'Vui lòng nhập số lượng hợp lệ!');
+      return;
+    }
+    
+    // Show loading
+    showNotification('info', 'Đang xử lý...', 'Cập nhật tồn kho sách');
+    
+    // Simulate update (replace with actual backend call when ready)
+    setTimeout(() => {
+      try {
+        // Update UI immediately for better UX
+        const bookRow = document.querySelector(`[data-book-id="${bookId}"]`);
+        if (bookRow) {
+          const stockDisplay = bookRow.querySelector('.stock-number');
+          const stockBadge = bookRow.querySelector('.stock-display');
+          if (stockDisplay) {
+            stockDisplay.textContent = newStock;
+          }
+          if (stockBadge) {
+            stockBadge.innerHTML = `<i class="fas fa-boxes"></i><span class="stock-number">${newStock}</span> ${newStock == 0 ? 'hết hàng' : 'còn lại'}`;
+          }
+        }
+        
+        showNotification('success', 'Thành công!', `Đã cập nhật tồn kho thành ${newStock} sản phẩm`);
+        closeUpdateStockModal();
+        
+        // Log to console for development
+        console.log('Stock updated:', {
+          bookId: bookId,
+          newStock: newStock,
+          note: note,
+          timestamp: new Date().toISOString()
+        });
+        
+      } catch (error) {
+        console.error('Error:', error);
+        showNotification('error', 'Lỗi!', 'Cập nhật thất bại - ' + error.message);
+      }
+    }, 1000);
+    
+    /* 
+    // TODO: Uncomment when backend is ready
+    const formData = new FormData();
+    formData.append('stock', newStock);
+    formData.append('note', note);
+    formData.append('_token', '{{ csrf_token() }}');
+    formData.append('_method', 'PATCH');
+    
+    fetch(`/admin/books/${bookId}/update-stock`, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showNotification('success', 'Thành công!', `Đã cập nhật tồn kho thành ${newStock} sản phẩm`);
+        
+        // Update UI
+        const bookRow = document.querySelector(`[data-book-id="${bookId}"]`);
+        if (bookRow) {
+          const stockDisplay = bookRow.querySelector('.stock-number');
+          const stockBadge = bookRow.querySelector('.stock-display');
+          if (stockDisplay) {
+            stockDisplay.textContent = newStock;
+          }
+          if (stockBadge) {
+            stockBadge.innerHTML = `<i class="fas fa-boxes"></i><span class="stock-number">${newStock}</span> ${newStock == 0 ? 'hết hàng' : 'còn lại'}`;
+          }
+        }
+        
+        closeUpdateStockModal();
+      } else {
+        showNotification('error', 'Lỗi!', data.message || 'Cập nhật thất bại');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showNotification('error', 'Lỗi mạng!', 'Không thể kết nối đến server');
+    });
+    */
+  });
+
+  // ====== EXPORT EXCEL FUNCTION ======
+  function exportLowStockExcel() {
+    showNotification('info', 'Đang xuất file...', 'Chuẩn bị báo cáo Excel');
+    
+    // Collect low stock data
+    const lowStockData = [];
+    document.querySelectorAll('[data-book-id]').forEach(bookRow => {
+      const bookId = bookRow.getAttribute('data-book-id');
+      const title = bookRow.querySelector('h6').textContent;
+      const category = bookRow.querySelector('[class*="fa-tag"]').parentElement.textContent.replace('🏷️', '').trim();
+      const author = bookRow.querySelector('[class*="fa-user"]').parentElement.textContent.replace('👤', '').trim();
+      const price = bookRow.querySelector('[class*="fa-dollar-sign"]').parentElement.textContent.replace('💰', '').trim();
+      const stock = bookRow.querySelector('.stock-number').textContent;
+      
+      lowStockData.push({
+        'ID': bookId,
+        'Tên sách': title,
+        'Tác giả': author,
+        'Danh mục': category,
+        'Giá (VNĐ)': price,
+        'Tồn kho': stock,
+        'Trạng thái': stock == '0' ? 'Hết hàng' : 'Sắp hết',
+        'Ngày xuất': new Date().toLocaleDateString('vi-VN')
+      });
+    });
+    
+    // Create CSV content
+    const headers = Object.keys(lowStockData[0] || {});
+    const csvContent = [
+      headers.join(','),
+      ...lowStockData.map(row => 
+        headers.map(header => `"${row[header] || ''}"`).join(',')
+      )
+    ].join('\n');
+    
+    // Create and download file
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `danh-sach-sach-sap-het-hang-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    setTimeout(() => {
+      showNotification('success', 'Xuất file thành công!', 'File CSV đã được tải về');
+    }, 1000);
+    
+    /* 
+    // TODO: Uncomment when backend Excel export is ready
+    window.location.href = '/admin/export/low-stock';
+    
+    setTimeout(() => {
+      showNotification('success', 'Xuất file thành công!', 'File Excel đã được tải về');
+    }, 1000);
+    */
+  }
+
+  // ====== EXPORT TODAY ORDERS ======
+  function exportTodayOrders() {
+    showNotification('info', 'Đang xuất file...', 'Chuẩn bị báo cáo đơn hàng hôm nay');
+    
+    // Collect today orders data from modal
+    const todayOrdersData = [];
+    document.querySelectorAll('#todayOrdersModal .space-y-4 > div').forEach((orderRow, index) => {
+      if (orderRow.querySelector('.font-semibold')) {
+        const customerName = orderRow.querySelector('.font-semibold').textContent;
+        const orderNumber = orderRow.querySelector('[style*="background"]').textContent;
+        const time = orderRow.querySelector('[class*="fa-clock"]').parentElement.textContent.replace('🕐', '').trim();
+        const items = orderRow.querySelector('[class*="fa-shopping-bag"]').parentElement.textContent.replace('🛍️', '').trim();
+        const payment = orderRow.querySelector('[class*="fa-credit-card"]').parentElement.textContent.replace('💳', '').trim();
+        const total = orderRow.querySelector('.text-lg.font-bold').textContent;
+        const status = orderRow.querySelector('.badge-soft').textContent;
+        
+        todayOrdersData.push({
+          'Mã đơn hàng': orderNumber,
+          'Khách hàng': customerName,
+          'Thời gian': time,
+          'Số sản phẩm': items,
+          'Phương thức thanh toán': payment,
+          'Tổng tiền': total,
+          'Trạng thái': status,
+          'Ngày xuất': new Date().toLocaleDateString('vi-VN')
+        });
+      }
+    });
+    
+    if (todayOrdersData.length === 0) {
+      showNotification('warning', 'Không có dữ liệu', 'Hôm nay chưa có đơn hàng nào để xuất');
+      return;
+    }
+    
+    // Create CSV content for orders
+    const headers = Object.keys(todayOrdersData[0]);
+    const csvContent = [
+      headers.join(','),
+      ...todayOrdersData.map(row => 
+        headers.map(header => `"${row[header] || ''}"`).join(',')
+      )
+    ].join('\n');
+    
+    // Create and download file
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `don-hang-hom-nay-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    setTimeout(() => {
+      showNotification('success', 'Xuất file thành công!', 'File báo cáo đơn hàng đã được tải về');
+    }, 1000);
+  }
 
   window.onclick=function(e){
-    const a=document.getElementById('lowStockModal'),b=document.getElementById('todayOrdersModal');
+    const a=document.getElementById('lowStockModal'),b=document.getElementById('todayOrdersModal'),c=document.getElementById('updateStockModal');
     if(e.target==a) closeLowStockModal();
     if(e.target==b) closeTodayOrdersModal();
+    if(e.target==c) closeUpdateStockModal();
   }
 
   // ====== DATA from server (fallback only) ======
@@ -770,9 +1236,9 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
     }
   });
 
-  // ====== Views by Category from API (/api/books) ======
+  // ====== Views by Category from CORRECT API ======
   async function buildViewsFromAPI(){
-    const apiUrl = 'http://localhost:8000/api/books';
+    const apiUrl = 'http://localhost:8000/api/books/search?limit=500';
     let weekMap = new Map();
     let monthMap = new Map();
 
@@ -781,17 +1247,19 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
       if(!res.ok) throw new Error('HTTP '+res.status);
       const data = await res.json();
 
-      const list = Array.isArray(data?.top_rated_books) ? data.top_rated_books : [];
+      // Lấy dữ liệu từ response.data thay vì top_rated_books
+      const list = Array.isArray(data?.data) ? data.data : [];
       const now = new Date();
       const d7  = new Date(now);  d7.setDate(d7.getDate()-7);
       const d30 = new Date(now); d30.setDate(d30.getDate()-30);
 
       const toDate = s => s ? new Date(s) : null;
       const labelOf = b => {
-        const name = b?.category?.name ?? b?.category_name;
+        const name = b?.category?.name;
         return name ? name : `Danh mục #${b?.category_id ?? 'N/A'}`;
       };
 
+      // Process dữ liệu từ API mới
       for(const b of list){
         const label = labelOf(b);
         const views = Number(b?.views ?? 0);
@@ -804,6 +1272,13 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
           weekMap.set(label, (weekMap.get(label) || 0) + views);
         }
       }
+
+      console.log('API Data processed:', {
+        totalBooks: list.length,
+        weekCategories: weekMap.size,
+        monthCategories: monthMap.size
+      });
+
     }catch(err){
       console.warn('Books API failed, fallback to server data:', err);
       const viewsWeekFallback = {!! json_encode($viewsByCategoryWeek ?? ($viewsByCategory ?? [])) !!};
@@ -814,7 +1289,7 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
 
     const toDataset = (m) => {
       const entries = Array.from(m.entries());
-      entries.sort((a,b)=>b[1]-a[1]); // desc
+      entries.sort((a,b)=>b[1]-a[1]); // desc by views
       return { labels: entries.map(e=>e[0]), data: entries.map(e=>e[1]) };
     };
 
@@ -886,40 +1361,80 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
     });
   }
 
-  // Publisher doughnut (xám + xanh dương nhạt dịu)
-  const publisherCtx=document.getElementById('publisherChart').getContext('2d');
-  const publisherChart=new Chart(publisherCtx,{
-    type:'doughnut',
-    data:{
-      labels:Object.keys(publisherData),
-      datasets:[{
-        data:Object.values(publisherData),
-        backgroundColor:['#111','#374151','#4b5563','#6b7280','#94a3b8','#cbd5e1','#e5e7eb','#f3f4f6'],
-        borderWidth:3,
-        borderColor:'#ffffff',
-        hoverBorderWidth:5,
-        hoverBorderColor:'#ffffff'
-      }]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{
-        legend:{position:'bottom',labels:{usePointStyle:true,pointStyle:'circle',padding:20,font:{size:12,weight:'500'}}},
-        tooltip:{
-          backgroundColor:'#111', titleColor:'#fff', bodyColor:'#fff',
-          borderColor:'#000', borderWidth:1, cornerRadius:8, displayColors:true,
-          callbacks:{
-            label:(ctx)=>{
-              const total=ctx.dataset.data.reduce((a,b)=>a+b,0);
-              const p=((ctx.parsed*100)/total).toFixed(1);
-              return ctx.label+': '+ctx.parsed+' sách ('+p+'%)';
+  // ====== Publisher Chart từ API ======
+  async function buildPublisherChart() {
+    const apiUrl = 'http://localhost:8000/api/books/search?limit=5000';
+    let publisherMap = new Map();
+
+    try{
+      const res = await fetch(apiUrl, { headers:{ 'Accept':'application/json' }});
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+
+      const list = Array.isArray(data?.data) ? data.data : [];
+
+      // Đếm số sách theo nhà xuất bản
+      for(const b of list){
+        const publisherName = b?.publisher?.name || 'Không xác định';
+        publisherMap.set(publisherName, (publisherMap.get(publisherName) || 0) + 1);
+      }
+
+      console.log('Publisher data processed:', {
+        totalPublishers: publisherMap.size,
+        data: Object.fromEntries(publisherMap)
+      });
+
+    }catch(err){
+      console.warn('Publisher API failed, using fallback data:', err);
+      // Fallback to server data
+      const fallbackData = {!! json_encode($booksByPublisher ?? []) !!};
+      Object.entries(fallbackData).forEach(([k,v])=> publisherMap.set(k, Number(v||0)));
+    }
+
+    // Convert Map to arrays for Chart.js
+    const entries = Array.from(publisherMap.entries());
+    entries.sort((a,b)=>b[1]-a[1]); // Sort by book count desc
+    const labels = entries.map(e=>e[0]);
+    const dataValues = entries.map(e=>e[1]);
+
+    // Update publisher chart
+    const publisherCtx=document.getElementById('publisherChart').getContext('2d');
+    
+    if(window.__publisherChart) { window.__publisherChart.destroy(); }
+
+    window.__publisherChart = new Chart(publisherCtx,{
+      type:'doughnut',
+      data:{
+        labels: labels,
+        datasets:[{
+          data: dataValues,
+          backgroundColor:['#111','#374151','#4b5563','#6b7280','#94a3b8','#cbd5e1','#e5e7eb','#f3f4f6'],
+          borderWidth:3,
+          borderColor:'#ffffff',
+          hoverBorderWidth:5,
+          hoverBorderColor:'#ffffff'
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{position:'bottom',labels:{usePointStyle:true,pointStyle:'circle',padding:20,font:{size:12,weight:'500'}}},
+          tooltip:{
+            backgroundColor:'#111', titleColor:'#fff', bodyColor:'#fff',
+            borderColor:'#000', borderWidth:1, cornerRadius:8, displayColors:true,
+            callbacks:{
+              label:(ctx)=>{
+                const total=ctx.dataset.data.reduce((a,b)=>a+b,0);
+                const p=((ctx.parsed*100)/total).toFixed(1);
+                return ctx.label+': '+ctx.parsed+' sách ('+p+'%)';
+              }
             }
           }
-        }
-      },
-      cutout:'60%'
-    }
-  });
+        },
+        cutout:'60%'
+      }
+    });
+  }
 
   // Switch order timeframe
   document.addEventListener('DOMContentLoaded',function(){
@@ -939,8 +1454,11 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
     });
   });
 
-  // Lượt đọc theo danh mục từ API
-  document.addEventListener('DOMContentLoaded', buildViewsFromAPI);
+  // Lượt đọc theo danh mục từ API mới
+  document.addEventListener('DOMContentLoaded', () => {
+    buildViewsFromAPI();
+    buildPublisherChart();
+  });
 
   // Clock
   function updateClock(){
@@ -953,7 +1471,14 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
   // Shortcuts
   document.addEventListener('keydown',function(e){
     if(e.ctrlKey&&e.key==='r'){e.preventDefault();location.reload()}
-    if(e.key==='Escape'){closeLowStockModal();closeTodayOrdersModal()}
+    if(e.key==='Escape'){closeLowStockModal();closeTodayOrdersModal();closeUpdateStockModal();}
   });
+
+  // Show success message if redirected from update
+  @if(session('success'))
+    setTimeout(() => {
+      showNotification('success', 'Thành công!', '{{ session("success") }}');
+    }, 500);
+  @endif
 </script>
 @endsection

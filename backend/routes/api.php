@@ -106,7 +106,16 @@ Route::get('/books', [BookChapterApiController::class, 'listBooks']);
 Route::get('/books/{bookId}/chapters', [BookChapterApiController::class, 'getChapters']);
 Route::get('/chapters/{chapterId}', [BookChapterApiController::class, 'getChapter']);
 
-
+//excel book
+Route::prefix('books')->group(function () {
+    // Import books
+    Route::post('/import', [BookController::class, 'importBooks']);
+    Route::get('/template/download', [BookController::class, 'downloadTemplate']);
+    Route::get('/template/simple', [BookController::class, 'downloadSimpleTemplate']);
+    Route::get('/template/data', [BookController::class, 'getTemplateData']);
+    Route::post('/import/preview', [BookController::class, 'previewImport']);
+    Route::get('/import/stats', [BookController::class, 'getImportStats']);
+});
 // Bài viết
 Route::prefix('posts')->group(function () {
     Route::get('/', [PostApiController::class, 'index']);
@@ -129,7 +138,7 @@ Route::prefix('topics')->group(function () {
 // Thông tin người dùng
 Route::prefix('user')->group(function () {
 Route::post('/change-password', [UserProfileController::class, 'updatePassword']);
-Route::put('/profile', [UserProfileController::class, 'update']);
+Route::post('/profile', [UserProfileController::class, 'update']);
 Route::get('/profile', [UserProfileController::class, 'profile']);
 });
 

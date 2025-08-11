@@ -15,7 +15,7 @@ class CloudinaryService
         $this->cloudinary = new Cloudinary([
             'cloud' => [
                 'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
-                'api_key' => env('CLOUDINARY_API_KEY'),
+                'api_key'    => env('CLOUDINARY_API_KEY'),
                 'api_secret' => env('CLOUDINARY_API_SECRET'),
             ],
             'url' => ['secure' => true],
@@ -32,27 +32,84 @@ class CloudinaryService
         return $uploaded['secure_url'] ?? null;
     }
 
-    public function uploadImageAvoidDuplicate($file, $folder = 'uploads')
+    /**
+     * Upload avatar image to Cloudinary
+     */
+    public function uploadAvatar(UploadedFile $file, $userId, $options = [])
     {
-        // Tạo hash từ file để nhận diện ảnh trùng
-        $hash = md5_file($file->getRealPath());
+        try {
+            // Validate file
+            if (!$file->isValid()) {
+                throw new \Exception('File avatar không hợp lệ.');
+            }
 
-        // Public ID = folder + hash để Cloudinary nhận diện
-        $publicId = $folder . '/' . $hash;
+            if (!in_array($file->getMimeType(), ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])) {
+                throw new \Exception('File phải là ảnh (jpg, jpeg, png, webp).');
+            }
 
-        // Upload (overwrite=false → nếu đã tồn tại thì trả ảnh cũ)
-        $uploaded = $this->cloudinary->uploadApi()->upload(
-            $file->getRealPath(),
-            [
-                'folder' => $folder,
-                'public_id' => $hash,
-                'overwrite' => false
-            ]
-        );
+            if ($file->getSize() > 10 * 1024 * 1024) { // 10MB limit
+                throw new \Exception('File avatar không được vượt quá 10MB.');
+            }
 
-        return $uploaded['secure_url'] ?? null;
+            $fixedPublicId = "users/{$userId}/avatar";
+
+            $defaultOptions = [
+                'public_id'       => $fixedPublicId,
+                'overwrite'       => true,
+                'invalidate'      => true,
+                'resource_type'   => 'image',
+                'unique_filename' => false,
+                'use_filename'    => false,
+                'transformation'  => ['width' => 1024, 'height' => 1024, 'crop' => 'limit'],
+            ];
+
+            $mergedOptions = array_merge($defaultOptions, $options);
+
+            \Log::info('Starting avatar upload via CloudinaryService', [
+                'user_id' => $userId,
+                'filename' => $file->getClientOriginalName(),
+                'final_public_id' => $fixedPublicId,
+                'size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+                'options' => $mergedOptions
+            ]);
+
+            // Upload file
+            $result = $this->cloudinary->uploadApi()->upload(
+                $file->getRealPath(),
+                $mergedOptions
+            );
+
+            \Log::info('Avatar upload successful', [
+                'user_id' => $userId,
+                'secure_url' => $result['secure_url'] ?? 'missing',
+                'public_id' => $result['public_id'] ?? 'missing',
+                'format' => $result['format'] ?? 'unknown'
+            ]);
+
+            if (!isset($result['secure_url'])) {
+                throw new \Exception('Không lấy được URL từ kết quả upload.');
+            }
+
+            return [
+                'secure_url' => $result['secure_url'],
+                'public_id' => $result['public_id'],
+                'format' => $result['format'] ?? 'unknown',
+                'bytes' => $result['bytes'] ?? $file->getSize(),
+                'created_at' => $result['created_at'] ?? now()
+            ];
+
+        } catch (\Exception $e) {
+            \Log::error('Avatar upload failed via CloudinaryService', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+                'file' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
+        }
     }
-
 
     /**
      * Upload PDF file to Cloudinary
@@ -169,40 +226,14 @@ class CloudinaryService
         }
     }
 
-    public function deleteImageByPublicId($url, $resourceType = 'image')
+    public function deleteImageByPublicId($url)
     {
-        // Lấy path từ URL
-        $path = parse_url($url, PHP_URL_PATH);
+        $parts = explode('/', parse_url($url, PHP_URL_PATH));
+        $filename = end($parts);
+        $publicId = pathinfo($filename, PATHINFO_FILENAME);
 
-        // Tách path thành mảng
-        $parts = explode('/', trim($path, '/'));
-
-        // Tìm vị trí 'upload' và lấy phần sau nó
-        $uploadIndex = array_search('upload', $parts);
-        if ($uploadIndex === false) {
-            throw new \Exception('URL Cloudinary không hợp lệ.');
-        }
-
-        // Bỏ phần version nếu có (ví dụ: v1691234567)
-        $publicIdParts = array_slice($parts, $uploadIndex + 1);
-        if (isset($publicIdParts[0]) && preg_match('/^v[0-9]+$/', $publicIdParts[0])) {
-            array_shift($publicIdParts); // bỏ version
-        }
-
-        // Ghép lại full path (folder/tên-file)
-        $publicIdWithExtension = implode('/', $publicIdParts);
-
-        // Loại bỏ extension (.jpg, .png, .pdf, ...)
-        $publicId = preg_replace('/\.[^.]+$/', '', $publicIdWithExtension);
-
-        // Gọi API xóa
-        return $this->cloudinary->uploadApi()->destroy($publicId, [
-            'resource_type' => $resourceType
-        ]);
+        return $this->cloudinary->uploadApi()->destroy($publicId);
     }
-
-
-
 
     /**
      * Delete PDF file by public_id

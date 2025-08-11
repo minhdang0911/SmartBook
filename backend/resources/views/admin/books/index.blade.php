@@ -412,6 +412,96 @@
         color: white;
     }
 
+    /* Import Modal Styles */
+    .import-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .import-modal.show {
+        display: flex !important;
+    }
+
+    .import-modal-content {
+        background: white;
+        padding: 24px;
+        border-radius: 8px;
+        min-width: 400px;
+        max-width: 500px;
+        margin: 20px;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    }
+
+    .import-modal-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .import-modal-header h5 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .import-progress {
+        background: #f5f5f5;
+        border-radius: 4px;
+        height: 8px;
+        margin-bottom: 12px;
+        overflow: hidden;
+    }
+
+    .import-progress-bar {
+        height: 100%;
+        background: #2196F3;
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+
+    .import-result-summary {
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 16px;
+    }
+
+    .import-result-success {
+        background: #f6ffed;
+        border: 1px solid #b7eb8f;
+        color: #389e0d;
+    }
+
+    .import-result-warning {
+        background: #fffbe6;
+        border: 1px solid #ffe58f;
+        color: #d48806;
+    }
+
+    .import-result-error {
+        background: #fff2f0;
+        border: 1px solid #ffccc7;
+        color: #cf1322;
+    }
+
+    /* Animation */
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .spin {
+        animation: spin 1s linear infinite;
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
         .page-container {
@@ -437,6 +527,11 @@
         .popconfirm {
             min-width: 260px;
             margin: 0 16px;
+        }
+
+        .import-modal-content {
+            min-width: 300px;
+            margin: 16px;
         }
     }
 
@@ -466,6 +561,40 @@
 
     @include('components.alert')
     @include('admin.books.partials.filters')
+
+    <!-- Action Buttons -->
+    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 20px;">
+        <a href="http://localhost:8000/api/books/template/download" 
+           title="Tải xuống file mẫu Excel"
+           style="display: inline-flex; align-items: center; gap: 6px; background-color: #4CAF50; color: white; text-decoration: none; padding: 8px 14px; border-radius: 5px; font-size: 14px; font-weight: 500; transition: background-color 0.3s; cursor: pointer;">
+            <svg style="width: 16px; height: 16px;" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+            </svg>
+            Tải Template
+        </a>
+
+        <!-- File Input và Import Button -->
+        <div style="position: relative;">
+            <input type="file" 
+                   id="excel-file-input" 
+                   accept=".xlsx,.xls" 
+                   style="display: none;"
+                   onchange="handleFileSelect(this)">
+            
+            <button type="button" 
+                    id="import-btn"
+                    onclick="document.getElementById('excel-file-input').click()"
+                    title="Import danh sách sách từ file Excel"
+                    style="display: inline-flex; align-items: center; gap: 6px; background-color: #2196F3; color: white; padding: 8px 14px; border-radius: 5px; font-size: 14px; font-weight: 500; border: none; cursor: pointer; transition: background-color 0.3s;">
+                <svg style="width: 16px; height: 16px;" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                    <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+                </svg>
+                <span id="import-btn-text">Import Excel</span>
+            </button>
+        </div>
+    </div>
 
     <!-- Desktop Table -->
     <div class="content-wrapper">
@@ -670,11 +799,64 @@
         </div>
     </div>
 </div>
+
+<!-- Import Modal -->
+<div id="import-modal" class="import-modal">
+    <div class="import-modal-content">
+        <div class="import-modal-header">
+            <div id="modal-icon" style="width: 24px; height: 24px;">
+                <!-- Loading icon -->
+                <svg id="loading-icon" class="spin" style="width: 24px; height: 24px;" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M11.251.068a.5.5 0 0 1 .227.58L9.677 6.5H13a.5.5 0 0 1 .364.843l-8 8.5a.5.5 0 0 1-.842-.49L6.323 9.5H3a.5.5 0 0 1-.364-.843l8-8.5a.5.5 0 0 1 .615-.09z"/>
+                </svg>
+                <!-- Success icon -->
+                <svg id="success-icon" style="width: 24px; height: 24px; color: #52c41a; display: none;" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022Z"/>
+                </svg>
+                <!-- Error icon -->
+                <svg id="error-icon" style="width: 24px; height: 24px; color: #ff4d4f; display: none;" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/>
+                </svg>
+            </div>
+            <h5 id="modal-title">Đang import dữ liệu...</h5>
+        </div>
+        
+        <div id="modal-content">
+            <div id="progress-section">
+                <div class="import-progress">
+                    <div id="progress-bar" class="import-progress-bar"></div>
+                </div>
+                <p id="modal-message" style="margin: 0; color: #666; font-size: 14px;">Đang xử lý file Excel...</p>
+            </div>
+            
+            <div id="result-section" style="display: none;">
+                <div id="result-summary"></div>
+                <div id="result-details" style="font-size: 14px; color: #666;"></div>
+            </div>
+        </div>
+        
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px;">
+            <button id="modal-close-btn" 
+                    class="popconfirm-btn"
+                    style="display: none;"
+                    onclick="closeImportModal()">
+                Đóng
+            </button>
+            <button id="modal-reload-btn" 
+                    class="popconfirm-btn"
+                    style="display: none; background: #2196F3; color: white; border-color: #2196F3;"
+                    onclick="window.location.reload()">
+                Tải lại trang
+            </button>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Delete confirmation functionality
     const overlay = document.getElementById('popconfirm-overlay');
     const popconfirm = document.getElementById('popconfirm');
     const message = document.getElementById('popconfirm-message');
@@ -793,6 +975,225 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 100);
         }
     });
+
+    // Import functionality
+    window.handleFileSelect = function(input) {
+        const file = input.files[0];
+        if (!file) return;
+        
+        // Validate file type
+        const allowedTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
+        if (!allowedTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls)$/i)) {
+            alert('Vui lòng chọn file Excel (.xlsx hoặc .xls)');
+            input.value = '';
+            return;
+        }
+        
+        // Validate file size (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            alert('File quá lớn. Vui lòng chọn file nhỏ hơn 10MB');
+            input.value = '';
+            return;
+        }
+        
+        // Start import
+        importExcelFile(file);
+        
+        // Clear input
+        input.value = '';
+    };
+
+    function importExcelFile(file) {
+        // Show modal
+        showImportModal();
+        
+        // Create FormData
+        const formData = new FormData();
+        formData.append('excel_file', file);
+        
+        // Add CSRF token if available
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (csrfToken) {
+            formData.append('_token', csrfToken.getAttribute('content'));
+        }
+        
+        // Simulate progress
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += Math.random() * 30;
+            if (progress >= 90) {
+                progress = 90;
+                clearInterval(progressInterval);
+            }
+            updateProgress(progress);
+        }, 200);
+        
+        // Make API call
+        fetch('http://localhost:8000/api/books/import', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            clearInterval(progressInterval);
+            updateProgress(100);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            setTimeout(() => {
+                showImportResult(data);
+            }, 500);
+        })
+        .catch(error => {
+            console.error('Import error:', error);
+            clearInterval(progressInterval);
+            showImportError(error.message || 'Có lỗi xảy ra khi import dữ liệu');
+        });
+    }
+
+    function showImportModal() {
+        const modal = document.getElementById('import-modal');
+        const title = document.getElementById('modal-title');
+        const message = document.getElementById('modal-message');
+        const loadingIcon = document.getElementById('loading-icon');
+        const successIcon = document.getElementById('success-icon');
+        const errorIcon = document.getElementById('error-icon');
+        const progressSection = document.getElementById('progress-section');
+        const resultSection = document.getElementById('result-section');
+        const closeBtn = document.getElementById('modal-close-btn');
+        const reloadBtn = document.getElementById('modal-reload-btn');
+        
+        // Reset modal state
+        title.textContent = 'Đang import dữ liệu...';
+        message.textContent = 'Đang xử lý file Excel...';
+        loadingIcon.style.display = 'block';
+        successIcon.style.display = 'none';
+        errorIcon.style.display = 'none';
+        progressSection.style.display = 'block';
+        resultSection.style.display = 'none';
+        closeBtn.style.display = 'none';
+        reloadBtn.style.display = 'none';
+        
+        updateProgress(0);
+        modal.classList.add('show');
+    }
+
+    function updateProgress(percent) {
+        const progressBar = document.getElementById('progress-bar');
+        const message = document.getElementById('modal-message');
+        
+        progressBar.style.width = percent + '%';
+        
+        if (percent < 30) {
+            message.textContent = 'Đang đọc file Excel...';
+        } else if (percent < 60) {
+            message.textContent = 'Đang xác thực dữ liệu...';
+        } else if (percent < 90) {
+            message.textContent = 'Đang lưu vào cơ sở dữ liệu...';
+        } else {
+            message.textContent = 'Hoàn thành xử lý...';
+        }
+    }
+
+    function showImportResult(data) {
+        const title = document.getElementById('modal-title');
+        const loadingIcon = document.getElementById('loading-icon');
+        const successIcon = document.getElementById('success-icon');
+        const progressSection = document.getElementById('progress-section');
+        const resultSection = document.getElementById('result-section');
+        const resultSummary = document.getElementById('result-summary');
+        const resultDetails = document.getElementById('result-details');
+        const closeBtn = document.getElementById('modal-close-btn');
+        const reloadBtn = document.getElementById('modal-reload-btn');
+        
+        // Update UI
+        title.textContent = 'Import hoàn tất!';
+        loadingIcon.style.display = 'none';
+        successIcon.style.display = 'block';
+        progressSection.style.display = 'none';
+        resultSection.style.display = 'block';
+        closeBtn.style.display = 'inline-block';
+        reloadBtn.style.display = 'inline-block';
+        
+        // Show results
+        if (data.status === 'success' && data.summary) {
+            const summary = data.summary;
+            const hasErrors = summary.error_count > 0;
+            const hasWarnings = summary.duplicate_count > 0;
+            
+            let summaryClass = 'import-result-success';
+            if (hasErrors) {
+                summaryClass = 'import-result-error';
+            } else if (hasWarnings) {
+                summaryClass = 'import-result-warning';
+            }
+            
+            resultSummary.className = `import-result-summary ${summaryClass}`;
+            resultSummary.innerHTML = `
+                <div style="font-weight: 600; margin-bottom: 8px;">Kết quả Import</div>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div>📚 Tổng số dòng: <strong>${summary.total_rows || 0}</strong></div>
+                    <div>✅ Thành công: <strong>${summary.success_count || 0}</strong></div>
+                    ${summary.error_count > 0 ? `<div>❌ Lỗi: <strong>${summary.error_count}</strong></div>` : ''}
+                    ${summary.duplicate_count > 0 ? `<div>⚠️ Trùng lặp: <strong>${summary.duplicate_count}</strong></div>` : ''}
+                </div>
+            `;
+            
+            // Show details if there are errors
+            if (data.errors && data.errors.length > 0) {
+                resultDetails.innerHTML = `
+                    <div style="margin-top: 16px;">
+                        <div style="font-weight: 500; margin-bottom: 8px;">Chi tiết lỗi:</div>
+                        <div style="max-height: 200px; overflow-y: auto; background: #f5f5f5; padding: 8px; border-radius: 4px;">
+                            ${data.errors.map(error => `<div>• ${error}</div>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+        } else {
+            resultSummary.className = 'import-result-summary import-result-success';
+            resultSummary.innerHTML = `
+                <div style="font-weight: 600;">✅ Import thành công!</div>
+                <div style="margin-top: 8px;">Dữ liệu đã được import vào hệ thống.</div>
+            `;
+        }
+    }
+
+    function showImportError(errorMessage) {
+        const title = document.getElementById('modal-title');
+        const loadingIcon = document.getElementById('loading-icon');
+        const errorIcon = document.getElementById('error-icon');
+        const progressSection = document.getElementById('progress-section');
+        const resultSection = document.getElementById('result-section');
+        const resultSummary = document.getElementById('result-summary');
+        const closeBtn = document.getElementById('modal-close-btn');
+        
+        // Update UI
+        title.textContent = 'Import thất bại!';
+        loadingIcon.style.display = 'none';
+        errorIcon.style.display = 'block';
+        progressSection.style.display = 'none';
+        resultSection.style.display = 'block';
+        closeBtn.style.display = 'inline-block';
+        
+        resultSummary.className = 'import-result-summary import-result-error';
+        resultSummary.innerHTML = `
+            <div style="font-weight: 600;">❌ Import thất bại</div>
+            <div style="margin-top: 8px;">${errorMessage}</div>
+        `;
+    }
+
+    window.closeImportModal = function() {
+        const modal = document.getElementById('import-modal');
+        modal.classList.remove('show');
+    };
 });
 </script>
 
