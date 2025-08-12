@@ -125,20 +125,20 @@
 
         /* CSS cho bảng */
         .table-fixed th, .table-fixed td {
-            max-width: 300px;
+            max-width: 250px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
         .table-fixed th:nth-child(1), .table-fixed td:nth-child(1) { width: 5%; } /* STT */
-        .table-fixed th:nth-child(2), .table-fixed td:nth-child(2) { width: 10%; } /* Ảnh */
+        .table-fixed th:nth-child(2), .table-fixed td:nth-child(2) { width: 8%; } /* Ảnh */
         .table-fixed th:nth-child(3), .table-fixed td:nth-child(3) { width: 30%; } /* Tiêu đề */
-        .table-fixed th:nth-child(4), .table-fixed td:nth-child(4) { width: 10%; } /* Ghim */
+        .table-fixed th:nth-child(4), .table-fixed td:nth-child(4) { width: 8%; } /* Ghim */
         .table-fixed th:nth-child(5), .table-fixed td:nth-child(5) { width: 15%; } /* Chủ đề */
-        .table-fixed th:nth-child(6), .table-fixed td:nth-child(6) { width: 10%; } /* Trạng thái */
-        .table-fixed th:nth-child(7), .table-fixed td:nth-child(7) { width: 15%; } /* Ngày tạo */
-        .table-fixed th:nth-child(8), .table-fixed td:nth-child(8) { width: 15%; } /* Hành động */
+        .table-fixed th:nth-child(6), .table-fixed td:nth-child(6) { width: 8%; } /* Trạng thái */
+        .table-fixed th:nth-child(7), .table-fixed td:nth-child(7) { width: 12%; } /* Ngày tạo */
+        .table-fixed th:nth-child(8), .table-fixed td:nth-child(8) { width: 14%; } /* Hành động */
     </style>
 @endpush
 
@@ -263,8 +263,8 @@
                                         @endif
                                     </td>
                                     <td class="px-6 py-4">
-                                        <div class="text-base font-medium text-gray-900 dark:text-white">{{ Str::limit($post->title, 50) }}</div>
-                                        <div class="text-sm text-gray-500 dark:text-gray-400">{{ Str::limit($post->slug, 40) }}</div>
+                                        <div class="text-base font-medium text-gray-900 dark:text-white overflow-hidden text-overflow-ellipsis whitespace-nowrap">{{ Str::limit($post->title, 50) }}</div>
+                                        <div class="text-sm text-gray-500 dark:text-gray-400 overflow-hidden text-overflow-ellipsis whitespace-nowrap">{{ Str::limit($post->slug, 40) }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         @if ($post->is_pinned)
@@ -280,9 +280,9 @@
                                         @endif
                                     </td>
                                     <td class="px-6 py-4">
-                                        <div class="flex flex-wrap gap-1">
+                                        <div class="flex flex-wrap gap-1 max-h-[60px] overflow-y-auto">
                                             @forelse($post->topics as $topic)
-                                                <span class="status-badge topic-badge dark:topic-badge">{{ $topic->name }}</span>
+                                                <span class="status-badge topic-badge dark:topic-badge overflow-hidden text-overflow-ellipsis whitespace-nowrap">{{ Str::limit($topic->name, 20) }}</span>
                                             @empty
                                                 <span class="text-gray-400 dark:text-gray-400">—</span>
                                             @endforelse
@@ -353,18 +353,18 @@
                         <div class="flex space-x-3 mb-2">
                             <div class="flex-shrink-0">
                                 @if ($post->thumbnail)
-                                    <img src="{{ $post->thumbnail }}" alt="Thumbnail" class="h-12 w-12 rounded-lg object-cover border border-gray-200 dark:border-gray-600">
+                                    <img src="{{ $post->thumbnail }}" alt="Thumbnail" class="h-10 w-10 rounded-lg object-cover border border-gray-200 dark:border-gray-600">
                                 @else
-                                    <div class="h-12 w-12 rounded-lg bg-gray-100 dark:bg-gray-600 flex items-center justify-center border border-gray-200 dark:border-gray-600">
-                                        <svg class="h-6 w-6 text-gray-400 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div class="h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-600 flex items-center justify-center border border-gray-200 dark:border-gray-600">
+                                        <svg class="h-5 w-5 text-gray-400 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                         </svg>
                                     </div>
                                 @endif
                             </div>
                             <div class="flex-1 min-w-0">
-                                <h3 class="text-base font-medium text-gray-900 dark:text-white truncate">{{ $post->title }}</h3>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $post->slug }}</p>
+                                <h3 class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ Str::limit($post->title, 50) }}</h3>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ Str::limit($post->slug, 40) }}</p>
                                 <div class="flex items-center gap-2 mt-1">
                                     <span class="status-badge {{ $post->status === 'published' ? 'status-published dark:status-published' : 'status-draft dark:status-draft' }}">
                                         {{ $post->status === 'published' ? 'Xuất bản' : 'Nháp' }}
@@ -379,9 +379,9 @@
                         <div class="space-y-2 text-sm">
                             <div class="flex justify-between">
                                 <span class="text-gray-500 dark:text-gray-400">Chủ đề:</span>
-                                <div class="flex flex-wrap gap-1">
+                                <div class="flex flex-wrap gap-1 max-h-[60px] overflow-y-auto">
                                     @forelse($post->topics as $topic)
-                                        <span class="status-badge topic-badge dark:topic-badge">{{ $topic->name }}</span>
+                                        <span class="status-badge topic-badge dark:topic-badge overflow-hidden text-overflow-ellipsis whitespace-nowrap">{{ Str::limit($topic->name, 20) }}</span>
                                     @empty
                                         <span class="text-gray-400 dark:text-gray-400">—</span>
                                     @endforelse
@@ -411,7 +411,7 @@
                             </div>
                         </div>
 
-                        <div class="flex gap-2 mt-3 pt-2 border-t border-gray-200 dark:border-gray-700 flex-wrap">
+                        <div class="flex gap-2 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 flex-wrap">
                             <a href="{{ route('admin.posts.edit', $post) }}" class="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-xl text-sm text-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
                                 Sửa
                             </a>
@@ -444,11 +444,11 @@
                         @if ($posts->onFirstPage())
                             <span class="relative inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400">Trước</span>
                         @else
-                            <a href="{{ $posts->appends(['keyword' => request('keyword'), 'topic_id' => request('topic_id'), 'status' => request('status')])->previousPageUrl() }}" class="relative inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600">Trước</a>
+                            <a href="{{ $posts->appends(request()->query())->previousPageUrl() }}" class="relative inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600">Trước</a>
                         @endif
 
                         @if ($posts->hasMorePages())
-                            <a href="{{ $posts->appends(['keyword' => request('keyword'), 'topic_id' => request('topic_id'), 'status' => request('status')])->nextPageUrl() }}" class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600">Sau</a>
+                            <a href="{{ $posts->appends(request()->query())->nextPageUrl() }}" class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600">Sau</a>
                         @else
                             <span class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400">Sau</span>
                         @endif
@@ -475,14 +475,14 @@
                                         </svg>
                                     </span>
                                 @else
-                                    <a href="{{ $posts->appends(['keyword' => request('keyword'), 'topic_id' => request('topic_id'), 'status' => request('status')])->previousPageUrl() }}" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 dark:text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:z-20 focus:outline-offset-0">
+                                    <a href="{{ $posts->appends(request()->query())->previousPageUrl() }}" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 dark:text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:z-20 focus:outline-offset-0">
                                         <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                             <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
                                         </svg>
                                     </a>
                                 @endif
 
-                                @foreach ($posts->appends(['keyword' => request('keyword'), 'topic_id' => request('topic_id'), 'status' => request('status')])->getUrlRange(1, $posts->lastPage()) as $page => $url)
+                                @foreach ($posts->appends(request()->query())->getUrlRange(max(1, $posts->currentPage() - 2), min($posts->lastPage(), $posts->currentPage() + 2)) as $page => $url)
                                     @if ($page == $posts->currentPage())
                                         <span class="relative z-10 inline-flex items-center bg-black dark:bg-white px-4 py-2 text-sm font-semibold text-white dark:text-black focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black dark:focus-visible:outline-white">{{ $page }}</span>
                                     @else
@@ -491,7 +491,7 @@
                                 @endforeach
 
                                 @if ($posts->hasMorePages())
-                                    <a href="{{ $posts->appends(['keyword' => request('keyword'), 'topic_id' => request('topic_id'), 'status' => request('status')])->nextPageUrl() }}" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 dark:text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:z-20 focus:outline-offset-0">
+                                    <a href="{{ $posts->appends(request()->query())->nextPageUrl() }}" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 dark:text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:z-20 focus:outline-offset-0">
                                         <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                             <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
                                         </svg>
@@ -530,7 +530,7 @@
                             <button type="button" onclick="closeModal('confirmModal')" class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
                                 Hủy
                             </button>
-                            <button type="button" id="confirmDeleteBtn" class="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors">
+                            <button type="button" id="confirmDeleteBtn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
                                 Xóa
                             </button>
                         </div>
