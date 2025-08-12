@@ -18,7 +18,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
- 
+
             min-height: 100vh;
         }
 
@@ -477,29 +477,29 @@
             .container {
                 padding: 10px;
             }
-            
+
             .page-title {
                 font-size: 2rem;
             }
-            
+
             .stats-row {
                 grid-template-columns: 1fr;
             }
-            
+
             .orders-table {
                 padding: 15px;
                 overflow-x: auto;
             }
-            
+
             table {
                 min-width: 900px; /* Tăng min-width để chứa thêm cột phone */
             }
-            
+
             .modal-content {
                 width: 95%;
                 margin: 5% auto;
             }
-            
+
             .info-grid {
                 grid-template-columns: 1fr;
             }
@@ -547,7 +547,7 @@
                     </select>
                 </div>
             </div>
-            
+
             <table>
                 <thead>
                     <tr>
@@ -659,7 +659,7 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'http://localhost:8000/api';
+        const API_BASE_URL = '{{ config('app.url') }}/api';
         let currentPage = 1;
         let allOrdersData = []; // Lưu trữ tất cả dữ liệu
         let filteredOrdersData = []; // Dữ liệu sau khi lọc
@@ -682,7 +682,7 @@
             }
         }
 
-       
+
         document.addEventListener('DOMContentLoaded', () => {
             const sidebar = document.getElementById('adminSidebar');
             const overlay = document.getElementById('sidebarOverlay');
@@ -773,7 +773,7 @@
 
                 allOrdersData = allOrders;
                 applyCurrentFilter();
-                
+
             } catch (error) {
                 console.error('Error loading orders:', error);
                 showError('Không thể tải danh sách đơn hàng');
@@ -865,7 +865,7 @@
         function renderPagination() {
             const container = document.getElementById('pagination-container');
             const totalPages = Math.ceil(filteredOrdersData.length / ITEMS_PER_PAGE);
-            
+
             if (totalPages <= 1) {
                 container.style.display = 'none';
                 return;
@@ -907,7 +907,7 @@
         function changePage(page) {
             const totalPages = Math.ceil(filteredOrdersData.length / ITEMS_PER_PAGE);
             if (page < 1 || page > totalPages) return;
-            
+
             currentPage = page;
             renderOrders();
             renderPagination();
@@ -981,9 +981,9 @@
 
         function updateShippingButton(order) {
             const btn = document.getElementById('create-shipping-btn');
-            
+
             const canCreateShipping = ['pending','ready_to_pick', 'picking', 'picked'].includes(order.status);
-            
+
             if (canCreateShipping) {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-truck"></i> Tạo đơn ship';
@@ -1001,7 +1001,7 @@
 
             const btn = document.getElementById('create-shipping-btn');
             const originalText = btn.innerHTML;
-            
+
             try {
                 btn.disabled = true;
                 btn.innerHTML = '<div class="loading-spinner"></div> Đang tạo đơn ship...';
@@ -1027,7 +1027,7 @@
                 if (data.success || response.ok) {
                     showShippingStatus('Đơn ship đã được tạo thành công!', 'created');
                     btn.innerHTML = '<i class="fas fa-check"></i> Đã tạo đơn ship';
-                    
+
                     setTimeout(() => {
                         loadAllOrders();
                     }, 1000);
@@ -1051,7 +1051,7 @@
                 <i class="fas ${type === 'created' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
                 ${message}
             `;
-            
+
             if (type === 'created') {
                 setTimeout(() => {
                     hideShippingStatus();

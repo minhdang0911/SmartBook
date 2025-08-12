@@ -606,7 +606,7 @@
         let saleProducts = [];
 
         // API Base URL
-        const API_BASE = 'http://localhost:8000/api';
+        const API_BASE = '{{ config('app.url') }}/api';
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function () {

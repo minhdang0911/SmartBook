@@ -3,7 +3,7 @@
 @section('content')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
-    
+
         .filters {
             display: flex;
             gap: 15px;
@@ -263,20 +263,20 @@
             .main-content {
                 margin-left: 0;
             }
-            
+
             .sidebar {
                 display: none;
             }
-            
+
             .filters {
                 flex-direction: column;
                 align-items: stretch;
             }
-            
+
             .filter-group {
                 justify-content: space-between;
             }
-            
+
             .large-chart {
                 grid-column: span 1;
             }
@@ -489,7 +489,7 @@
 
     <script>
         // API Base URL
-        const API_BASE_URL = 'http://localhost:8000/api/revenue';
+        const API_BASE_URL = '{{ config('app.url') }}/api/revenue';
 
         // Charts variables
         let ordersChart, revenueChart, statusChart, quarterlyChart, monthlyChart;
@@ -533,16 +533,16 @@
         async function getTotalRevenue() {
             let endpoint = '/total';
             const params = new URLSearchParams();
-            
+
             if (currentFilters.month) {
                 params.append('start_date', `${currentFilters.year}-${currentFilters.month.padStart(2, '0')}-01`);
                 params.append('end_date', `${currentFilters.year}-${currentFilters.month.padStart(2, '0')}-31`);
             }
-            
+
             if (params.toString()) {
                 endpoint += '?' + params.toString();
             }
-            
+
             return await fetchAPI(endpoint);
         }
 

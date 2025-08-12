@@ -776,7 +776,7 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
 
     <form id="updateStockForm" class="p-6">
       <input type="hidden" id="updateBookId" name="book_id">
-      
+
       <div class="space-y-4">
         <div class="space-y-2">
           <label class="block text-sm font-semibold text-gray-700 mb-3">
@@ -826,14 +826,14 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
     const container = document.getElementById('notificationContainer');
     const notification = document.createElement('div');
     const notificationId = 'notification_' + Date.now();
-    
+
     const icons = {
       success: 'fas fa-check-circle',
       error: 'fas fa-exclamation-circle',
       warning: 'fas fa-exclamation-triangle',
       info: 'fas fa-info-circle'
     };
-    
+
     notification.className = `notification notification-${type}`;
     notification.id = notificationId;
     notification.innerHTML = `
@@ -849,21 +849,21 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
       ${description ? `<div class="notification-description">${description}</div>` : ''}
       <div class="notification-progress" style="width: 100%;"></div>
     `;
-    
+
     container.appendChild(notification);
-    
+
     // Show animation
     setTimeout(() => {
       notification.classList.add('show');
     }, 10);
-    
+
     // Progress bar animation
     const progressBar = notification.querySelector('.notification-progress');
     setTimeout(() => {
       progressBar.style.transition = `width ${duration}ms linear`;
       progressBar.style.width = '0%';
     }, 100);
-    
+
     // Auto close
     setTimeout(() => {
       closeNotification(notificationId);
@@ -887,7 +887,7 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
   function closeLowStockModal(){document.getElementById('lowStockModal').classList.remove('show')}
   function showTodayOrdersModal(){document.getElementById('todayOrdersModal').classList.add('show')}
   function closeTodayOrdersModal(){document.getElementById('todayOrdersModal').classList.remove('show')}
-  
+
   function showUpdateStockModal(bookId, bookTitle, currentStock) {
     document.getElementById('updateBookId').value = bookId;
     document.getElementById('updateStockBookTitle').textContent = `Cập nhật tồn kho: ${bookTitle}`;
@@ -896,7 +896,7 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
     document.getElementById('stockNote').value = '';
     document.getElementById('updateStockModal').classList.add('show');
   }
-  
+
   function closeUpdateStockModal(){
     document.getElementById('updateStockModal').classList.remove('show')
   }
@@ -904,19 +904,19 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
   // ====== UPDATE STOCK FORM ======
   document.getElementById('updateStockForm').addEventListener('submit', function(e) {
     e.preventDefault();
-    
+
     const bookId = document.getElementById('updateBookId').value;
     const newStock = document.getElementById('newStock').value;
     const note = document.getElementById('stockNote').value;
-    
+
     if (!newStock || newStock < 0) {
       showNotification('error', 'Lỗi', 'Vui lòng nhập số lượng hợp lệ!');
       return;
     }
-    
+
     // Show loading
     showNotification('info', 'Đang xử lý...', 'Cập nhật tồn kho sách');
-    
+
     // Simulate update (replace with actual backend call when ready)
     setTimeout(() => {
       try {
@@ -932,10 +932,10 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
             stockBadge.innerHTML = `<i class="fas fa-boxes"></i><span class="stock-number">${newStock}</span> ${newStock == 0 ? 'hết hàng' : 'còn lại'}`;
           }
         }
-        
+
         showNotification('success', 'Thành công!', `Đã cập nhật tồn kho thành ${newStock} sản phẩm`);
         closeUpdateStockModal();
-        
+
         // Log to console for development
         console.log('Stock updated:', {
           bookId: bookId,
@@ -943,21 +943,21 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
           note: note,
           timestamp: new Date().toISOString()
         });
-        
+
       } catch (error) {
         console.error('Error:', error);
         showNotification('error', 'Lỗi!', 'Cập nhật thất bại - ' + error.message);
       }
     }, 1000);
-    
-    /* 
+
+    /*
     // TODO: Uncomment when backend is ready
     const formData = new FormData();
     formData.append('stock', newStock);
     formData.append('note', note);
     formData.append('_token', '{{ csrf_token() }}');
     formData.append('_method', 'PATCH');
-    
+
     fetch(`/admin/books/${bookId}/update-stock`, {
       method: 'POST',
       body: formData,
@@ -969,7 +969,7 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
     .then(data => {
       if (data.success) {
         showNotification('success', 'Thành công!', `Đã cập nhật tồn kho thành ${newStock} sản phẩm`);
-        
+
         // Update UI
         const bookRow = document.querySelector(`[data-book-id="${bookId}"]`);
         if (bookRow) {
@@ -982,7 +982,7 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
             stockBadge.innerHTML = `<i class="fas fa-boxes"></i><span class="stock-number">${newStock}</span> ${newStock == 0 ? 'hết hàng' : 'còn lại'}`;
           }
         }
-        
+
         closeUpdateStockModal();
       } else {
         showNotification('error', 'Lỗi!', data.message || 'Cập nhật thất bại');
@@ -998,7 +998,7 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
   // ====== EXPORT EXCEL FUNCTION ======
   function exportLowStockExcel() {
     showNotification('info', 'Đang xuất file...', 'Chuẩn bị báo cáo Excel');
-    
+
     // Collect low stock data
     const lowStockData = [];
     document.querySelectorAll('[data-book-id]').forEach(bookRow => {
@@ -1008,7 +1008,7 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
       const author = bookRow.querySelector('[class*="fa-user"]').parentElement.textContent.replace('👤', '').trim();
       const price = bookRow.querySelector('[class*="fa-dollar-sign"]').parentElement.textContent.replace('💰', '').trim();
       const stock = bookRow.querySelector('.stock-number').textContent;
-      
+
       lowStockData.push({
         'ID': bookId,
         'Tên sách': title,
@@ -1020,16 +1020,16 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
         'Ngày xuất': new Date().toLocaleDateString('vi-VN')
       });
     });
-    
+
     // Create CSV content
     const headers = Object.keys(lowStockData[0] || {});
     const csvContent = [
       headers.join(','),
-      ...lowStockData.map(row => 
+      ...lowStockData.map(row =>
         headers.map(header => `"${row[header] || ''}"`).join(',')
       )
     ].join('\n');
-    
+
     // Create and download file
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -1040,15 +1040,15 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     setTimeout(() => {
       showNotification('success', 'Xuất file thành công!', 'File CSV đã được tải về');
     }, 1000);
-    
-    /* 
+
+    /*
     // TODO: Uncomment when backend Excel export is ready
     window.location.href = '/admin/export/low-stock';
-    
+
     setTimeout(() => {
       showNotification('success', 'Xuất file thành công!', 'File Excel đã được tải về');
     }, 1000);
@@ -1058,7 +1058,7 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
   // ====== EXPORT TODAY ORDERS ======
   function exportTodayOrders() {
     showNotification('info', 'Đang xuất file...', 'Chuẩn bị báo cáo đơn hàng hôm nay');
-    
+
     // Collect today orders data from modal
     const todayOrdersData = [];
     document.querySelectorAll('#todayOrdersModal .space-y-4 > div').forEach((orderRow, index) => {
@@ -1070,7 +1070,7 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
         const payment = orderRow.querySelector('[class*="fa-credit-card"]').parentElement.textContent.replace('💳', '').trim();
         const total = orderRow.querySelector('.text-lg.font-bold').textContent;
         const status = orderRow.querySelector('.badge-soft').textContent;
-        
+
         todayOrdersData.push({
           'Mã đơn hàng': orderNumber,
           'Khách hàng': customerName,
@@ -1083,21 +1083,21 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
         });
       }
     });
-    
+
     if (todayOrdersData.length === 0) {
       showNotification('warning', 'Không có dữ liệu', 'Hôm nay chưa có đơn hàng nào để xuất');
       return;
     }
-    
+
     // Create CSV content for orders
     const headers = Object.keys(todayOrdersData[0]);
     const csvContent = [
       headers.join(','),
-      ...todayOrdersData.map(row => 
+      ...todayOrdersData.map(row =>
         headers.map(header => `"${row[header] || ''}"`).join(',')
       )
     ].join('\n');
-    
+
     // Create and download file
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -1108,7 +1108,7 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     setTimeout(() => {
       showNotification('success', 'Xuất file thành công!', 'File báo cáo đơn hàng đã được tải về');
     }, 1000);
@@ -1238,7 +1238,7 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
 
   // ====== Views by Category from CORRECT API ======
   async function buildViewsFromAPI(){
-    const apiUrl = 'http://localhost:8000/api/books/search?limit=500';
+    const apiUrl = '{{ config('app.url') }}/api/books/search?limit=500';
     let weekMap = new Map();
     let monthMap = new Map();
 
@@ -1399,7 +1399,7 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
 
     // Update publisher chart
     const publisherCtx=document.getElementById('publisherChart').getContext('2d');
-    
+
     if(window.__publisherChart) { window.__publisherChart.destroy(); }
 
     window.__publisherChart = new Chart(publisherCtx,{

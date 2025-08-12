@@ -281,7 +281,7 @@
             let editingCouponId = null;
 
             // API endpoints
-            const API_BASE = 'http://localhost:8000/api';
+            const API_BASE = '{{ config('app.url') }}/api';
             const API_ENDPOINTS = {
                 coupons: `${API_BASE}/coupons/get`,
                 books: `${API_BASE}/buybooks`,

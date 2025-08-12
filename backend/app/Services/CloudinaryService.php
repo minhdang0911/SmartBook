@@ -15,7 +15,7 @@ class CloudinaryService
         $this->cloudinary = new Cloudinary([
             'cloud' => [
                 'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
-                'api_key'    => env('CLOUDINARY_API_KEY'),
+                'api_key' => env('CLOUDINARY_API_KEY'),
                 'api_secret' => env('CLOUDINARY_API_SECRET'),
             ],
             'url' => ['secure' => true],
@@ -54,13 +54,13 @@ class CloudinaryService
             $fixedPublicId = "users/{$userId}/avatar";
 
             $defaultOptions = [
-                'public_id'       => $fixedPublicId,
-                'overwrite'       => true,
-                'invalidate'      => true,
-                'resource_type'   => 'image',
+                'public_id' => $fixedPublicId,
+                'overwrite' => true,
+                'invalidate' => true,
+                'resource_type' => 'image',
                 'unique_filename' => false,
-                'use_filename'    => false,
-                'transformation'  => ['width' => 1024, 'height' => 1024, 'crop' => 'limit'],
+                'use_filename' => false,
+                'transformation' => ['width' => 1024, 'height' => 1024, 'crop' => 'limit'],
             ];
 
             $mergedOptions = array_merge($defaultOptions, $options);
@@ -260,4 +260,23 @@ class CloudinaryService
             return null;
         }
     }
+
+    public function uploadImageAvoidDuplicate(UploadedFile $file, $folder = 'uploads')
+    {
+        $hash = md5_file($file->getRealPath());
+
+        $publicId = $folder . '/' . $hash;
+
+        $uploaded = $this->cloudinary->uploadApi()->upload(
+            $file->getRealPath(),
+            [
+                'folder' => $folder,
+                'public_id' => $hash,
+                'overwrite' => false
+            ]
+        );
+
+        return $uploaded['secure_url'] ?? null;
+    }
+
 }
