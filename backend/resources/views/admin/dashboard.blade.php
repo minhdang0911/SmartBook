@@ -1363,7 +1363,7 @@ button.btn-ghost:hover{ border-color:#cfcfcf!important; }
 
   // ====== Publisher Chart từ API ======
   async function buildPublisherChart() {
-    const apiUrl = 'http://localhost:8000/api/books/search?limit=5000';
+    const apiUrl = '{{ config('app.url') }}/api/books/search?limit=5000';
     let publisherMap = new Map();
 
     try{
