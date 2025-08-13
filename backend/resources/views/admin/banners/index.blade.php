@@ -646,33 +646,52 @@
         }
 
         // Toggle banner status
-        async function toggleBannerStatus(id, status) {
-            const banner = banners.find(b => b.id === id);
-            const originalStatus = banner ? banner.status : !status;
-            
-            try {
-                // Optimistically update UI
-                if (banner) {
-                    banner.status = status;
-                    updateStats();
-                }
-                
-                // Make API call
-                await apiRequest('PATCH', `/banners/${id}/status`, { status });
-                showNotification(`Banner ${status ? 'hiển thị' : 'ẩn'} thành công!`, 'success');
-                
-            } catch (error) {
-                console.error('Error updating banner status:', error);
-                showNotification('Lỗi khi cập nhật trạng thái: ' + error.message, 'error');
-                
-                // Revert the toggle on error
-                if (banner) {
-                    banner.status = originalStatus;
-                    renderBannerTable();
-                    updateStats();
-                }
+       async function toggleBannerStatus(id, status) {
+    const banner = banners.find(b => b.id === id);
+    const originalStatus = banner ? banner.status : !status;
+    
+    try {
+        // Optimistically update UI
+        if (banner) {
+            banner.status = status;
+            updateStats();
+        }
+        
+        // Prepare form data for banner update
+        const formData = new FormData();
+        formData.append('title', banner.title || '');
+        formData.append('description', banner.description || '');
+        formData.append('link', banner.link || '');
+        formData.append('book_id', banner.book_id || '');
+        formData.append('priority', banner.priority || 0);
+        formData.append('status', status ? 1 : 0);
+        formData.append('_method', 'PUT');
+        
+        // Make API call to update banner
+        const response = await apiRequest('POST', `/banners/${id}`, formData, true);
+        
+        // Update local banner data with response
+        if (response.data) {
+            const index = banners.findIndex(b => b.id === id);
+            if (index !== -1) {
+                banners[index] = response.data;
             }
         }
+        
+        showNotification(`Banner ${status ? 'hiển thị' : 'ẩn'} thành công!`, 'success');
+        
+    } catch (error) {
+        console.error('Error updating banner status:', error);
+        showNotification('Lỗi khi cập nhật trạng thái: ' + error.message, 'error');
+        
+        // Revert the toggle on error
+        if (banner) {
+            banner.status = originalStatus;
+            renderBannerTable();
+            updateStats();
+        }
+    }
+}
 
         // Modal functions
         function openModal(modalId) {
