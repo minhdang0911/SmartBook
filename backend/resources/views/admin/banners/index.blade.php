@@ -284,6 +284,7 @@
             <div class="modal-content">
                 <form id="banner-form">
                     <input type="hidden" id="banner-id">
+                    <input type="hidden" id="status" value="1">
                     
                     <!-- Modal Header -->
                     <div class="p-6 border-b border-gray-200">
@@ -317,8 +318,8 @@
                             <textarea id="description" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" placeholder="Nhập mô tả chi tiết..."></textarea>
                         </div>
 
-                        <!-- Book Select, Priority, Status -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Book Select and Priority -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <!-- Book Select -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">ID Sách (tùy chọn)</label>
@@ -354,18 +355,6 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Độ ưu tiên</label>
                                 <input type="number" id="priority" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" placeholder="0" min="0" max="999" value="0">
                                 <p class="text-xs text-gray-500 mt-1">Số càng cao càng ưu tiên</p>
-                            </div>
-                            
-                            <!-- Status -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Trạng thái</label>
-                                <div class="flex items-center gap-3 mt-3">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="status" checked>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                    <span class="text-sm text-gray-700">Hiển thị banner</span>
-                                </div>
                             </div>
                         </div>
 
@@ -646,52 +635,52 @@
         }
 
         // Toggle banner status
-       async function toggleBannerStatus(id, status) {
-    const banner = banners.find(b => b.id === id);
-    const originalStatus = banner ? banner.status : !status;
-    
-    try {
-        // Optimistically update UI
-        if (banner) {
-            banner.status = status;
-            updateStats();
-        }
-        
-        // Prepare form data for banner update
-        const formData = new FormData();
-        formData.append('title', banner.title || '');
-        formData.append('description', banner.description || '');
-        formData.append('link', banner.link || '');
-        formData.append('book_id', banner.book_id || '');
-        formData.append('priority', banner.priority || 0);
-        formData.append('status', status ? 1 : 0);
-        formData.append('_method', 'PUT');
-        
-        // Make API call to update banner
-        const response = await apiRequest('POST', `/banners/${id}`, formData, true);
-        
-        // Update local banner data with response
-        if (response.data) {
-            const index = banners.findIndex(b => b.id === id);
-            if (index !== -1) {
-                banners[index] = response.data;
+        async function toggleBannerStatus(id, status) {
+            const banner = banners.find(b => b.id === id);
+            const originalStatus = banner ? banner.status : !status;
+            
+            try {
+                // Optimistically update UI
+                if (banner) {
+                    banner.status = status;
+                    updateStats();
+                }
+                
+                // Prepare form data for banner update
+                const formData = new FormData();
+                formData.append('title', banner.title || '');
+                formData.append('description', banner.description || '');
+                formData.append('link', banner.link || '');
+                formData.append('book_id', banner.book_id || '');
+                formData.append('priority', banner.priority || 0);
+                formData.append('status', status ? 1 : 0);
+                formData.append('_method', 'PUT');
+                
+                // Make API call to update banner
+                const response = await apiRequest('POST', `/banners/${id}`, formData, true);
+                
+                // Update local banner data with response
+                if (response.data) {
+                    const index = banners.findIndex(b => b.id === id);
+                    if (index !== -1) {
+                        banners[index] = response.data;
+                    }
+                }
+                
+                showNotification(`Banner ${status ? 'hiển thị' : 'ẩn'} thành công!`, 'success');
+                
+            } catch (error) {
+                console.error('Error updating banner status:', error);
+                showNotification('Lỗi khi cập nhật trạng thái: ' + error.message, 'error');
+                
+                // Revert the toggle on error
+                if (banner) {
+                    banner.status = originalStatus;
+                    renderBannerTable();
+                    updateStats();
+                }
             }
         }
-        
-        showNotification(`Banner ${status ? 'hiển thị' : 'ẩn'} thành công!`, 'success');
-        
-    } catch (error) {
-        console.error('Error updating banner status:', error);
-        showNotification('Lỗi khi cập nhật trạng thái: ' + error.message, 'error');
-        
-        // Revert the toggle on error
-        if (banner) {
-            banner.status = originalStatus;
-            renderBannerTable();
-            updateStats();
-        }
-    }
-}
 
         // Modal functions
         function openModal(modalId) {
@@ -716,7 +705,7 @@
             document.getElementById('description').value = banner.description || '';
             document.getElementById('link').value = banner.link || '';
             document.getElementById('priority').value = banner.priority || 0;
-            document.getElementById('status').checked = banner.status !== false;
+            document.getElementById('status').value = banner.status ? 1 : 0;
 
             // Set book selection
             if (banner.book_id) {
@@ -794,7 +783,7 @@
             formData.append('link', link || '');
             formData.append('book_id', document.getElementById('bookIdInput').value || '');
             formData.append('priority', parseInt(document.getElementById('priority').value) || 0);
-            formData.append('status', document.getElementById('status').checked ? 1 : 0);
+            formData.append('status', document.getElementById('status').value);
 
             // Add image if selected
             const imageInput = document.getElementById('image-input');
@@ -843,7 +832,6 @@
             document.getElementById('modalTitle').textContent = 'Thêm Banner Mới';
             document.getElementById('banner-form').reset();
             document.getElementById('priority').value = 0;
-            document.getElementById('status').checked = true;
             document.getElementById('image-preview').classList.add('hidden');
             document.getElementById('upload-content').classList.remove('hidden');
             

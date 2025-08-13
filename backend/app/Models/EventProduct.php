@@ -14,6 +14,7 @@ class EventProduct extends Model
         'event_id',
         'books_id',
         'discount_percent',
+        'discount_price',
         'quantity_limit',
         'sold_quantity'
     ];
