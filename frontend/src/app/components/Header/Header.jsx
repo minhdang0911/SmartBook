@@ -12,11 +12,13 @@ import {
     UserOutlined,
 } from '@ant-design/icons';
 import { Avatar, Badge, Button, Divider, Drawer, Dropdown, Input, Space, Tooltip, Upload, message } from 'antd';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { apiGetMe } from '../../../../apis/user';
 import useCategories from '../../hooks/useCategories';
 import './Header.css';
+import path from 'path';
 
 const Header = () => {
     const router = useRouter();
@@ -60,6 +62,14 @@ const Header = () => {
             path: '/blog',
             icon: <ShopOutlined />,
             color: '#eb2f96',
+        },
+        
+        
+        {
+            label: 'Giới thiệu',
+            path: '/About',
+            icon: <CameraOutlined />,
+            color: '#13c2c2',
         },
     ];
 

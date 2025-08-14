@@ -152,7 +152,6 @@ class PostController extends Controller
 
     public function destroy(Post $post)
     {
-        // Delete thumbnail if exists
         if ($post->thumbnail) {
             $cloudinary = new CloudinaryService();
             $cloudinary->deleteImageByPublicId($post->thumbnail);
