@@ -610,6 +610,7 @@
                         <th style="width: 100px;">Danh mục</th>
                         <th style="width: 100px;">Loại sách</th>
                         <th style="width: 100px;">Giá bán</th>
+                        <th style="width: 100px;">Giá giảm</th>
                         <th style="width: 80px;">Tồn kho</th>
                         <th style="width: 120px;">Thao tác</th>
                     </tr>
@@ -652,6 +653,13 @@
                                 @else
                                     <span class="price-free">Miễn phí</span>
                                 @endif
+                            </td>
+
+                             <td class="text-right">
+                              
+                                    <span class="price">{{ number_format($book->discount_price, 0, ',', '.') }}₫</span>
+                              
+                           
                             </td>
                             <td class="text-center">
                                 @if($book->is_physical)

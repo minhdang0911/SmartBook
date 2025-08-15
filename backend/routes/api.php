@@ -32,6 +32,10 @@ use App\Http\Controllers\PostLikeController;
 use App\Http\Controllers\Api\ChapterApiController;
 
 
+Route::get('/books/available-for-event', [EventController::class, 'getAvailableBooks']);
+
+
+
 
 
 Route::prefix('comments')->group(function () {
@@ -106,7 +110,8 @@ Route::get('/books', [BookChapterApiController::class, 'listBooks']);
 Route::get('/books/{bookId}/chapters', [BookChapterApiController::class, 'getChapters']);
 Route::get('/chapters/{chapterId}', [BookChapterApiController::class, 'getChapter']);
 
-//excel book
+
+
 Route::prefix('books')->group(function () {
     // Import books
     Route::post('/import', [BookController::class, 'importBooks']);
@@ -116,6 +121,8 @@ Route::prefix('books')->group(function () {
     Route::post('/import/preview', [BookController::class, 'previewImport']);
     Route::get('/import/stats', [BookController::class, 'getImportStats']);
 });
+ 
+
 // Bài viết
 Route::prefix('posts')->group(function () {
     Route::get('/', [PostApiController::class, 'index']);
@@ -138,7 +145,7 @@ Route::prefix('topics')->group(function () {
 // Thông tin người dùng
 Route::prefix('user')->group(function () {
 Route::post('/change-password', [UserProfileController::class, 'updatePassword']);
-Route::post('/profile', [UserProfileController::class, 'update']);
+Route::put('/profile', [UserProfileController::class, 'update']);
 Route::get('/profile', [UserProfileController::class, 'profile']);
 });
 
@@ -740,25 +747,32 @@ Route::prefix('revenue')->group(function () {
 
 
 // Route quản lý sách thuộc về event
-Route::prefix('events/{event_id}')->group(function () {
-    Route::post('/books', [EventProductController::class, 'store']);
-    Route::put('/books/{book_id}', [EventProductController::class, 'update']);
-    Route::delete('/books/{book_id}', [EventProductController::class, 'destroy']);
-});
+// Route::prefix('events/{event_id}')->group(function () {
+//     Route::post('/books', [EventProductController::class, 'store']);
+//     Route::put('/books/{book_id}', [EventProductController::class, 'update']);
+//     Route::delete('/books/{book_id}', [EventProductController::class, 'destroy']);
+// });
+    
+
+
 
 Route::prefix('events')->group(function () {
-    // Tạo event
-    Route::post('/', [EventController::class, 'store'])->name('store');
-
     // Lấy danh sách tất cả event
-    Route::get('/', [EventController::class, 'getall'])->name('events.getall');
-
+    Route::get('/', [EventController::class, 'getall']);
+    
+    // Tạo event mới
+    Route::post('/', [EventController::class, 'store']);
+    
     // Lấy chi tiết 1 event
-    Route::get('/{event_id}', [EventController::class, 'show'])->name('events.show');
-
+    Route::get('/{event_id}', [EventController::class, 'show']);
+    
     // Cập nhật event
-    Route::put('/{event_id}', [EventController::class, 'update'])->name('events.update');
-
+    Route::put('/{event_id}', [EventController::class, 'update']);
+    
     // Xoá event
-    Route::delete('/{event_id}', [EventController::class, 'destroy'])->name('events.destroy');
+    Route::delete('/{event_id}', [EventController::class, 'destroy']);
+    
+    // ✅ QUAN TRỌNG: Thêm/xóa sách khỏi event - SỬ DỤNG EventController
+    Route::post('/{event_id}/books', [EventController::class, 'addBookToEvent']);
+    Route::delete('/{event_id}/books/{book_id}', [EventController::class, 'removeBookFromEvent']);
 });
