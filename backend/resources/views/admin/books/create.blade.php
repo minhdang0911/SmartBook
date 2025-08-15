@@ -65,34 +65,69 @@
             </div>
 
             <!-- Loại sách -->
-<div class="col-12">
-    <label class="form-label d-block">Loại sách</label>
-    <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="is_physical" id="ebook" value="0"
-            {{ old('is_physical', '1') === '0' ? 'checked' : '' }}>
-        <label class="form-check-label" for="ebook">📱 Ebook</label>
-    </div>
-    <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="is_physical" id="physical" value="1"
-            {{ old('is_physical', '1') === '1' ? 'checked' : '' }}>
-        <label class="form-check-label" for="physical">📚 Sách giấy</label>
-    </div>
-</div>
+            <div class="col-12">
+                <label class="form-label d-block">Loại sách</label>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="is_physical" id="ebook" value="0"
+                        {{ old('is_physical', 1) == 0 ? 'checked' : '' }}>
+                    <label class="form-check-label" for="ebook">📱 Ebook</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="is_physical" id="physical" value="1"
+                        {{ old('is_physical', 1) == 1 ? 'checked' : '' }}>
+                    <label class="form-check-label" for="physical">📚 Sách giấy</label>
+                </div>
+            </div>
 
-<!-- Giá -->
-<div class="col-md-6">
-    <label for="price" class="form-label">Giá (VNĐ)</label>
-    <input type="number" name="price" id="price" class="form-control"
-           value="{{ old('price') }}" {{ old('is_physical', '1') === '0' ? 'disabled' : 'required' }}>
-</div>
+            <!-- Giá gốc -->
+            <div class="col-md-4">
+                <label for="price" class="form-label">Giá gốc (VNĐ)</label>
+                <input type="number" name="price" id="price" class="form-control"
+                       value="{{ old('price') }}" {{ old('is_physical', 1) == 0 ? 'disabled' : 'required' }}>
+            </div>
 
-<!-- Tồn kho -->
-<div class="col-md-6">
-    <label for="stock" class="form-label">Tồn kho</label>
-    <input type="number" name="stock" id="stock" class="form-control"
-           value="{{ old('stock') }}" {{ old('is_physical', '1') === '0' ? 'disabled' : 'required' }}>
-</div>
+            <!-- Phần trăm giảm giá -->
+            <div class="col-md-4">
+                <label for="discount_percent" class="form-label">% Giảm giá</label>
+                <div class="input-group">
+                    <input type="number" id="discount_percent" class="form-control" 
+                           value="{{ old('discount_percent', 0) }}" min="0" max="99" step="0.01"
+                           {{ old('is_physical', 1) == 0 ? 'disabled' : '' }}>
+                    <span class="input-group-text">%</span>
+                </div>
+                <small class="text-muted">Để trống hoặc 0 nếu không giảm giá</small>
+            </div>
 
+            <!-- Giá sau giảm (tự động tính) -->
+            <div class="col-md-4">
+                <label for="discount_price" class="form-label">Giá sau giảm (VNĐ)</label>
+                <input type="number" name="discount_price" id="discount_price" class="form-control bg-light" 
+                       value="{{ old('discount_price') }}" readonly>
+                <small class="text-muted">Tự động tính từ % giảm giá</small>
+            </div>
+
+            <!-- Tồn kho -->
+            <div class="col-md-6">
+                <label for="stock" class="form-label">Tồn kho</label>
+                <input type="number" name="stock" id="stock" class="form-control"
+                       value="{{ old('stock') }}" {{ old('is_physical', 1) == 0 ? 'disabled' : 'required' }}>
+            </div>
+
+            <!-- Hiển thị tóm tắt giá -->
+            <div class="col-md-6">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title mb-2">💰 Tóm tắt giá</h6>
+                        <div id="price-summary">
+                            <div>Giá gốc: <span id="original-price-display">0₫</span></div>
+                            <div class="text-success" id="discount-info" style="display: none;">
+                                Giảm <span id="discount-percent-display">0</span>%: 
+                                <strong><span id="final-price-display">0₫</span></strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Mô tả -->
             <div class="col-12">
@@ -149,17 +184,74 @@
         });
     });
 
-    // Ẩn/hiện giá & tồn kho
+    // Format currency
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        }).format(amount);
+    }
+
+    // Tính giá giảm tự động
+    function calculateDiscount() {
+        const priceInput = document.getElementById('price');
+        const discountPercentInput = document.getElementById('discount_percent');
+        const discountPriceInput = document.getElementById('discount_price');
+        
+        const originalPrice = parseFloat(priceInput.value) || 0;
+        const discountPercent = parseFloat(discountPercentInput.value) || 0;
+        
+        // Update price summary display
+        document.getElementById('original-price-display').textContent = formatCurrency(originalPrice);
+        
+        if (discountPercent > 0 && originalPrice > 0) {
+            const discountAmount = originalPrice * (discountPercent / 100);
+            const finalPrice = originalPrice - discountAmount;
+            
+            discountPriceInput.value = Math.round(finalPrice);
+            
+            // Show discount info
+            document.getElementById('discount-percent-display').textContent = discountPercent;
+            document.getElementById('final-price-display').textContent = formatCurrency(finalPrice);
+            document.getElementById('discount-info').style.display = 'block';
+        } else {
+            discountPriceInput.value = '';
+            document.getElementById('discount-info').style.display = 'none';
+        }
+    }
+
+    // Ẩn/hiện các trường theo loại sách
     function toggleFields() {
         const isPhysical = document.querySelector('input[name="is_physical"]:checked').value === '1';
-        document.getElementById('price').disabled = !isPhysical;
-        document.getElementById('stock').disabled = !isPhysical;
+        const fields = ['price', 'stock', 'discount_percent'];
+        
+        fields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            field.disabled = !isPhysical;
+            if (!isPhysical) {
+                field.value = '';
+            }
+        });
+        
+        // Update price display
+        if (isPhysical) {
+            calculateDiscount();
+        } else {
+            document.getElementById('discount_price').value = '';
+            document.getElementById('original-price-display').textContent = '0₫';
+            document.getElementById('discount-info').style.display = 'none';
+        }
     }
+
+    // Event listeners
+    document.getElementById('price').addEventListener('input', calculateDiscount);
+    document.getElementById('discount_percent').addEventListener('input', calculateDiscount);
 
     document.querySelectorAll('input[name="is_physical"]').forEach(input => {
         input.addEventListener('change', toggleFields);
     });
 
-    toggleFields(); // Khi trang load
+    // Khởi tạo khi trang load
+    toggleFields();
+    calculateDiscount();
 </script>
-@endpush
