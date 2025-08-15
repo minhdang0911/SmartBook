@@ -32,14 +32,12 @@ class Book extends Model
         'book_images' => 'array',
         'price' => 'decimal:2',
         'discount_price' => 'decimal:2',
-    'is_physical' => 'integer',
-
+        'is_physical' => 'integer',
         'stock' => 'integer',
         'views' => 'integer',
         'likes' => 'integer',
         'rating_avg' => 'decimal:1',
     ];
-
 
     public function author() 
     { 
@@ -69,6 +67,13 @@ class Book extends Model
     public function chapters(): HasMany
     {
         return $this->hasMany(BookChapter::class)->orderBy('chapter_order');
+    }
+
+    // Quan hệ với events
+    public function events()
+    {
+        return $this->belongsToMany(Event::class, 'event_products', 'books_id', 'event_id')
+                    ->withPivot('quantity_limit', 'sold_quantity');
     }
 
     public function updateRatingAvg()
@@ -120,5 +125,85 @@ class Book extends Model
     public function scopeElectronic($query)
     {
         return $query->where('is_physical', false);
+    }
+
+    // === CÁC PHƯƠNG THỨC MỚI CHO LOGIC EVENT ===
+
+    /**
+     * Kiểm tra sách có đang trong event không
+     */
+    public function isInEvent()
+    {
+        return $this->discount_price !== null && $this->discount_price > 0;
+    }
+
+    /**
+     * Kiểm tra sách có thể thêm vào event không
+     */
+    public function canAddToEvent()
+    {
+        return !$this->isInEvent();
+    }
+
+    /**
+     * Lấy giá hiển thị (ưu tiên discount_price nếu có)
+     */
+    public function getDisplayPriceAttribute()
+    {
+        return $this->discount_price ?? $this->price;
+    }
+
+    /**
+     * Tính phần trăm giảm giá
+     */
+    public function getDiscountPercentAttribute()
+    {
+        if (!$this->discount_price || $this->discount_price >= $this->price) {
+            return 0;
+        }
+
+        return round((($this->price - $this->discount_price) / $this->price) * 100, 2);
+    }
+
+    /**
+     * Kiểm tra có giảm giá không
+     */
+    public function hasDiscount()
+    {
+        return $this->discount_price !== null && $this->discount_price < $this->price;
+    }
+
+    /**
+     * Reset giá giảm
+     */
+    public function resetDiscount()
+    {
+        $this->update(['discount_price' => null]);
+    }
+
+    /**
+     * Áp dụng giá giảm theo phần trăm
+     */
+    public function applyDiscount($discountPercent)
+    {
+        $discountPrice = $this->price - ($this->price * $discountPercent / 100);
+        $this->update(['discount_price' => $discountPrice]);
+        return $discountPrice;
+    }
+
+    // Scope để lấy sách có thể thêm vào event
+    public function scopeAvailableForEvent($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('discount_price')->orWhere('discount_price', 0);
+        });
+    }
+
+    // Scope để lấy sách đang có giảm giá
+    public function scopeOnSale($query)
+    {
+        return $query->whereNotNull('discount_price')
+                    ->where('discount_price', '>', 0)
+                    ->whereRaw('discount_price < price');
     }
 }

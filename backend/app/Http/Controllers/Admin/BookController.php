@@ -101,55 +101,92 @@ class BookController extends Controller
         ]);
     }
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'title' => 'required|max:255',
-            'cover_image' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
-            'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
-            'author_id' => 'required|exists:authors,id',
-            'publisher_id' => 'required|exists:publishers,id',
-            'category_id' => 'required|exists:categories,id',
-            'is_physical' => 'required|boolean',
-            'description' => 'nullable|string',
-            'price' => $request->is_physical ? 'required|numeric|min:0' : 'nullable',
-            'stock' => $request->is_physical ? 'required|integer|min:0' : 'nullable',
-        ]);
+  public function store(Request $request)
+{
+    $request->validate([
+        'title' => 'required|max:255',
+        'cover_image' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
+        'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+        'author_id' => 'required|exists:authors,id',
+        'publisher_id' => 'required|exists:publishers,id',
+        'category_id' => 'required|exists:categories,id',
+        'is_physical' => 'required|boolean',
+        'description' => 'nullable|string',
+        'price' => $request->is_physical ? 'required|numeric|min:0' : 'nullable',
+        'discount_price' => 'nullable|numeric|min:0',
+        'stock' => $request->is_physical ? 'required|integer|min:0' : 'nullable',
+    ], [
+        'discount_price.min' => 'Giá giảm phải lớn hơn 0',
+    ]);
 
-        $coverUrl = $this->cloudinary->uploadImage($request->file('cover_image'), 'book_covers');
+    // Validate discount_price < price nếu có
+    if ($request->discount_price && $request->price && $request->discount_price >= $request->price) {
+        return back()
+            ->withInput()
+            ->withErrors(['discount_price' => 'Giá giảm phải nhỏ hơn giá gốc']);
+    }
 
-        $book = Book::create([
+    $coverUrl = $this->cloudinary->uploadImage($request->file('cover_image'), 'book_covers');
+
+    // Chuẩn bị data để tạo book
+    $bookData = [
         'title' => $request->title,
         'author_id' => $request->author_id,
         'publisher_id' => $request->publisher_id,
         'category_id' => $request->category_id,
-        'is_physical' => $request->input('is_physical'), // ✅ thêm dòng này
-        'price' => $request->price,
-        'stock' => $request->stock,
+        'is_physical' => $request->input('is_physical'),
         'description' => $request->description,
         'cover_image' => $coverUrl,
-        ]);
+    ];
 
-        BookImage::create([
-            'book_id' => $book->id,
-            'image_url' => $coverUrl,
-            'is_main' => 1,
-        ]);
-
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $imageUrl = $this->cloudinary->uploadImage($image, 'book_images');
-                BookImage::create([
-                    'book_id' => $book->id,
-                    'image_url' => $imageUrl,
-                    'is_main' => 0,
-                ]);
-            }
+    // Xử lý price và discount cho sách vật lý
+    if ($request->is_physical) {
+        $bookData['price'] = $request->price;
+        $bookData['stock'] = $request->stock;
+        
+        // Chỉ lưu discount_price nếu > 0 và < price
+        if ($request->discount_price && $request->discount_price > 0 && $request->discount_price < $request->price) {
+            $bookData['discount_price'] = $request->discount_price;
+        } else {
+            $bookData['discount_price'] = null;
         }
-
-        return redirect()->route('admin.books.index')->with('success', 'Đã thêm sách và ảnh.');
+    } else {
+        // Sách điện tử - set null
+        $bookData['price'] = null;
+        $bookData['stock'] = null;
+        $bookData['discount_price'] = null;
     }
 
+    $book = Book::create($bookData);
+
+    // Tạo ảnh chính
+    BookImage::create([
+        'book_id' => $book->id,
+        'image_url' => $coverUrl,
+        'is_main' => 1,
+    ]);
+
+    // Upload ảnh phụ nếu có
+    if ($request->hasFile('images')) {
+        foreach ($request->file('images') as $image) {
+            $imageUrl = $this->cloudinary->uploadImage($image, 'book_images');
+            BookImage::create([
+                'book_id' => $book->id,
+                'image_url' => $imageUrl,
+                'is_main' => 0,
+            ]);
+        }
+    }
+
+    // Tạo thông báo success với thông tin giảm giá
+    $message = "Đã thêm sách '{$book->title}' thành công!";
+    if ($book->discount_price) {
+        $discountPercent = round((($book->price - $book->discount_price) / $book->price) * 100, 1);
+        $message .= " (Giảm giá {$discountPercent}%)";
+    }
+
+    return redirect()->route('admin.books.index')->with('success', $message);
+}
     public function edit(Book $book)
     {
         $book->load('images');

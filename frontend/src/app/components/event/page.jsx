@@ -30,7 +30,7 @@ const OnlinePromotion = () => {
     useEffect(() => {
         const fetchEvents = async () => {
             try {
-                const res = await fetch('http://localhost:8000/api/events');
+                const res = await fetch('https://smartbook.io.vn/api/events');
                 const data = await res.json();
                 setEvents(data);
                 categorizeEvents(data);
@@ -259,11 +259,7 @@ const OnlinePromotion = () => {
                 <div className="books-grid">
                     {displayedBooks.length > 0 ? (
                         displayedBooks.map((book) => (
-                            <div
-                                key={book.id}
-                                className="book-grid-item"
-                                onClick={() => router.push(`/book/${book.id}`)}
-                            >
+                            <div key={book.id} className="book-grid-item">
                                 <Card className="book-card">
                                     <div className="book-image-container">
                                         <img
@@ -291,7 +287,7 @@ const OnlinePromotion = () => {
                                         </div>
                                     </div>
 
-                                    <div className="book-info">
+                                    <div className="book-info" onClick={() => router.push(`/book/${book.id}`)}>
                                         <h3 className="book-title">{book.title}</h3>
                                         {/* <span className="book-author">Số lượng: {book.quantity_limit}</span>
                                         <span className="book-author">Đã bán: {book.sold_quantity}</span> */}

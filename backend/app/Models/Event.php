@@ -12,29 +12,67 @@ class Event extends Model
         'event_name', 'start_date', 'end_date', 'status'
     ];
 
+    protected $casts = [
+        'start_date' => 'datetime',
+        'end_date' => 'datetime',
+    ];
+
     public function books()
     {
         return $this->belongsToMany(Book::class, 'event_products', 'event_id', 'books_id')
-                    ->withPivot('discount_percent', 'quantity_limit', 'sold_quantity');
+                    ->withPivot('quantity_limit', 'sold_quantity'); // Bỏ discount_percent
     }
 
     /**
-     * Thêm hoặc cập nhật sản phẩm trong sự kiện.
+     * Thêm sách vào sự kiện (chỉ lưu quantity info, giá giảm lưu trong books table)
      *
      * @param int $bookId
-     * @param float $discountPercent
      * @param int $quantityLimit
      * @param int $soldQuantity
      * @return void
      */
-    public function addOrUpdateBook($bookId, $discountPercent, $quantityLimit, $soldQuantity = 0)
+    public function addBook($bookId, $quantityLimit, $soldQuantity = 0)
     {
         $this->books()->syncWithoutDetaching([
             $bookId => [
-                'discount_percent' => $discountPercent,
                 'quantity_limit' => $quantityLimit,
                 'sold_quantity' => $soldQuantity
             ]
         ]);
+    }
+
+    /**
+     * Cập nhật số lượng đã bán
+     */
+    public function updateSoldQuantity($bookId, $quantity)
+    {
+        $this->books()->updateExistingPivot($bookId, [
+            'sold_quantity' => $quantity
+        ]);
+    }
+
+    /**
+     * Kiểm tra event có đang active không
+     */
+    public function isActive()
+    {
+        return $this->status === 'active' && 
+               now()->between($this->start_date, $this->end_date);
+    }
+
+    /**
+     * Lấy tổng số sản phẩm trong event
+     */
+    public function getTotalProductsAttribute()
+    {
+        return $this->books()->count();
+    }
+
+    /**
+     * Lấy tổng số lượng đã bán
+     */
+    public function getTotalSoldAttribute()
+    {
+        return $this->books()->sum('event_products.sold_quantity');
     }
 }
