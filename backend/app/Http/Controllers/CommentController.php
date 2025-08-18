@@ -14,8 +14,8 @@ class CommentController extends Controller
         $postId = $request->query('post_id');
 
         $comments = Comment::with([
-            'user:id,name,avatar',
-            'reactions.user:id,name'
+           'user' => fn($q) => $q->select('id','name','avatar_url'),
+    'replies.user' => fn($q) => $q->select('id','name','avatar_url'),
         ])
             ->withCount('replies')
             ->where('post_id', $postId)
@@ -29,7 +29,7 @@ class CommentController extends Controller
             $comment->user = [
                 'id' => $comment->user->id,
                 'name' => $comment->user->name,
-                'avatar' => $comment->user->avatar,
+                'avatar' => $comment->user->avatar_url,
             ];
 
             // Tạo reactions data array
