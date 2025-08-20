@@ -3,7 +3,6 @@
 @section('content')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
-
         .filters {
             display: flex;
             gap: 15px;
@@ -48,7 +47,7 @@
             background: #fff;
             border-radius: 8px;
             padding: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         .card-header {
@@ -87,7 +86,7 @@
             background: #fff;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         .stat-card h3 {
@@ -200,12 +199,25 @@
             color: #64748b;
         }
 
-        .status-pending { color: #f59e0b; }
-        .status-completed { color: #10b981; }
-        .status-cancelled { color: #ef4444; }
+        .status-pending {
+            color: #f59e0b;
+        }
 
-        .metric-positive { color: #10b981; }
-        .metric-negative { color: #ef4444; }
+        .status-completed {
+            color: #10b981;
+        }
+
+        .status-cancelled {
+            color: #ef4444;
+        }
+
+        .metric-positive {
+            color: #10b981;
+        }
+
+        .metric-negative {
+            color: #ef4444;
+        }
 
         .loading {
             display: none;
@@ -282,633 +294,549 @@
             }
         }
     </style>
-</head>
-<body>
-    <div class="main-content">
-        <div class="header">
-            <h1>Revenue Dashboard</h1>
-            <div class="filters">
-                <div class="filter-group">
-                    <label>Năm:</label>
-                    <select id="yearSelect">
-                        <option value="2025">2025</option>
-                        <option value="2024">2024</option>
-                        <option value="2023">2023</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label>Tháng:</label>
-                    <select id="monthSelect">
-                        <option value="">Tất cả</option>
-                        <option value="1">Tháng 1</option>
-                        <option value="2">Tháng 2</option>
-                        <option value="3">Tháng 3</option>
-                        <option value="4">Tháng 4</option>
-                        <option value="5">Tháng 5</option>
-                        <option value="6">Tháng 6</option>
-                        <option value="7">Tháng 7</option>
-                        <option value="8">Tháng 8</option>
-                        <option value="9">Tháng 9</option>
-                        <option value="10">Tháng 10</option>
-                        <option value="11">Tháng 11</option>
-                        <option value="12">Tháng 12</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label>Quý:</label>
-                    <select id="quarterSelect">
-                        <option value="">Tất cả</option>
-                        <option value="1">Quý 1</option>
-                        <option value="2">Quý 2</option>
-                        <option value="3">Quý 3</option>
-                        <option value="4">Quý 4</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label>Kênh bán:</label>
-                    <select id="channelSelect">
-                        <option value="">Tất cả</option>
-                        <option value="shopee">Shopee</option>
-                        <option value="web">Web</option>
-                        <option value="tiktok">TikTok Shop</option>
-                    </select>
-                </div>
-            </div>
-        </div>
+    </head>
 
-        <div class="loading" id="loadingIndicator">
-            <div>🔄 Đang tải dữ liệu...</div>
-        </div>
-
-        <!-- Stats Cards -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <h3>Số đơn hàng</h3>
-                <div class="value" id="ordersCount">0</div>
-            </div>
-            <div class="stat-card">
-                <h3>Hoàn trả</h3>
-                <div class="value metric-negative" id="returnsAmount">0 đ</div>
-            </div>
-            <div class="stat-card">
-                <h3>Doanh thu thuần</h3>
-                <div class="value" id="netRevenue">0 đ</div>
-            </div>
-            <div class="stat-card">
-                <h3>Thực nhận</h3>
-                <div class="value" id="actualRevenue">0 đ</div>
-            </div>
-        </div>
-
-        <!-- Dashboard Grid -->
-        <div class="dashboard-grid">
-            <!-- Orders Chart -->
-            <div class="card large-chart">
-                <div class="card-header">
-                    <h3 class="card-title">Lượng đơn hàng</h3>
-                </div>
-                <div class="chart-container">
-                    <canvas id="ordersChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Revenue Chart -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Doanh thu thuần</h3>
-                </div>
-                <div class="card-value" id="revenueCardValue">0 đ</div>
-                <div class="chart-container-small">
-                    <canvas id="revenueChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Channel Revenue Table -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Doanh thu thuần - từ kênh bán hàng</h3>
-                </div>
-                <table class="revenue-table">
-                    <thead>
-                        <tr>
-                            <th>Kênh</th>
-                            <th>Đơn hàng</th>
-                            <th>Doanh thu</th>
-                        </tr>
-                    </thead>
-                    <tbody id="channelRevenueTable">
-                        <tr>
-                            <td>Shopee</td>
-                            <td id="shopeeOrders">0</td>
-                            <td id="shopeeRevenue">0 đ</td>
-                        </tr>
-                        <tr>
-                            <td>Web</td>
-                            <td id="webOrders">0</td>
-                            <td id="webRevenue">0 đ</td>
-                        </tr>
-                        <tr>
-                            <td>TikTok Shop</td>
-                            <td id="tiktokOrders">0</td>
-                            <td id="tiktokRevenue">0 đ</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Top Orders -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Top đơn hàng</h3>
-                </div>
-                <table class="revenue-table">
-                    <thead>
-                        <tr>
-                            <th>Mã đơn</th>
-                            <th>Giá trị</th>
-                            <th>Ngày</th>
-                        </tr>
-                    </thead>
-                    <tbody id="topOrdersTable">
-                        <tr>
-                            <td colspan="3" class="no-data">Đang tải...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Revenue by Status -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Doanh thu theo trạng thái</h3>
-                </div>
-                <div class="doughnut-container">
-                    <canvas id="statusChart"></canvas>
-                    <div class="total-center">
-                        <div class="amount" id="statusTotalAmount">0 đ</div>
-                        <div class="label">Tổng doanh thu</div>
+    <body>
+        <div class="main-content">
+            <div class="header">
+                <h1>Revenue Dashboard</h1>
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Năm:</label>
+                        <select id="yearSelect">
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Tháng:</label>
+                        <select id="monthSelect">
+                            <option value="">Tất cả</option>
+                            <option value="1">Tháng 1</option>
+                            <option value="2">Tháng 2</option>
+                            <option value="3">Tháng 3</option>
+                            <option value="4">Tháng 4</option>
+                            <option value="5">Tháng 5</option>
+                            <option value="6">Tháng 6</option>
+                            <option value="7">Tháng 7</option>
+                            <option value="8">Tháng 8</option>
+                            <option value="9">Tháng 9</option>
+                            <option value="10">Tháng 10</option>
+                            <option value="11">Tháng 11</option>
+                            <option value="12">Tháng 12</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Quý:</label>
+                        <select id="quarterSelect">
+                            <option value="">Tất cả</option>
+                            <option value="1">Quý 1</option>
+                            <option value="2">Quý 2</option>
+                            <option value="3">Quý 3</option>
+                            <option value="4">Quý 4</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Kênh bán:</label>
+                        <select id="channelSelect">
+                            <option value="">Tất cả</option>
+                            <option value="shopee">Shopee</option>
+                            <option value="web">Web</option>
+                            <option value="tiktok">TikTok Shop</option>
+                        </select>
                     </div>
                 </div>
             </div>
 
-            <!-- Quarterly Revenue -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Doanh thu theo quý</h3>
+            <div class="loading" id="loadingIndicator">
+                <div>🔄 Đang tải dữ liệu...</div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Số đơn hàng</h3>
+                    <div class="value" id="ordersCount">0</div>
                 </div>
-                <div class="chart-container-small">
-                    <canvas id="quarterlyChart"></canvas>
+                <div class="stat-card">
+                    <h3>Hoàn trả</h3>
+                    <div class="value metric-negative" id="returnsAmount">0 đ</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Doanh thu thuần</h3>
+                    <div class="value" id="netRevenue">0 đ</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Thực nhận</h3>
+                    <div class="value" id="actualRevenue">0 đ</div>
                 </div>
             </div>
 
-            <!-- Monthly Revenue -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Doanh thu theo tháng</h3>
+            <!-- Dashboard Grid -->
+            <div class="dashboard-grid">
+                <!-- Orders Chart -->
+                <div class="card large-chart">
+                    <div class="card-header">
+                        <h3 class="card-title">Lượng đơn hàng</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="ordersChart"></canvas>
+                    </div>
                 </div>
-                <div class="chart-container-small">
-                    <canvas id="monthlyChart"></canvas>
-                </div>
-            </div>
 
-            <!-- Yearly Revenue -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Doanh thu theo năm</h3>
+                <!-- Revenue Chart -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Doanh thu thuần</h3>
+                    </div>
+                    <div class="card-value" id="revenueCardValue">0 đ</div>
+                    <div class="chart-container-small">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
                 </div>
-                <div class="yearly-stats">
-                    <div class="year-stat">
-                        <h4 id="currentYear">2025</h4>
-                        <div class="year-value" id="yearlyRevenue">0 đ</div>
-                        <div class="year-orders" id="yearlyOrders">0 đơn hàng</div>
+
+                <!-- Channel Revenue Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Doanh thu thuần - từ kênh bán hàng</h3>
+                    </div>
+                    <table class="revenue-table">
+                        <thead>
+                            <tr>
+                                <th>Kênh</th>
+                                <th>Đơn hàng</th>
+                                <th>Doanh thu</th>
+                            </tr>
+                        </thead>
+                        <tbody id="channelRevenueTable">
+                            <tr>
+                                <td>Shopee</td>
+                                <td id="shopeeOrders">0</td>
+                                <td id="shopeeRevenue">0 đ</td>
+                            </tr>
+                            <tr>
+                                <td>Web</td>
+                                <td id="webOrders">0</td>
+                                <td id="webRevenue">0 đ</td>
+                            </tr>
+                            <tr>
+                                <td>TikTok Shop</td>
+                                <td id="tiktokOrders">0</td>
+                                <td id="tiktokRevenue">0 đ</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Top Orders -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Top đơn hàng</h3>
+                    </div>
+                    <table class="revenue-table">
+                        <thead>
+                            <tr>
+                                <th>Mã đơn</th>
+                                <th>Giá trị</th>
+                                <th>Ngày</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topOrdersTable">
+                            <tr>
+                                <td colspan="3" class="no-data">Đang tải...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Revenue by Status -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Doanh thu theo trạng thái</h3>
+                    </div>
+                    <div class="doughnut-container">
+                        <canvas id="statusChart"></canvas>
+                        <div class="total-center">
+                            <div class="amount" id="statusTotalAmount">0 đ</div>
+                            <div class="label">Tổng doanh thu</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quarterly Revenue -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Doanh thu theo quý</h3>
+                    </div>
+                    <div class="chart-container-small">
+                        <canvas id="quarterlyChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Monthly Revenue -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Doanh thu theo tháng</h3>
+                    </div>
+                    <div class="chart-container-small">
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Yearly Revenue -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Doanh thu theo năm</h3>
+                    </div>
+                    <div class="yearly-stats">
+                        <div class="year-stat">
+                            <h4 id="currentYear">2025</h4>
+                            <div class="year-value" id="yearlyRevenue">0 đ</div>
+                            <div class="year-orders" id="yearlyOrders">0 đơn hàng</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const API_BASE_URL = @json(url('/api/revenue'));
 
-    <script>
-        // API Base URL
-        const API_BASE_URL = '{{ config('app.url') }}/api/revenue';
+                // Màu theo trạng thái (color-blind khá ổn)
+const STATUS_COLORS = {
+  pending:       '#f59e0b', // cam - chờ xác nhận
+  confirmed:     '#3b82f6', // xanh dương - đã xác nhận
+  processing:    '#06b6d4', // cyan - đang xử lý
+  ready_to_pick: '#a855f7', // tím - sẵn sàng lấy
+  shipping:      '#0ea5e9', // sky - đang giao
+  delivered:     '#22c55e', // XANH LÁ - HOÀN THÀNH (vui tươi)
+  cancelled:     '#ef4444'  // ĐỎ - huỷ (nguy hiểm)
+};
 
-        // Charts variables
-        let ordersChart, revenueChart, statusChart, quarterlyChart, monthlyChart;
+const STATUS_LABELS = {
+  pending:       'Chờ xác nhận',
+  confirmed:     'Đã xác nhận',
+  processing:    'Đang xử lý',
+  ready_to_pick: 'Sẵn sàng lấy hàng',
+  shipping:      'Đang giao hàng',
+  delivered:     'Đã giao hàng',
+  cancelled:     'Đã hủy'
+};
 
-        // Current filters
-        let currentFilters = {
-            year: 2025,
-            month: '',
-            quarter: '',
-            channel: ''
-        };
 
-        // Format currency
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('vi-VN').format(Math.abs(amount)) + ' đ';
-        }
+                const yearSelect = document.getElementById('yearSelect');
+                const monthSelect = document.getElementById('monthSelect');
+                const quarterSelect = document.getElementById('quarterSelect');
+                const channelSelect = document.getElementById('channelSelect');
 
-        // Show loading
-        function showLoading() {
-            document.getElementById('loadingIndicator').style.display = 'block';
-        }
+                // Channel table
+                const elShopOrders = document.getElementById('shopeeOrders');
+                const elShopRevenue = document.getElementById('shopeeRevenue');
+                const elWebOrders = document.getElementById('webOrders');
+                const elWebRevenue = document.getElementById('webRevenue');
+                const elTtkOrders = document.getElementById('tiktokOrders');
+                const elTtkRevenue = document.getElementById('tiktokRevenue');
 
-        // Hide loading
-        function hideLoading() {
-            document.getElementById('loadingIndicator').style.display = 'none';
-        }
+                let ordersChart, revenueChart, statusChart, quarterlyChart, monthlyChart;
 
-        // API calls
-        async function fetchAPI(endpoint) {
-            try {
-                const response = await fetch(`${API_BASE_URL}${endpoint}`);
-                const data = await response.json();
-                return data;
-            } catch (error) {
-                console.error('API Error:', error);
-                return null;
-            }
-        }
+                const QUARTER_MONTHS = { '1': [1, 2, 3], '2': [4, 5, 6], '3': [7, 8, 9], '4': [10, 11, 12] };
+                let currentFilters = {
+                    year: parseInt(yearSelect?.value || new Date().getFullYear(), 10),
+                    month: monthSelect?.value || '',
+                    quarter: quarterSelect?.value || '',
+                    channel: channelSelect?.value || ''
+                };
 
-        // Get total revenue
-        async function getTotalRevenue() {
-            let endpoint = '/total';
-            const params = new URLSearchParams();
+                function formatCurrency(a) { return new Intl.NumberFormat('vi-VN').format(Math.abs(Number(a) || 0)) + ' đ'; }
+                function showLoading() { document.getElementById('loadingIndicator').style.display = 'block'; }
+                function hideLoading() { document.getElementById('loadingIndicator').style.display = 'none'; }
 
-            if (currentFilters.month) {
-                params.append('start_date', `${currentFilters.year}-${currentFilters.month.padStart(2, '0')}-01`);
-                params.append('end_date', `${currentFilters.year}-${currentFilters.month.padStart(2, '0')}-31`);
-            }
-
-            if (params.toString()) {
-                endpoint += '?' + params.toString();
-            }
-
-            return await fetchAPI(endpoint);
-        }
-
-        // Get monthly revenue
-        async function getMonthlyRevenue() {
-            const month = currentFilters.month || new Date().getMonth() + 1;
-            return await fetchAPI(`/monthly?year=${currentFilters.year}&month=${month}`);
-        }
-
-        // Get quarterly revenue
-        async function getQuarterlyRevenue() {
-            return await fetchAPI(`/quarterly?year=${currentFilters.year}`);
-        }
-
-        // Get quarter detail
-        async function getQuarterDetail(quarter) {
-            return await fetchAPI(`/quarter?year=${currentFilters.year}&quarter=${quarter}`);
-        }
-
-        // Get yearly revenue
-        async function getYearlyRevenue() {
-            return await fetchAPI(`/yearly?year=${currentFilters.year}`);
-        }
-
-        // Get revenue by status
-        async function getRevenueByStatus() {
-            return await fetchAPI(`/by-status?year=${currentFilters.year}`);
-        }
-
-        // Update overview stats
-        function updateOverviewStats(data) {
-            if (!data || !data.success) return;
-
-            const stats = data.data;
-            document.getElementById('ordersCount').textContent = stats.total_orders || 0;
-            document.getElementById('netRevenue').textContent = formatCurrency(stats.total_revenue || 0);
-            document.getElementById('actualRevenue').textContent = formatCurrency(stats.total_revenue || 0);
-            document.getElementById('revenueCardValue').textContent = formatCurrency(stats.total_revenue || 0);
-        }
-
-        // Update top orders table
-        function updateTopOrdersTable(data) {
-            const tbody = document.getElementById('topOrdersTable');
-            tbody.innerHTML = '';
-
-            if (data && data.top_orders) {
-                data.top_orders.slice(0, 10).forEach(order => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>#${order.id}</td>
-                        <td>${formatCurrency(order.total_price)}</td>
-                        <td>${new Date(order.created_at).toLocaleDateString('vi-VN')}</td>
-                    `;
-                    tbody.appendChild(row);
-                });
-            } else {
-                tbody.innerHTML = '<tr><td colspan="3" class="no-data">Không có dữ liệu</td></tr>';
-            }
-        }
-
-        // Update orders chart
-        function updateOrdersChart(data) {
-            const ctx = document.getElementById('ordersChart');
-            if (!ctx) return;
-
-            if (ordersChart) {
-                ordersChart.destroy();
-            }
-
-            let chartData = { labels: [], data: [] };
-
-            if (data && data.data) {
-                if (data.data.daily_breakdown) {
-                    // Monthly data with daily breakdown
-                    data.data.daily_breakdown.forEach(item => {
-                        const date = new Date(item.date);
-                        chartData.labels.push(`${date.getDate()}/${date.getMonth() + 1}`);
-                        chartData.data.push(item.orders_count || 0);
-                    });
-                } else if (Array.isArray(data.data)) {
-                    // Quarterly or yearly data
-                    data.data.forEach(item => {
-                        if (item.quarter) {
-                            chartData.labels.push(`Q${item.quarter}`);
-                            chartData.data.push(item.orders_count || 0);
-                        } else if (item.year) {
-                            chartData.labels.push(item.year.toString());
-                            chartData.data.push(item.orders_count || 0);
-                        }
-                    });
+                // MONTH options follow quarter
+                function setMonthOptionsForQuarter(q, keep = '') {
+                    const selected = keep ? String(keep) : '';
+                    const months = q && QUARTER_MONTHS[String(q)] ? QUARTER_MONTHS[String(q)] : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+                    let html = `<option value="">Tất cả</option>`;
+                    months.forEach(m => html += `<option value="${m}" ${selected === String(m) ? 'selected' : ''}>Tháng ${m}</option>`);
+                    monthSelect.innerHTML = html;
                 }
-            }
 
-            ordersChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: chartData.labels,
-                    datasets: [{
-                        label: 'Số đơn hàng',
-                        data: chartData.data,
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
+                function lastDayOfMonth(y, m) { return new Date(y, m, 0).getDate(); }
+                function getRangeQuery() {
+                    const p = new URLSearchParams();
+                    if (currentFilters.month) {
+                        const y = currentFilters.year, m = parseInt(currentFilters.month, 10), ld = lastDayOfMonth(y, m);
+                        p.append('start_date', `${y}-${String(m).padStart(2, '0')}-01`);
+                        p.append('end_date', `${y}-${String(m).padStart(2, '0')}-${String(ld).padStart(2, '0')}`);
+                    } else if (currentFilters.quarter) {
+                        const y = currentFilters.year, [sm, , em] = QUARTER_MONTHS[String(currentFilters.quarter)], ld = lastDayOfMonth(y, em);
+                        p.append('start_date', `${y}-${String(sm).padStart(2, '0')}-01`);
+                        p.append('end_date', `${y}-${String(em).padStart(2, '0')}-${String(ld).padStart(2, '0')}`);
+                    }
+                    const qs = p.toString(); return qs ? `?${qs}` : '';
+                }
+                function getYearRangeQuery(year) {
+                    const p = new URLSearchParams(); p.append('year', String(year)); return `?${p.toString()}`;
+                }
+
+                async function fetchAPI(endpoint) {
+                    try { const r = await fetch(`${API_BASE_URL}${endpoint}`); return await r.json(); }
+                    catch (e) { console.error('[Revenue] fetch err', endpoint, e); return null; }
+                }
+
+                // ------- API wrappers
+                async function getTotalRevenue() { return fetchAPI('/total' + getRangeQuery()); }
+                async function getMonthlyRevenue() {
+                    let m = currentFilters.month; if (!m && currentFilters.quarter) m = QUARTER_MONTHS[String(currentFilters.quarter)][0];
+                    if (!m) m = new Date().getMonth() + 1;
+                    return fetchAPI(`/monthly?year=${currentFilters.year}&month=${m}`);
+                }
+                async function getQuarterlyRevenue() { return fetchAPI(`/quarterly?year=${currentFilters.year}`); }
+                async function getYearlyRevenue() { return fetchAPI(`/yearly?year=${currentFilters.year}`); }
+                async function getRevenueByStatus() { return fetchAPI('/by-status' + getRangeQuery()); }
+                async function getQuarterDetail(q) { return fetchAPI(`/quarter?year=${currentFilters.year}&quarter=${q}`); }
+
+                // NEW: monthly-by-year & top orders
+                async function getRevenueByMonthInYear(year) { return fetchAPI('/by-month' + getYearRangeQuery(year)); }
+                async function getTopOrdersData() {
+                    // dùng khoảng tháng/quý nếu có, ngược lại dùng năm
+                    const qs = getRangeQuery() || getYearRangeQuery(currentFilters.year);
+                    return fetchAPI('/top-orders' + qs);
+                }
+
+                // ------- Update UI
+                function updateOverviewStats(data) {
+                    if (!data || !data.success) return;
+                    const s = data.data;
+                    document.getElementById('ordersCount').textContent = s.total_orders || 0;
+                    document.getElementById('netRevenue').textContent = formatCurrency(s.total_revenue || 0);
+                    document.getElementById('actualRevenue').textContent = formatCurrency(s.total_revenue || 0);
+                    document.getElementById('revenueCardValue').textContent = formatCurrency(s.total_revenue || 0);
+                }
+
+                function updateTopOrdersTableFromList(list) {
+                    const tbody = document.getElementById('topOrdersTable');
+                    tbody.innerHTML = '';
+                    if (Array.isArray(list) && list.length) {
+                        list.slice(0, 10).forEach(o => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `<td>#${o.id}</td><td>${formatCurrency(o.total_price)}</td><td>${new Date(o.created_at).toLocaleDateString('vi-VN')}</td>`;
+                            tbody.appendChild(tr);
+                        });
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="3" class="no-data">Không có dữ liệu</td></tr>';
                     }
                 }
-            });
-        }
 
-        // Update revenue chart
-        function updateRevenueChart(data) {
-            const ctx = document.getElementById('revenueChart');
-            if (!ctx) return;
-
-            if (revenueChart) {
-                revenueChart.destroy();
-            }
-
-            let chartData = { labels: [], data: [] };
-
-            if (data && data.data) {
-                if (data.data.daily_breakdown) {
-                    data.data.daily_breakdown.forEach(item => {
-                        const date = new Date(item.date);
-                        chartData.labels.push(`${date.getDate()}/${date.getMonth() + 1}`);
-                        chartData.data.push(parseFloat(item.revenue || 0));
+                function updateOrdersChart(data) {
+                    const ctx = document.getElementById('ordersChart'); if (!ctx) return;
+                    if (ordersChart) ordersChart.destroy();
+                    let labels = [], vals = [];
+                    if (data && data.data) {
+                        if (data.data.daily_breakdown) {
+                            data.data.daily_breakdown.forEach(it => {
+                                const d = new Date(it.date); labels.push(`${d.getDate()}/${d.getMonth() + 1}`); vals.push(it.orders_count || 0);
+                            });
+                        } else if (Array.isArray(data.data)) {
+                            data.data.forEach(it => {
+                                if (it.quarter) { labels.push(`Q${it.quarter}`); vals.push(it.orders_count || 0); }
+                                else if (it.year) { labels.push(String(it.year)); vals.push(it.orders_count || 0); }
+                            });
+                        }
+                    }
+                    ordersChart = new Chart(ctx, {
+                        type: 'line', data: { labels, datasets: [{ label: 'Số đơn hàng', data: vals, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', tension: 0.4, fill: true }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
                     });
                 }
-            }
 
-            revenueChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: chartData.labels,
-                    datasets: [{
-                        label: 'Doanh thu',
-                        data: chartData.data,
-                        backgroundColor: '#10b981',
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
+                function updateRevenueChart(data) {
+                    const ctx = document.getElementById('revenueChart'); if (!ctx) return;
+                    if (revenueChart) revenueChart.destroy();
+                    let labels = [], vals = [];
+                    if (data && data.data && data.data.daily_breakdown) {
+                        data.data.daily_breakdown.forEach(it => {
+                            const d = new Date(it.date); labels.push(`${d.getDate()}/${d.getMonth() + 1}`); vals.push(parseFloat(it.revenue || 0));
+                        });
+                    }
+                    revenueChart = new Chart(ctx, {
+                        type: 'bar', data: { labels, datasets: [{ label: 'Doanh thu', data: vals, backgroundColor: '#10b981', borderRadius: 4 }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => formatCurrency(v) } } } }
+                    });
+                }
+
+                // NEW: Doanh thu theo 12 tháng của năm
+                function updateMonthlyByYearChart(data) {
+                    const ctx = document.getElementById('monthlyChart'); if (!ctx) return;
+                    if (monthlyChart) monthlyChart.destroy();
+                    const monthNames = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+                    const map = new Map();
+                    (data?.data || []).forEach(r => map.set(Number(r.month), Number(r.revenue)));
+                    const vals = monthNames.map((_, idx) => map.get(idx + 1) || 0);
+
+                    monthlyChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: { labels: monthNames.map(m => `T${m}`), datasets: [{ label: 'Doanh thu theo tháng', data: vals, backgroundColor: '#60a5fa' }] },
+                        options: {
+                            responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                            scales: { y: { beginAtZero: true, ticks: { callback: v => formatCurrency(v) } } }
                         }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return formatCurrency(value);
-                                }
-                            }
-                        }
+                    });
+                }
+
+             function updateStatusChart(data) {
+  const ctx = document.getElementById('statusChart');
+  if (!ctx) return;
+  if (statusChart) statusChart.destroy();
+
+  let labels = [], vals = [], colors = [];
+  let deliveredAmount = 0;
+
+  if (data && data.data) {
+    // đảm bảo thứ tự ổn định để màu không nhảy
+    const order = ['pending','confirmed','processing','ready_to_pick','shipping','delivered','cancelled'];
+    const map = new Map(data.data.map(i => [i.status, i]));
+    order.forEach(k => {
+      const it = map.get(k) || { status: k, revenue: 0, orders_count: 0 };
+      labels.push(k);
+      const r = parseFloat(it.revenue || 0);
+      vals.push(r);
+      colors.push(STATUS_COLORS[k] || '#9ca3af');
+      if (k === 'delivered') deliveredAmount = r;
+    });
+  }
+
+  // số giữa: chỉ tổng delivered
+  document.getElementById('statusTotalAmount').textContent = formatCurrency(deliveredAmount);
+
+  statusChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data: vals,
+        backgroundColor: colors,
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '70%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const key = ctx.label;
+              const name = STATUS_LABELS[key] || key;
+              return `${name}: ${formatCurrency(ctx.parsed)}`;
+            },
+            title: () => '' // khỏi hiện title cho gọn
+          }
+        }
+      }
+    }
+  });
+}
+
+                function updateQuarterlyChart(data) {
+                    const ctx = document.getElementById('quarterlyChart'); if (!ctx) return;
+                    if (quarterlyChart) quarterlyChart.destroy();
+                    let labels = [], vals = [];
+                    if (data && data.data) { data.data.forEach(it => { labels.push(`Q${it.quarter}`); vals.push(parseFloat(it.revenue || 0)); }); }
+                    quarterlyChart = new Chart(ctx, {
+                        type: 'bar', data: { labels, datasets: [{ label: 'Doanh thu', data: vals, backgroundColor: '#8b5cf6' }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => formatCurrency(v) } } } }
+                    });
+                }
+
+                function updateYearlyStats(data) {
+                    if (data && data.data && data.data.length > 0) {
+                        const y = data.data[0];
+                        document.getElementById('currentYear').textContent = y.year;
+                        document.getElementById('yearlyRevenue').textContent = formatCurrency(y.revenue || 0);
+                        document.getElementById('yearlyOrders').textContent = `${y.orders_count || 0} đơn hàng`;
                     }
                 }
-            });
-        }
 
-        // Update status chart
-        function updateStatusChart(data) {
-            const ctx = document.getElementById('statusChart');
-            if (!ctx) return;
+                // Channel table (Web thật theo NĂM, Shopee/TikTok = 0)
+                async function updateChannelRevenueYearly(year) {
+                    const yearly = await fetchAPI('/total' + getYearRangeQuery(year));
+                    const orders = yearly?.data?.total_orders || 0;
+                    const revenue = yearly?.data?.total_revenue || 0;
+                    if (elWebOrders) elWebOrders.textContent = orders;
+                    if (elWebRevenue) elWebRevenue.textContent = formatCurrency(revenue);
+                    if (elShopOrders) elShopOrders.textContent = 0;
+                    if (elShopRevenue) elShopRevenue.textContent = formatCurrency(0);
+                    if (elTtkOrders) elTtkOrders.textContent = 0;
+                    if (elTtkRevenue) elTtkRevenue.textContent = formatCurrency(0);
+                }
 
-            if (statusChart) {
-                statusChart.destroy();
-            }
+                // ------- Load all
+                async function loadDashboardData() {
+                    showLoading();
+                    try {
+                        const [
+                            totalData, monthlyData, quarterlyData, yearlyData, statusData,
+                            monthlyByYearData, topOrdersData
+                        ] = await Promise.all([
+                            getTotalRevenue(),
+                            getMonthlyRevenue(),
+                            getQuarterlyRevenue(),
+                            getYearlyRevenue(),
+                            getRevenueByStatus(),
+                            getRevenueByMonthInYear(currentFilters.year),
+                            getTopOrdersData()
+                        ]);
 
-            let chartData = { labels: [], data: [], total: 0 };
+                        updateOverviewStats(totalData);
+                        updateOrdersChart(monthlyData);
+                        updateRevenueChart(monthlyData);
+                        updateQuarterlyChart(quarterlyData);
+                        updateStatusChart(statusData);
+                        updateYearlyStats(yearlyData);
 
-            if (data && data.data) {
-                data.data.forEach(item => {
-                    chartData.labels.push(item.status);
-                    const revenue = parseFloat(item.revenue || 0);
-                    chartData.data.push(revenue);
-                    chartData.total += revenue;
+                        // NEW
+                        updateMonthlyByYearChart(monthlyByYearData);
+                        updateTopOrdersTableFromList(topOrdersData?.data || []);
+
+                        // Bảng kênh bán theo NĂM
+                        await updateChannelRevenueYearly(currentFilters.year);
+                    } catch (e) {
+                        console.error('[Revenue] loadDashboardData error:', e);
+                    } finally { hideLoading(); }
+                }
+
+                // ------- Filters
+                yearSelect.addEventListener('change', (e) => { currentFilters.year = parseInt(e.target.value, 10); loadDashboardData(); });
+                monthSelect.addEventListener('change', (e) => {
+                    currentFilters.month = e.target.value;
+                    if (currentFilters.month) { quarterSelect.value = ''; currentFilters.quarter = ''; setMonthOptionsForQuarter(null, currentFilters.month); }
+                    loadDashboardData();
                 });
-            }
-
-            document.getElementById('statusTotalAmount').textContent = formatCurrency(chartData.total);
-
-            statusChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: chartData.labels,
-                    datasets: [{
-                        data: chartData.data,
-                        backgroundColor: ['#3b82f6', '#ef4444', '#10b981', '#f59e0b'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '70%',
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
+                quarterSelect.addEventListener('change', (e) => {
+                    currentFilters.quarter = e.target.value;
+                    if (currentFilters.quarter) {
+                        const allowed = QUARTER_MONTHS[String(currentFilters.quarter)];
+                        if (currentFilters.month && !allowed.includes(parseInt(currentFilters.month, 10))) currentFilters.month = '';
+                        setMonthOptionsForQuarter(currentFilters.quarter, currentFilters.month || '');
+                    } else {
+                        setMonthOptionsForQuarter(null, currentFilters.month || '');
                     }
-                }
-            });
-        }
-
-        // Update quarterly chart
-        function updateQuarterlyChart(data) {
-            const ctx = document.getElementById('quarterlyChart');
-            if (!ctx) return;
-
-            if (quarterlyChart) {
-                quarterlyChart.destroy();
-            }
-
-            let chartData = { labels: [], data: [] };
-
-            if (data && data.data) {
-                data.data.forEach(item => {
-                    chartData.labels.push(`Q${item.quarter}`);
-                    chartData.data.push(parseFloat(item.revenue || 0));
+                    loadDashboardData();
                 });
-            }
+                channelSelect.addEventListener('change', (e) => { currentFilters.channel = e.target.value; loadDashboardData(); });
 
-            quarterlyChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: chartData.labels,
-                    datasets: [{
-                        label: 'Doanh thu',
-                        data: chartData.data,
-                        backgroundColor: '#8b5cf6'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return formatCurrency(value);
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Update yearly stats
-        function updateYearlyStats(data) {
-            if (data && data.data && data.data.length > 0) {
-                const yearData = data.data[0];
-                document.getElementById('currentYear').textContent = yearData.year;
-                document.getElementById('yearlyRevenue').textContent = formatCurrency(yearData.revenue || 0);
-                document.getElementById('yearlyOrders').textContent = `${yearData.orders_count || 0} đơn hàng`;
-            }
-        }
-
-        // Load all dashboard data
-        async function loadDashboardData() {
-            showLoading();
-
-            try {
-                // Load data parallel
-                const [
-                    totalData,
-                    monthlyData,
-                    quarterlyData,
-                    yearlyData,
-                    statusData
-                ] = await Promise.all([
-                    getTotalRevenue(),
-                    getMonthlyRevenue(),
-                    getQuarterlyRevenue(),
-                    getYearlyRevenue(),
-                    getRevenueByStatus()
-                ]);
-
-                // Update UI
-                updateOverviewStats(totalData);
-                updateOrdersChart(monthlyData);
-                updateRevenueChart(monthlyData);
-                updateQuarterlyChart(quarterlyData);
-                updateStatusChart(statusData);
-                updateYearlyStats(yearlyData);
-
-                // Update top orders if available
-                if (currentFilters.quarter) {
-                    const quarterDetail = await getQuarterDetail(currentFilters.quarter);
-                    if (quarterDetail && quarterDetail.top_orders) {
-                        updateTopOrdersTable(quarterDetail);
-                    }
-                }
-
-            } catch (error) {
-                console.error('Error loading dashboard data:', error);
-            } finally {
-                hideLoading();
-            }
-        }
-
-        // Event listeners
-        function setupEventListeners() {
-            // Year filter
-            document.getElementById('yearSelect').addEventListener('change', function(e) {
-                currentFilters.year = parseInt(e.target.value);
+                // Init
+                setMonthOptionsForQuarter(currentFilters.quarter || null, currentFilters.month || '');
                 loadDashboardData();
+                setInterval(loadDashboardData, 300000);
             });
+        </script>
 
-            // Month filter
-            document.getElementById('monthSelect').addEventListener('change', function(e) {
-                currentFilters.month = e.target.value;
-                loadDashboardData();
-            });
 
-            // Quarter filter
-            document.getElementById('quarterSelect').addEventListener('change', function(e) {
-                currentFilters.quarter = e.target.value;
-                loadDashboardData();
-            });
+    </body>
 
-            // Channel filter
-            document.getElementById('channelSelect').addEventListener('change', function(e) {
-                currentFilters.channel = e.target.value;
-                loadDashboardData();
-            });
-        }
-
-        // Initialize dashboard
-        function initDashboard() {
-            setupEventListeners();
-            loadDashboardData();
-        }
-
-        // Load dashboard when DOM is ready
-        document.addEventListener('DOMContentLoaded', function() {
-            initDashboard();
-        });
-
-        // Auto refresh every 5 minutes
-        setInterval(loadDashboardData, 300000);
-    </script>
-</body>
-</html>
+    </html>
 @endsection
