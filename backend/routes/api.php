@@ -739,8 +739,11 @@ Route::prefix('revenue')->group(function () {
     Route::get('/by-status', [RevenueController::class, 'getRevenueByStatus']);
     Route::get('/by-payment', [RevenueController::class, 'getRevenueByPaymentMethod']);
     Route::get('/dashboard', [RevenueController::class, 'getDashboard']);
+     Route::get('/top-orders',   [RevenueController::class, 'getTopOrders']);
+    Route::get('/by-month',     [RevenueController::class, 'getRevenueByMonthInYear']);
     // Route riêng cho từng quý
     Route::get('/quarter', [RevenueController::class, 'getQuarterDetail']);
+    
 });
 
 

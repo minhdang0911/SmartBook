@@ -9,6 +9,13 @@ use Illuminate\Http\Request;
 
 class BookController extends Controller
 {
+    public function getAllIds()
+    {
+        // Lấy danh sách id và title (nếu cần hiển thị)
+        $books = Book::select('id', 'title')->get();
+
+        return response()->json($books);
+    }
     protected $cloudinary;
 
     public function __construct(CloudinaryService $cloudinary)

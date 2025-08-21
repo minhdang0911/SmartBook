@@ -28,7 +28,7 @@ class Order extends Model
         'address',
         'order_code',
         'phone',
-        'shipping_code'  // Thêm shipping_code vào fillable
+        'shipping_code'
     ];
 
     protected $casts = [
@@ -40,38 +40,35 @@ class Order extends Model
     ];
 
     // Status constants
-    const STATUS_PENDING = 'pending';
-    const STATUS_CONFIRMED = 'confirmed';
-    const STATUS_PROCESSING = 'processing';
-    const STATUS_READY_TO_PICK = 'ready_to_pick';  // Thêm status này
-    const STATUS_SHIPPING = 'shipping';
-    const STATUS_DELIVERED = 'delivered';
-    const STATUS_CANCELLED = 'cancelled';
+    const STATUS_PENDING      = 'pending';
+    const STATUS_CONFIRMED    = 'confirmed';
+    const STATUS_PROCESSING   = 'processing';
+    const STATUS_READY_TO_PICK= 'ready_to_pick';
+    const STATUS_SHIPPING     = 'shipping';
+    const STATUS_DELIVERED    = 'delivered';
+    const STATUS_CANCELLED    = 'cancelled';
 
     // Payment constants
-    const PAYMENT_COD = 'cod';
-    const PAYMENT_BANK_TRANSFER = 'bank_transfer';
-    const PAYMENT_CREDIT_CARD = 'credit_card';
+    const PAYMENT_COD          = 'cod';
+    const PAYMENT_BANK_TRANSFER= 'bank_transfer';
+    const PAYMENT_CREDIT_CARD  = 'credit_card';
 
-    /**
-     * Relationship với User
-     */
+    /** Scope: chỉ đơn đã giao thành công */
+    public function scopeDelivered($query)
+    {
+        return $query->where('status', self::STATUS_DELIVERED);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Relationship với OrderItems
-     */
     public function orderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class);
     }
 
-    /**
-     * Get status label
-     */
     public function getStatusLabelAttribute(): string
     {
         $labels = [
@@ -87,9 +84,6 @@ class Order extends Model
         return $labels[$this->status] ?? 'Không xác định';
     }
 
-    /**
-     * Get payment label
-     */
     public function getPaymentLabelAttribute(): string
     {
         $labels = [
@@ -101,25 +95,16 @@ class Order extends Model
         return $labels[$this->payment] ?? 'Không xác định';
     }
 
-    /**
-     * Check if order can be cancelled
-     */
     public function canBeCancelled(): bool
     {
         return in_array($this->status, [self::STATUS_PENDING, self::STATUS_CONFIRMED]);
     }
 
-    /**
-     * Get total quantity
-     */
     public function getTotalQuantityAttribute(): int
     {
         return $this->orderItems->sum('quantity');
     }
 
-    /**
-     * Check if order has shipping code
-     */
     public function hasShippingCode(): bool
     {
         return !empty($this->shipping_code);

@@ -11,7 +11,6 @@ use Illuminate\Http\JsonResponse;
 
 class CartController extends Controller
 { 
-
     /**
      * Lấy giỏ hàng của user hiện tại
      */
@@ -43,7 +42,7 @@ class CartController extends Controller
                     'cart' => $cart,
                     'items' => $cart->cartItems,
                     'total_amount' => $cart->total_amount,
-                    'total_items' => $cart->total_items
+                    'total_items' => $cart->cartItems()->count()
                 ]
             ]);
 
@@ -126,7 +125,7 @@ class CartController extends Controller
                     'cart' => $cart,
                     'cart_item' => $cartItem->load('book'),
                     'total_amount' => $cart->total_amount,
-                    'total_items' => $cart->total_items
+                    'total_items' => $cart->cartItems()->count()
                 ]
             ]);
 
@@ -192,7 +191,7 @@ class CartController extends Controller
                     'cart' => $cart,
                     'cart_item' => $cartItem->fresh()->load('book'),
                     'total_amount' => $cart->total_amount,
-                    'total_items' => $cart->total_items
+                    'total_items' => $cart->cartItems()->count()
                 ]
             ]);
 
@@ -213,10 +212,9 @@ class CartController extends Controller
     /**
      * Xóa sách khỏi giỏ hàng
      */
-  public function removeFromCart(Request $request): JsonResponse
+    public function removeFromCart(Request $request): JsonResponse
     {
         try {
-            // Validate input - có thể là single ID hoặc array of IDs
             $request->validate([
                 'cart_item_ids' => 'required|array|min:1',
                 'cart_item_ids.*' => 'integer|exists:cart_items,id'
@@ -225,7 +223,6 @@ class CartController extends Controller
             $user = Auth::user();
             $cartItemIds = $request->cart_item_ids;
 
-            // Tìm các cart items thuộc về user hiện tại
             $cartItems = CartItem::whereHas('cart', function($query) use ($user) {
                                     $query->where('user_id', $user->id);
                                 })
@@ -240,7 +237,6 @@ class CartController extends Controller
                 ], 404);
             }
 
-            // Kiểm tra xem có item nào không thuộc về user không
             $foundIds = $cartItems->pluck('id')->toArray();
             $notFoundIds = array_diff($cartItemIds, $foundIds);
             
@@ -251,17 +247,13 @@ class CartController extends Controller
                 ], 404);
             }
 
-            // Lấy cart (tất cả items phải cùng 1 cart)
             $cart = $cartItems->first()->cart;
 
-            // Xóa các cart items
             $deletedCount = $cartItems->count();
             CartItem::whereIn('id', $cartItemIds)->delete();
 
-            // Cập nhật tổng tiền giỏ hàng
             $cart->calculateTotal();
 
-            // Kiểm tra nếu giỏ hàng trống thì xóa luôn
             if ($cart->cartItems()->count() == 0) {
                 $cart->delete();
                 
@@ -277,7 +269,6 @@ class CartController extends Controller
                 ]);
             }
 
-            // Load lại cart với relationships
             $cart->load(['cartItems.book.author', 'cartItems.book.category']);
 
             return response()->json([
@@ -286,7 +277,7 @@ class CartController extends Controller
                 'data' => [
                     'cart' => $cart,
                     'total_amount' => $cart->total_amount,
-                    'total_items' => $cart->total_items,
+                    'total_items' => $cart->cartItems()->count(),
                     'deleted_count' => $deletedCount
                 ]
             ]);
@@ -304,7 +295,6 @@ class CartController extends Controller
             ], 500);
         }
     }
-
 
     public function removeFromCartSingle($cartItemId): JsonResponse
     {
@@ -325,10 +315,8 @@ class CartController extends Controller
             $cart = $cartItem->cart;
             $cartItem->delete();
 
-            // Cập nhật tổng tiền giỏ hàng
             $cart->calculateTotal();
 
-            // Kiểm tra nếu giỏ hàng trống thì xóa luôn
             if ($cart->cartItems()->count() == 0) {
                 $cart->delete();
                 
@@ -343,7 +331,6 @@ class CartController extends Controller
                 ]);
             }
 
-            // Load lại cart với relationships
             $cart->load(['cartItems.book.author', 'cartItems.book.category']);
 
             return response()->json([
@@ -352,7 +339,7 @@ class CartController extends Controller
                 'data' => [
                     'cart' => $cart,
                     'total_amount' => $cart->total_amount,
-                    'total_items' => $cart->total_items
+                    'total_items' => $cart->cartItems()->count()
                 ]
             ]);
 
@@ -363,9 +350,6 @@ class CartController extends Controller
             ], 500);
         }
     }
-
-
-    
 
     /**
      * Xóa toàn bộ giỏ hàng
@@ -383,10 +367,7 @@ class CartController extends Controller
                 ]);
             }
 
-            // Xóa tất cả items trong giỏ
             $cart->cartItems()->delete();
-
-            // Xóa giỏ hàng
             $cart->delete();
 
             return response()->json([
@@ -416,7 +397,7 @@ class CartController extends Controller
             $user = Auth::user();
             $cart = Cart::where('user_id', $user->id)->first();
 
-            $count = $cart ? $cart->total_items : 0;
+            $count = $cart ? $cart->cartItems()->count() : 0;
 
             return response()->json([
                 'success' => true,
