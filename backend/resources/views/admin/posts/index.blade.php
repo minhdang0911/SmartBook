@@ -139,6 +139,64 @@
         .table-fixed th:nth-child(6), .table-fixed td:nth-child(6) { width: 8%; } /* Trạng thái */
         .table-fixed th:nth-child(7), .table-fixed td:nth-child(7) { width: 12%; } /* Ngày tạo */
         .table-fixed th:nth-child(8), .table-fixed td:nth-child(8) { width: 14%; } /* Hành động */
+
+        /* Sửa lỗi phân trang */
+        .pagination {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            justify-content: center;
+        }
+
+        .pagination a {
+            min-width: 2.5rem;
+            text-align: center;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            border: 1px solid #d1d5db;
+            color: #374151;
+            background-color: #ffffff;
+            transition: all 0.2s ease;
+        }
+
+        .dark .pagination a {
+            border: 1px solid #4b5563;
+            color: #d1d5db;
+            background-color: #1f2937;
+        }
+
+        .pagination a:hover:not([aria-current="page"]):not(.disabled) {
+            background-color: #f3f4f6;
+        }
+
+        .dark .pagination a:hover:not([aria-current="page"]):not(.disabled) {
+            background-color: #374151;
+        }
+
+        .pagination a[aria-current="page"] {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            border-color: #000000 !important;
+            z-index: 10;
+        }
+
+        .dark .pagination a[aria-current="page"] {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border-color: #ffffff !important;
+        }
+
+        .pagination a.disabled, .pagination a[aria-disabled="true"] {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 640px) {
+            .pagination a {
+                font-size: 0.75rem;
+                padding: 0.5rem;
+            }
+        }
     </style>
 @endpush
 
@@ -429,75 +487,10 @@
                 @endforelse
             </div>
 
-            <!-- Custom Pagination -->
+            <!-- Pagination -->
             @if($posts->hasPages())
-                <div class="mt-8 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 sm:px-6 rounded-lg">
-                    <div class="flex flex-1 justify-between sm:hidden">
-                        @if ($posts->onFirstPage())
-                            <span class="relative inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400">Trước</span>
-                        @else
-                            <a href="{{ $posts->appends(request()->query())->previousPageUrl() }}" class="relative inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600">Trước</a>
-                        @endif
-
-                        @if ($posts->hasMorePages())
-                            <a href="{{ $posts->appends(request()->query())->nextPageUrl() }}" class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600">Sau</a>
-                        @else
-                            <span class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400">Sau</span>
-                        @endif
-                    </div>
-
-                    <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                        <div>
-                            <p class="text-sm text-gray-700 dark:text-gray-300">
-                                Hiển thị
-                                <span class="font-medium">{{ $posts->firstItem() }}</span>
-                                đến
-                                <span class="font-medium">{{ $posts->lastItem() }}</span>
-                                trong tổng số
-                                <span class="font-medium">{{ $posts->total() }}</span>
-                                kết quả
-                            </p>
-                        </div>
-                        <div>
-                            <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                                @if ($posts->onFirstPage())
-                                    <span class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 dark:text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:z-20 focus:outline-offset-0">
-                                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                            <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
-                                        </svg>
-                                    </span>
-                                @else
-                                    <a href="{{ $posts->appends(request()->query())->previousPageUrl() }}" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 dark:text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:z-20 focus:outline-offset-0">
-                                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                            <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
-                                        </svg>
-                                    </a>
-                                @endif
-
-                                @foreach ($posts->appends(request()->query())->getUrlRange(max(1, $posts->currentPage() - 2), min($posts->lastPage(), $posts->currentPage() + 2)) as $page => $url)
-                                    @if ($page == $posts->currentPage())
-                                        <span class="relative z-10 inline-flex items-center bg-black dark:bg-white px-4 py-2 text-sm font-semibold text-white dark:text-black focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black dark:focus-visible:outline-white">{{ $page }}</span>
-                                    @else
-                                        <a href="{{ $url }}" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-300 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:z-20 focus:outline-offset-0">{{ $page }}</a>
-                                    @endif
-                                @endforeach
-
-                                @if ($posts->hasMorePages())
-                                    <a href="{{ $posts->appends(request()->query())->nextPageUrl() }}" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 dark:text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:z-20 focus:outline-offset-0">
-                                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                            <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
-                                        </svg>
-                                    </a>
-                                @else
-                                    <span class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 dark:text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:z-20 focus:outline-offset-0">
-                                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                            <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
-                                        </svg>
-                                    </span>
-                                @endif
-                            </nav>
-                        </div>
-                    </div>
+                <div class="mt-8 flex justify-center pagination">
+                    {{ $posts->appends(request()->query())->links() }}
                 </div>
             @endif
         </div>

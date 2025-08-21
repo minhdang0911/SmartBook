@@ -125,6 +125,48 @@
         .table-fixed th:nth-child(6), .table-fixed td:nth-child(6) { width: 10%; } /* Trạng thái */
         .table-fixed th:nth-child(7), .table-fixed td:nth-child(7) { width: 10%; } /* Xác thực */
         .table-fixed th:nth-child(8), .table-fixed td:nth-child(8) { width: 20%; } /* Hành động */
+
+        /* Sửa lỗi phân trang */
+        .pagination {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            justify-content: center;
+        }
+
+        .pagination a {
+            min-width: 2.5rem;
+            text-align: center;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            border: 1px solid #d1d5db;
+            color: #374151;
+            background-color: #ffffff;
+            transition: all 0.2s ease;
+        }
+
+        .pagination a:hover:not([aria-current="page"]):not(.disabled) {
+            background-color: #f3f4f6;
+        }
+
+        .pagination a[aria-current="page"] {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            border-color: #000000 !important;
+            z-index: 10;
+        }
+
+        .pagination a.disabled, .pagination a[aria-disabled="true"] {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 640px) {
+            .pagination a {
+                font-size: 0.75rem;
+                padding: 0.5rem;
+            }
+        }
     </style>
 @endpush
 
@@ -367,7 +409,7 @@
 
             <!-- Pagination -->
             @if($users->hasPages())
-                <div class="mt-6 flex justify-center">
+                <div class="mt-6 flex justify-center pagination">
                     {{ $users->appends(['search' => request('search')])->links() }}
                 </div>
             @endif
