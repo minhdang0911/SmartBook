@@ -73,7 +73,7 @@ class PostController extends Controller
         $thumbnailUrl = null;
         if ($request->hasFile('thumbnail')) {
             $cloudinary = new CloudinaryService();
-            $thumbnailUrl = $cloudinary->uploadImage($request->file('thumbnail'), 'thumbnails');
+            $thumbnailUrl = $cloudinary->uploadImageAvoidDuplicate($request->file('thumbnail'), 'thumbnails');
         }
 
         $post = Post::create([
@@ -130,9 +130,9 @@ class PostController extends Controller
         if ($request->hasFile('thumbnail')) {
             $cloudinary = new CloudinaryService();
             if ($thumbnailUrl) {
-                $cloudinary->deleteImageByPublicId($thumbnailUrl);
+                $cloudinary->deleteImageByUrl($thumbnailUrl);
             }
-            $thumbnailUrl = $cloudinary->uploadImage($request->file('thumbnail'), 'thumbnails');
+            $thumbnailUrl = $cloudinary->uploadImageAvoidDuplicate($request->file('thumbnail'), 'thumbnails');
         }
 
         $post->update([
@@ -154,7 +154,7 @@ class PostController extends Controller
     {
         if ($post->thumbnail) {
             $cloudinary = new CloudinaryService();
-            $cloudinary->deleteImageByPublicId($post->thumbnail);
+            $cloudinary->deleteImageByUrl($post->thumbnail);
         }
 
         $post->delete();

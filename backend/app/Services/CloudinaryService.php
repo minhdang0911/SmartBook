@@ -235,6 +235,32 @@ class CloudinaryService
         return $this->cloudinary->uploadApi()->destroy($publicId);
     }
 
+    public function deleteImageByUrl($url)
+    {
+        $path = parse_url($url, PHP_URL_PATH);
+        // /smartbook/image/upload/v1724393324/Home/publishers/logo_abc.png
+
+        // Cắt đoạn trước "upload/"
+        $parts = explode('/upload/', $path);
+        if (count($parts) < 2) {
+            throw new \Exception("URL không hợp lệ: $url");
+        }
+
+        // Lấy phần sau upload/ => v1724393324/Home/publishers/logo_abc.png
+        $publicIdWithExt = preg_replace('/^v[0-9]+\//', '', $parts[1]);
+        // Home/publishers/logo_abc.png
+
+        // Bỏ extension
+        $publicId = pathinfo($publicIdWithExt, PATHINFO_DIRNAME) . '/' . pathinfo($publicIdWithExt, PATHINFO_FILENAME);
+        $publicId = ltrim($publicId, '/'); // tránh dấu / ở đầu
+
+        // Log lại để check đúng chưa
+        \Log::info("Xóa Cloudinary public_id: " . $publicId);
+
+        return $this->cloudinary->uploadApi()->destroy($publicId, ['resource_type' => 'image']);
+    }
+
+
     /**
      * Delete PDF file by public_id
      */

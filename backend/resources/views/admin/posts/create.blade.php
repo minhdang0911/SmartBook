@@ -92,16 +92,6 @@
                 </div>
             </div>
 
-            <!-- Error Messages -->
-            @if ($errors->any())
-                <div id="formErrorAlert" class="bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg p-4 mb-6 animate-fade-in">
-                    <ul class="mb-0 text-sm">
-                        @foreach ($errors->all() as $err)
-                            <li>{{ $err }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
 
             <form action="{{ route('admin.posts.store') }}" method="POST" enctype="multipart/form-data" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-fade-in">
                 @csrf

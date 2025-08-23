@@ -108,7 +108,7 @@
             max-height: 90vh;
             overflow-y: auto;
             transform: scale(0.7);
-            unint16_t transition: transform 0.3s ease;
+            transition: transform 0.3s ease;
         }
 
         .dark .modal-content {
@@ -181,9 +181,7 @@
 
             <!-- Search & Actions -->
             <div
-                class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border
-
--gray-700 p-6 mb-6 animate-fade-in">
+                class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6 animate-fade-in">
                 <form method="GET" action="{{ route('admin.topics.index') }}" class="flex flex-col gap-4">
                     <div class="flex-1">
                         <div class="relative">
@@ -298,8 +296,8 @@
                                 <tr>
                                     <td colspan="5" class="px-6 py-12 text-center">
                                         <div class="flex flex-col items-center">
-                                            <svg class="h-12 w-12 text-gray-400 mb-4" fill="none"
-                                                stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z">
                                                 </path>
@@ -330,8 +328,8 @@
                         <div class="flex items-center space-x-3 mb-3">
                             <div
                                 class="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center flex-shrink-0">
-                                <svg class="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none"
-                                    stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z">
                                     </path>
@@ -420,11 +418,7 @@
                                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent"
                                 placeholder="Nhập tên chủ đề..." value="{{ old('_form') === 'add' ? old('name') : '' }}"
                                 required>
-                            @if (old('_form') === 'add')
-                                @error('name')
-                                    <div class="text-red-500 text-sm mt-1">{{ $message }}</div>
-                                @enderror
-                            @endif
+
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Slug</label>
@@ -477,11 +471,7 @@
                                     class="editTopicName w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent"
                                     value="{{ old('_form') === 'edit' && old('_edit_id') == $topic->id ? old('name') : $topic->name }}"
                                     required>
-                                @if (old('_form') === 'edit' && old('_edit_id') == $topic->id)
-                                    @error('name')
-                                        <div class="text-red-500 text-sm mt-1">{{ $message }}</div>
-                                    @enderror
-                                @endif
+
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Slug</label>
@@ -543,7 +533,6 @@
     </div>
 
     <script>
-
         // Modal functions
         function openModal(modalId) {
             const modal = document.getElementById(modalId);
@@ -554,6 +543,14 @@
         function closeModal(modalId) {
             const modal = document.getElementById(modalId);
             modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Đóng tất cả modal
+        function closeAllModals() {
+            document.querySelectorAll('.modal-overlay').forEach(modal => {
+                modal.classList.remove('active');
+            });
             document.body.style.overflow = 'auto';
         }
 
@@ -618,18 +615,30 @@
             if (table) {
                 table.classList.add('table-fixed');
             }
-        });
 
-        // Show modal on validation errors
-        @if ($errors->any())
-            document.addEventListener('DOMContentLoaded', function() {
-                @if (old('_form') === 'add')
-                    openModal('addTopicModal');
-                @elseif (old('_form') === 'edit' && old('_edit_id'))
-                    openModal('editTopicModal{{ old('_edit_id') }}');
-                @endif
-            });
-        @endif
+            // Kiểm tra có lỗi validation không, nếu có thì đóng modal
+            @if ($errors->any())
+                // Đóng tất cả modal khi có lỗi
+                closeAllModals();
+
+                // Cuộn lên trên để xem thông báo lỗi
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+
+                // Làm nổi bật thông báo lỗi với animation
+                setTimeout(() => {
+                    const alertElement = document.querySelector('.alert, [class*="alert"], [class*="error"], .bg-red');
+                    if (alertElement) {
+                        alertElement.classList.add('animate-pulse');
+                        setTimeout(() => {
+                            alertElement.classList.remove('animate-pulse');
+                        }, 2000);
+                    }
+                }, 500);
+            @endif
+        });
 
         // Close modal when clicking outside
         document.addEventListener('click', function(e) {
@@ -642,11 +651,16 @@
         // ESC key to close modal
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
-                document.querySelectorAll('.modal-overlay.active').forEach(modal => {
-                    modal.classList.remove('active');
-                    document.body.style.overflow = 'auto';
-                });
+                closeAllModals();
             }
+        });
+
+        // Handle form submission errors
+        document.addEventListener('DOMContentLoaded', function() {
+            // Nếu có lỗi validation, hiển thị thông báo và đóng modal
+            @if ($errors->any())
+                console.log('Có lỗi validation, đóng modal và hiển thị thông báo');
+            @endif
         });
     </script>
 @endsection

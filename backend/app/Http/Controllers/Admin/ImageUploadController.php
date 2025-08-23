@@ -16,7 +16,7 @@ class ImageUploadController extends Controller
 
         $file = $request->file('upload');
 
-        $cloudinary = new \App\Services\CloudinaryService();
+        $cloudinary = new CloudinaryService();
         $url = $cloudinary->uploadImage($file, 'posts/content');
 
         return response()->json([

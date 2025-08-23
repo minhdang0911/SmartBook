@@ -28,23 +28,23 @@ class PublisherController extends Controller
     }
 
     public function store(StorePublisherRequest $request)
-{
-    $data = $request->validated();
+    {
+        $data = $request->validated();
 
-    if ($request->hasFile('image')) {
-        $cloudinaryService = new CloudinaryService();
-        $imageUrl = $cloudinaryService->uploadImageAvoidDuplicate(
-            $request->file('image'),
-            'publishers'
-        );
-        $data['image_url'] = $imageUrl;
+        if ($request->hasFile('image')) {
+            $cloudinaryService = new CloudinaryService();
+            $imageUrl = $cloudinaryService->uploadImageAvoidDuplicate(
+                $request->file('image'),
+                'publishers'
+            );
+            $data['image_url'] = $imageUrl;
+        }
+
+        Publisher::create($data);
+
+        return redirect()->route('admin.publishers.index')
+            ->with('success', 'Nhà xuất bản đã được thêm thành công!');
     }
-
-    Publisher::create($data);
-
-    return redirect()->route('admin.publishers.index')
-        ->with('success', 'Nhà xuất bản đã được thêm thành công!');
-}
 
 
     public function edit(Publisher $publisher)
@@ -58,7 +58,7 @@ class PublisherController extends Controller
 
         if ($request->hasFile('image')) {
             $cloudinaryService = new CloudinaryService();
-            $imageUrl = $cloudinaryService->uploadImage(
+            $imageUrl = $cloudinaryService->uploadImageAvoidDuplicate(
                 $request->file('image'),
                 'publishers'
             );
@@ -85,16 +85,7 @@ class PublisherController extends Controller
             try {
                 $cloudinaryService = new CloudinaryService();
 
-                // Detect resource_type từ URL (image / video / raw)
-                $resourceType = 'image';
-                if (preg_match('/\/video\/upload\//', $publisher->image_url)) {
-                    $resourceType = 'video';
-                } elseif (preg_match('/\/raw\/upload\//', $publisher->image_url)) {
-                    $resourceType = 'raw';
-                }
-
-                // Xóa ảnh
-                $cloudinaryService->deleteImageByPublicId($publisher->image_url, $resourceType);
+                $cloudinaryService->deleteImageByUrl($publisher->image_url);
 
             } catch (\Exception $e) {
                 \Log::error('Không thể xóa ảnh trên Cloudinary', [
@@ -104,12 +95,12 @@ class PublisherController extends Controller
             }
         }
 
-        // Xóa publisher trong DB
         $publisher->delete();
 
         return redirect()->route('admin.publishers.index')
             ->with('success', 'Nhà xuất bản đã bị xóa thành công.');
     }
+
 
     public function apiIndex()
     {
