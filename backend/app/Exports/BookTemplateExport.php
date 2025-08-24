@@ -18,13 +18,13 @@ class BookTemplateExport implements WithHeadings, WithEvents
         return [
             'Tên sách *',
             'Mô tả',
-            'ID Tác giả * (Chọn từ dropdown)',
-            'ID Thể loại * (Chọn từ dropdown)',
-            'ID Nhà xuất bản * (Chọn từ dropdown)',
-            'Giá *',
-            'Giá giảm',
-            'Số lượng *',
-            'Loại sách (paper/ebook) *',
+            'ID Tác giả *',
+            'ID Thể loại *', 
+            'ID Nhà xuất bản (Chỉ cần nếu là Paper)',
+            'Giá (Chỉ cần nếu là Paper)',
+            'Giá giảm (Tùy chọn)',
+            'Số lượng (Chỉ cần nếu là Paper)',
+            'Loại sách * (paper/ebook)',
             'Ảnh bìa (URL)'
         ];
     }
@@ -106,25 +106,30 @@ class BookTemplateExport implements WithHeadings, WithEvents
     private function addSampleData($sheet, $authors, $categories, $publishers)
     {
         $sampleData = [
+            // Sách giấy
             [
                 'Lập trình PHP cơ bản',
                 'Sách học lập trình PHP từ cơ bản đến nâng cao',
-                $authors->count() > 0 ? ($authors->first()->id . ' - ' . $authors->first()->name) : 'Không có tác giả',
-                $categories->count() > 0 ? ($categories->first()->id . ' - ' . $categories->first()->name) : 'Không có thể loại',
-                $publishers->count() > 0 ? ($publishers->first()->id . ' - ' . $publishers->first()->name) : 'Không có NXB',
+                $authors->count() > 0 ? ($authors->first()->id . ' - ' . $authors->first()->name) : '1',
+                $categories->count() > 0 ? ($categories->first()->id . ' - ' . $categories->first()->name) : '1',
+                $publishers->count() > 0 ? ($publishers->first()->id . ' - ' . $publishers->first()->name) : '1',
                 150000, 120000, 50, 'paper',
                 'https://example.com/php-book.jpg'
             ],
+            // Ebook
             [
-                'Laravel Framework',
-                'Hướng dẫn sử dụng Laravel Framework',
+                'Laravel Framework (Ebook)',
+                'Hướng dẫn sử dụng Laravel Framework - Phiên bản điện tử',
                 $authors->count() > 1 ? ($authors->skip(1)->first()->id . ' - ' . $authors->skip(1)->first()->name) :
-                    ($authors->count() > 0 ? ($authors->first()->id . ' - ' . $authors->first()->name) : 'Không có tác giả'),
+                    ($authors->count() > 0 ? ($authors->first()->id . ' - ' . $authors->first()->name) : '1'),
                 $categories->count() > 1 ? ($categories->skip(1)->first()->id . ' - ' . $categories->skip(1)->first()->name) :
-                    ($categories->count() > 0 ? ($categories->first()->id . ' - ' . $categories->first()->name) : 'Không có thể loại'),
-                $publishers->count() > 1 ? ($publishers->skip(1)->first()->id . ' - ' . $publishers->skip(1)->first()->name) :
-                    ($publishers->count() > 0 ? ($publishers->first()->id . ' - ' . $publishers->first()->name) : 'Không có NXB'),
-                200000, '', 30, 'ebook', ''
+                    ($categories->count() > 0 ? ($categories->first()->id . ' - ' . $categories->first()->name) : '1'),
+                '', // Ebook không cần publisher
+                '', // Ebook có thể free
+                '', // Ebook không cần giá giảm
+                '', // Ebook không cần stock
+                'ebook',
+                'https://example.com/laravel-ebook.jpg'
             ]
         ];
 
@@ -134,10 +139,13 @@ class BookTemplateExport implements WithHeadings, WithEvents
                 $col = chr(65 + $colIndex);
                 $sheet->setCellValue($col . $row, $value);
             }
+            
+            // Style khác nhau cho paper và ebook
+            $fillColor = $rowData[8] == 'paper' ? 'E8F5E8' : 'E3F2FD';
             $sheet->getStyle('A' . $row . ':J' . $row)->applyFromArray([
                 'fill' => [
                     'fillType' => Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => 'E8F5E8']
+                    'startColor' => ['rgb' => $fillColor]
                 ],
                 'borders' => [
                     'allBorders' => [
@@ -163,7 +171,7 @@ class BookTemplateExport implements WithHeadings, WithEvents
 
         if ($publishers->count() > 0) {
             $publisherRange = '$R$1:$R$' . $publishers->count();
-            $this->addDropdownDirect($sheet, 'E', $publisherRange, 'Chọn nhà xuất bản từ danh sách');
+            $this->addDropdownDirect($sheet, 'E', $publisherRange, 'Chọn nhà xuất bản (chỉ cần nếu là sách giấy)');
         }
 
         $this->addDropdownDirect($sheet, 'I', '$S$1:$S$2', 'Chọn: paper hoặc ebook');
@@ -192,42 +200,58 @@ class BookTemplateExport implements WithHeadings, WithEvents
     private function addInstructions($sheet, $authors, $categories, $publishers)
     {
         $instructions = [
-            'HƯỚNG DẪN SỬ DỤNG:',
+            '📚 HƯỚNG DẪN SỬ DỤNG TEMPLATE IMPORT:',
             '',
-            '1. Các trường có dấu (*) là bắt buộc',
-            '2. Chọn Tác giả, Thể loại, NXB từ dropdown',
-            '3. Sau khi chọn, chỉ lấy số ID đầu tiên',
-            '4. VD: "1 - Nguyễn Văn A" → chỉ lấy "1"',
-            '5. Giá phải là số, không có ký tự đặc biệt',
-            '6. Loại sách: "paper" hoặc "ebook"',
-            '7. URL ảnh bìa là tùy chọn',
+            '🔴 TRƯỜNG BẮT BUỘC:',
+            '• Tất cả: Tên sách, ID Tác giả, ID Thể loại, Loại sách',
+            '• Sách giấy: + ID Nhà xuất bản, Giá, Số lượng',
+            '• Ebook: Chỉ cần 4 trường bắt buộc ở trên',
             '',
-            'Lưu ý: Xóa 2 dòng mẫu trước khi import!',
+            '📝 CÁCH ĐIỀN:',
+            '1. Chọn loại sách trước: "paper" hoặc "ebook"',
+            '2. Chọn từ dropdown → chỉ lấy số ID đầu tiên',
+            '3. VD: "1 - Nguyễn Văn A" → nhập "1"',
             '',
-            '🔍 DEBUG INFO:',
-            'Authors: ' . $authors->count() . ' items',
-            'Categories: ' . $categories->count() . ' items',
-            'Publishers: ' . $publishers->count() . ' items'
+            '📋 QUY TẮC:',
+            '• Paper: Phải có đầy đủ thông tin bán hàng',
+            '• Ebook: Có thể để trống Publisher, Giá, Stock',
+            '• Giá = 0 có nghĩa là miễn phí',
+            '',
+            '⚠️ LƯU Ý:',
+            '• Xóa 2 dòng mẫu trước khi import!',
+            '• File chỉ chấp nhận .xlsx, .xls, .csv',
+            '• Tối đa 10MB',
+            '',
+            '🔍 THỐNG KÊ HỆ THỐNG:',
+            'Authors: ' . $authors->count() . ' tác giả',
+            'Categories: ' . $categories->count() . ' thể loại', 
+            'Publishers: ' . $publishers->count() . ' nhà xuất bản',
+            '',
+            '🎯 MẪU DỮ LIỆU:',
+            '• Dòng 2: Sách giấy (đầy đủ thông tin)',
+            '• Dòng 3: Ebook (chỉ thông tin cơ bản)'
         ];
 
         foreach ($instructions as $i => $instruction) {
             $row = $i + 1;
             $sheet->setCellValue('L' . $row, $instruction);
 
-            if ($i == 0) {
+            if (strpos($instruction, '📚') !== false) {
                 $sheet->getStyle('L' . $row)->applyFromArray([
-                    'font' => ['bold' => true, 'color' => ['rgb' => '2E7D32'], 'size' => 12]
+                    'font' => ['bold' => true, 'color' => ['rgb' => '1976D2'], 'size' => 12]
                 ]);
-            } elseif (strpos($instruction, '🔍 DEBUG') !== false) {
+            } elseif (strpos($instruction, '🔴') !== false || strpos($instruction, '📝') !== false || 
+                     strpos($instruction, '📋') !== false || strpos($instruction, '⚠️') !== false ||
+                     strpos($instruction, '🔍') !== false || strpos($instruction, '🎯') !== false) {
                 $sheet->getStyle('L' . $row)->applyFromArray([
-                    'font' => ['bold' => true, 'color' => ['rgb' => 'FF5722'], 'size' => 10]
+                    'font' => ['bold' => true, 'color' => ['rgb' => 'D32F2F'], 'size' => 10]
                 ]);
             } else {
                 $sheet->getStyle('L' . $row)->applyFromArray([
-                    'font' => ['size' => 10, 'color' => ['rgb' => '424242']]
+                    'font' => ['size' => 9, 'color' => ['rgb' => '424242']]
                 ]);
             }
         }
-        $sheet->getColumnDimension('L')->setWidth(40);
+        $sheet->getColumnDimension('L')->setWidth(45);
     }
 }

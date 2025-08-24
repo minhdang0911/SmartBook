@@ -30,6 +30,8 @@ use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CommentReactionController;
 use App\Http\Controllers\PostLikeController;
 use App\Http\Controllers\Api\ChapterApiController;
+use App\Http\Controllers\GroupOrderController;
+
 
 
 Route::get('/books/available-for-event', [EventController::class, 'getAvailableBooks']);
@@ -47,52 +49,79 @@ Route::prefix('comments')->group(function () {
     Route::patch('/{id}', [CommentController::class, 'destroy']);
 });
 
+
+
+Route::prefix('group-orders')->group(function () {
+    // public xem phòng
+    Route::get('/{token}', [GroupOrderController::class, 'show']);
+
+    // các route dưới đây BẮT BUỘC Bearer token
+    Route::middleware('auth:api')->group(function () {
+        Route::post('/', [GroupOrderController::class, 'store']); // tạo phòng
+        Route::post('/{token}/join', [GroupOrderController::class, 'join']); // join bằng link
+
+        // items
+        Route::post('/{token}/items', [GroupOrderController::class, 'addItem']); // thêm món
+        Route::delete('/{token}/items/{id}', [GroupOrderController::class, 'removeItem']); // xoá 1 món
+        Route::delete('/{token}/items', [GroupOrderController::class, 'removeItems']); // xoá nhiều món (body: { ids: [] })
+        Route::patch('/{token}/items/{id}/quantity', [GroupOrderController::class, 'updateItemQuantity']); // update qty
+
+        // group actions
+        Route::post('/{token}/lock', [GroupOrderController::class, 'lock']); // khoá
+        Route::post('/{token}/settlements/recalc', [GroupOrderController::class, 'recalc']); // chia tiền
+        Route::post('/{token}/checkout', [GroupOrderController::class, 'checkout']); // tạo Order thật
+
+        // members
+        Route::delete('/{token}/users/{userId?}', [GroupOrderController::class, 'kickOrLeaveByUser']); // kick/leave
+    });
+});
+
 // Thêm vào routes/web.php trong nhóm admin routes
 
 Route::prefix('admin')->name('admin.')->group(function () {
-    
+
     // Existing chapter routes
     Route::resource('chapters', ChapterController::class);
-    
+
     // Additional chapter routes
     Route::get('books/{bookId}/chapters/orders', [ChapterController::class, 'getChapterOrders'])
-         ->name('books.chapters.orders');
-    
-        Route::get('books/{bookId}/chapters', [ChapterController::class, 'getChaptersByBookId'])
-            ->name('books.chapters.list');
-    
-    Route::delete('chapters/bulk-delete', [ChapterController::class, 'bulkDelete'])
-         ->name('chapters.bulk-delete');
+        ->name('books.chapters.orders');
 
-         Route::get('books/{bookId}/chapters/{chapterId}/detail', [ChapterController::class, 'getChapterDetail'])
-     ->name('books.chapters.detail');
-    
+    Route::get('books/{bookId}/chapters', [ChapterController::class, 'getChaptersByBookId'])
+        ->name('books.chapters.list');
+
+    Route::delete('chapters/bulk-delete', [ChapterController::class, 'bulkDelete'])
+        ->name('chapters.bulk-delete');
+
+    Route::get('books/{bookId}/chapters/{chapterId}/detail', [ChapterController::class, 'getChapterDetail'])
+        ->name('books.chapters.detail');
+
 });
 
 // // API routes (thêm vào routes/api.php)
 // Route::prefix('v1')->name('api.')->group(function () {
-    
+
 // //     // Chapter API routes
 // //     Route::prefix('chapters')->group(function () {
 // //         Route::get('/book/{bookId}', [ChapterApiController::class, 'getChaptersByBook'])
 // //              ->name('chapters.by-book');
-        
+
 // //         Route::get('/{id}', [ChapterApiController::class, 'getChapter'])
 // //              ->name('chapters.show');
-        
+
 // //         Route::get('/', [ChapterApiController::class, 'searchChapters'])
 // //              ->name('chapters.search');
 // //     });
-    
+
 //     // Book API routes
 //     Route::prefix('books')->group(function () {
 //         Route::get('/with-chapters', [ChapterApiController::class, 'getBooksWithChapters'])
 //              ->name('books.with-chapters');
-        
+
 //         Route::get('/{bookSlug}/chapters/{chapterSlug}', [ChapterApiController::class, 'getChapterBySlug'])
 //              ->name('books.chapters.by-slug');
 //     });
-    
+
 // });
 
 Route::prefix('comments')->group(function () {
@@ -121,7 +150,7 @@ Route::prefix('books')->group(function () {
     Route::post('/import/preview', [BookController::class, 'previewImport']);
     Route::get('/import/stats', [BookController::class, 'getImportStats']);
 });
- 
+
 
 // Bài viết
 Route::prefix('posts')->group(function () {
@@ -144,9 +173,9 @@ Route::prefix('topics')->group(function () {
 
 // Thông tin người dùng
 Route::prefix('user')->group(function () {
-Route::post('/change-password', [UserProfileController::class, 'updatePassword']);
-Route::put('/profile', [UserProfileController::class, 'update']);
-Route::get('/profile', [UserProfileController::class, 'profile']);
+    Route::post('/change-password', [UserProfileController::class, 'updatePassword']);
+    Route::put('/profile', [UserProfileController::class, 'update']);
+    Route::get('/profile', [UserProfileController::class, 'profile']);
 });
 
 
@@ -268,8 +297,8 @@ Route::prefix('coupons')->group(function () {
 
 
 Route::prefix('publisher')->group(function () {
-        Route::get('/', [PublisherController::class, 'apiIndex']);
-    });
+    Route::get('/', [PublisherController::class, 'apiIndex']);
+});
 // Mã giảm giá
 
 // Route lấy danh sách mã giảm giá cho người dùng
@@ -739,11 +768,11 @@ Route::prefix('revenue')->group(function () {
     Route::get('/by-status', [RevenueController::class, 'getRevenueByStatus']);
     Route::get('/by-payment', [RevenueController::class, 'getRevenueByPaymentMethod']);
     Route::get('/dashboard', [RevenueController::class, 'getDashboard']);
-     Route::get('/top-orders',   [RevenueController::class, 'getTopOrders']);
-    Route::get('/by-month',     [RevenueController::class, 'getRevenueByMonthInYear']);
+    Route::get('/top-orders', [RevenueController::class, 'getTopOrders']);
+    Route::get('/by-month', [RevenueController::class, 'getRevenueByMonthInYear']);
     // Route riêng cho từng quý
     Route::get('/quarter', [RevenueController::class, 'getQuarterDetail']);
-    
+
 });
 
 
@@ -755,26 +784,26 @@ Route::prefix('revenue')->group(function () {
 //     Route::put('/books/{book_id}', [EventProductController::class, 'update']);
 //     Route::delete('/books/{book_id}', [EventProductController::class, 'destroy']);
 // });
-    
+
 
 
 
 Route::prefix('events')->group(function () {
     // Lấy danh sách tất cả event
     Route::get('/', [EventController::class, 'getall']);
-    
+
     // Tạo event mới
     Route::post('/', [EventController::class, 'store']);
-    
+
     // Lấy chi tiết 1 event
     Route::get('/{event_id}', [EventController::class, 'show']);
-    
+
     // Cập nhật event
     Route::put('/{event_id}', [EventController::class, 'update']);
-    
+
     // Xoá event
     Route::delete('/{event_id}', [EventController::class, 'destroy']);
-    
+
     // ✅ QUAN TRỌNG: Thêm/xóa sách khỏi event - SỬ DỤNG EventController
     Route::post('/{event_id}/books', [EventController::class, 'addBookToEvent']);
     Route::delete('/{event_id}/books/{book_id}', [EventController::class, 'removeBookFromEvent']);

@@ -15,7 +15,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\BookController;
-use App\Http\Controllers\Admin\BookImageController;
+use App\Http\Controllers\BookImageController;
 use App\Http\Controllers\Admin\ImageUploadController;
 use App\Http\Controllers\Admin\PostController;
 use App\Http\Controllers\Admin\TopicController;

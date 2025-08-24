@@ -30,6 +30,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         // nếu DB có 2 cột này thì để luôn:
         'blocked_until',
         'block_reason',
+        'is_group_cart',
     ];
 
     protected $hidden = [
@@ -47,6 +48,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
             'blocked_until'     => 'datetime',
             'date_of_birth'     => 'date:Y-m-d',
             'password'          => 'hashed',
+            'is_group_cart'     => 'boolean',
         ];
     }
 
