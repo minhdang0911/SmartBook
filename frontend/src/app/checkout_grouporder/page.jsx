@@ -85,7 +85,7 @@ const GroupCheckoutPageContent = () => {
     // Fetch group order data
     const fetchGroupOrderData = async (token) => {
         try {
-            const response = await axios.get(`http://localhost:8000/api/group-orders/${token}`);
+            const response = await axios.get(`https://smartbook.io.vn/api/group-orders/${token}`);
             setGroupOrderData(response.data);
             console.log('Group order data:', response.data);
         } catch (error) {
@@ -228,7 +228,7 @@ const GroupCheckoutPageContent = () => {
 
     const createZaloPayOrder = async (amount) => {
         try {
-            const response = await axios.post('http://localhost:8000/api/orders/zalopay/create-order', {
+            const response = await axios.post('https://smartbook.io.vn/api/orders/zalopay/create-order', {
                 amount: amount,
                 description: 'Thanh toán đơn hàng nhóm',
             });
@@ -316,7 +316,7 @@ const GroupCheckoutPageContent = () => {
             if (paymentMethod === 'cod') {
                 console.log('🛒 [COD] Processing Group Order COD checkout');
 
-                const response = await fetch(`http://localhost:8000/api/group-orders/${groupToken}/checkout`, {
+                const response = await fetch(`https://smartbook.io.vn/api/group-orders/${groupToken}/checkout`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -405,7 +405,7 @@ const GroupCheckoutPageContent = () => {
                             }
 
                             const statusResponse = await axios.post(
-                                'http://localhost:8000/api/orders/zalopay/check-status',
+                                'https://smartbook.io.vn/api/orders/zalopay/check-status',
                                 {
                                     app_trans_id: appTransId,
                                 },
@@ -432,7 +432,7 @@ const GroupCheckoutPageContent = () => {
                                     const storedGroupToken = storedPaymentInfo.paymentState?.groupToken || groupToken;
 
                                     const orderResponse = await fetch(
-                                        `http://localhost:8000/api/group-orders/${storedGroupToken}/checkout`,
+                                        `https://smartbook.io.vn/api/group-orders/${storedGroupToken}/checkout`,
                                         {
                                             method: 'POST',
                                             headers: {

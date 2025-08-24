@@ -116,7 +116,7 @@ const CartGroup = () => {
                 throw new Error('Không tìm thấy token giỏ hàng nhóm. Vui lòng tạo giỏ hàng nhóm mới.');
             }
 
-            const response = await fetch(`http://localhost:8000/api/group-orders/${groupToken}`, {
+            const response = await fetch(`https://smartbook.io.vn/api/group-orders/${groupToken}`, {
                 method: 'GET',
                 headers: getAuthHeaders(),
                 credentials: 'include',
@@ -232,7 +232,7 @@ const CartGroup = () => {
             const token = groupData?.join_token || getGroupToken();
 
             // call API delta
-            const res = await fetch(`http://localhost:8000/api/group-orders/${token}/items/${itemId}/quantity`, {
+            const res = await fetch(`https://smartbook.io.vn/api/group-orders/${token}/items/${itemId}/quantity`, {
                 method: 'PATCH',
                 headers: getAuthHeaders(),
                 credentials: 'include',
@@ -268,7 +268,7 @@ const CartGroup = () => {
             setActionLoading((s) => ({ ...s, deleteItem: { ...s.deleteItem, [itemId]: true } }));
             const token = groupData?.join_token || getGroupToken();
 
-            const res = await fetch(`http://localhost:8000/api/group-orders/${token}/items/${itemId}`, {
+            const res = await fetch(`https://smartbook.io.vn/api/group-orders/${token}/items/${itemId}`, {
                 method: 'DELETE',
                 headers: getAuthHeaders(),
                 credentials: 'include',
@@ -297,7 +297,7 @@ const CartGroup = () => {
             setActionLoading((s) => ({ ...s, lock: true }));
             const token = groupData?.join_token || getGroupToken();
 
-            const res = await fetch(`http://localhost:8000/api/group-orders/${token}/lock`, {
+            const res = await fetch(`https://smartbook.io.vn/api/group-orders/${token}/lock`, {
                 method: 'POST',
                 headers: getAuthHeaders(),
                 credentials: 'include',
@@ -323,7 +323,7 @@ const CartGroup = () => {
             setActionLoading((s) => ({ ...s, leave: true }));
             const token = groupData?.join_token || getGroupToken();
 
-            const res = await fetch(`http://localhost:8000/api/group-orders/${token}/users`, {
+            const res = await fetch(`https://smartbook.io.vn/api/group-orders/${token}/users`, {
                 method: 'DELETE',
                 headers: getAuthHeaders(),
                 credentials: 'include',
@@ -355,7 +355,7 @@ const CartGroup = () => {
                 try {
                     setActionLoading((s) => ({ ...s, kick: { ...s.kick, [userId]: true } }));
                     const token = groupData?.join_token || getGroupToken();
-                    const res = await fetch(`http://localhost:8000/api/group-orders/${token}/users/${userId}`, {
+                    const res = await fetch(`https://smartbook.io.vn/api/group-orders/${token}/users/${userId}`, {
                         method: 'DELETE',
                         headers: getAuthHeaders(),
                         credentials: 'include',
