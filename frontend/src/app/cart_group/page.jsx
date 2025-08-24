@@ -36,8 +36,10 @@ import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import '../cart/Cart.css'; // Reuse the same CSS file
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 const { confirm } = Modal;
+
+const POLL_INTERVAL_MS = 5000; // 5s/poll
 
 const CartGroup = () => {
     const router = useRouter();
@@ -61,7 +63,7 @@ const CartGroup = () => {
         itemTitle: '',
     });
 
-    // helpers
+    // headers + tokens
     const getAuthHeaders = () => {
         const authToken =
             localStorage.getItem('auth_token') || localStorage.getItem('access_token') || localStorage.getItem('token');
@@ -76,9 +78,8 @@ const CartGroup = () => {
 
     const getGroupToken = () => localStorage.getItem('group_cart_token');
 
-    // try to detect current user id (tùy backend của m — ưu tiên localStorage để nhanh)
+    // current user id
     const loadCurrentUserId = async () => {
-        // 1) thử lấy từ localStorage
         const localId =
             localStorage.getItem('user_id') || localStorage.getItem('uid') || localStorage.getItem('auth_user_id');
 
@@ -87,7 +88,6 @@ const CartGroup = () => {
             return;
         }
 
-        // 2) fallback gọi /api/me (nếu backend có)
         try {
             const res = await fetch('/api/me', {
                 method: 'GET',
@@ -100,20 +100,18 @@ const CartGroup = () => {
                     setCurrentUserId(String(me.id ?? me.user.id));
                 }
             }
-        } catch (_) {
-            // bỏ qua, không có cũng không sao
+        } catch {
+            // kệ
         }
     };
 
-    // Fetch group data from API using token from localStorage
-    const fetchGroupData = async () => {
+    // fetch group (silent = không bật spinner) — dùng cho polling & update
+    const fetchGroupData = async ({ silent = false } = {}) => {
         try {
-            setLoading(true);
+            if (!silent) setLoading(true);
             setError(null);
 
-            // Get token from localStorage
             const groupToken = getGroupToken();
-
             if (!groupToken) {
                 throw new Error('Không tìm thấy token giỏ hàng nhóm. Vui lòng tạo giỏ hàng nhóm mới.');
             }
@@ -145,7 +143,7 @@ const CartGroup = () => {
 
             const data = await response.json();
 
-            // Calculate total items from by_member
+            // build membersWithItems + totals từ by_member
             let totalItems = 0;
             const membersWithItems = [];
 
@@ -155,21 +153,18 @@ const CartGroup = () => {
                     if (memberData.items) {
                         totalItems += memberData.items.reduce((sum, item) => sum + item.qty, 0);
                     }
-
-                    // Find member info and add items data
                     const memberInfo = data.members?.find((m) => String(m.id) === String(memberId));
                     if (memberInfo) {
                         membersWithItems.push({
                             ...memberInfo,
                             subtotal: memberData.subtotal ?? 0,
                             items: memberData.items ?? [],
-                            itemCount: memberData.items ? memberData.items.reduce((sum, item) => sum + item.qty, 0) : 0,
+                            itemCount: memberData.items ? memberData.items.reduce((s, it) => s + it.qty, 0) : 0,
                         });
                     }
                 });
             }
 
-            // Transform API response to match component structure
             const transformedData = {
                 id: getGroupToken(),
                 join_token: getGroupToken(),
@@ -188,125 +183,115 @@ const CartGroup = () => {
 
             setGroupData(transformedData);
             setJoinUrl(data.join_url);
-        } catch (error) {
-            console.error('Error fetching group data:', error);
-            setError(error.message);
+        } catch (err) {
+            console.error('Error fetching group data:', err);
+            if (!silent) setError(err.message);
 
-            if (error.message.includes('token')) {
-                toast.error(error.message);
-                setTimeout(() => {
-                    router.push('/cart');
-                }, 3000);
-            } else if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-                toast.error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
-            } else {
-                toast.error(error.message || 'Có lỗi xảy ra khi tải giỏ hàng nhóm');
+            if (!silent) {
+                if (err.message.includes('token')) {
+                    toast.error(err.message);
+                    setTimeout(() => router.push('/cart'), 3000);
+                } else if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
+                    toast.error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
+                } else {
+                    toast.error(err.message || 'Có lỗi xảy ra khi tải giỏ hàng nhóm');
+                }
             }
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     };
 
-    // Calculate time remaining
+    const handleRefresh = () => fetchGroupData({ silent: false });
+
+    // time remaining
     const updateTimeRemaining = () => {
         if (!groupData?.expires_at) return;
-
         const now = new Date();
         const expiry = new Date(groupData.expires_at);
         const diff = expiry.getTime() - now.getTime();
-
         if (diff > 0) {
             const hours = Math.floor(diff / (1000 * 60 * 60));
             const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
             setTimeRemaining(`${hours}h ${minutes}m`);
-        } else {
-            setTimeRemaining('Đã hết hạn');
-        }
+        } else setTimeRemaining('Đã hết hạn');
     };
 
-    // Format price
-    const formatPrice = (price) => {
-        return new Intl.NumberFormat('vi-VN', {
+    const formatPrice = (price) =>
+        new Intl.NumberFormat('vi-VN', {
             style: 'currency',
             currency: 'VND',
             minimumFractionDigits: 0,
             maximumFractionDigits: 0,
         }).format(price ?? 0);
-    };
 
-    // NEW: Update item quantity
+    // === GIỮ NGUYÊN LOGIC CỦA M: tăng/giảm & xoá ===
     const handleUpdateQuantity = async (itemId, quantityChange) => {
         try {
             setActionLoading((s) => ({ ...s, quantityUpdate: { ...s.quantityUpdate, [itemId]: true } }));
             const token = groupData?.join_token || getGroupToken();
 
-            const response = await fetch(`http://localhost:8000/api/group-orders/${token}/items/${itemId}/quantity`, {
+            // call API delta
+            const res = await fetch(`http://localhost:8000/api/group-orders/${token}/items/${itemId}/quantity`, {
                 method: 'PATCH',
                 headers: getAuthHeaders(),
                 credentials: 'include',
-                body: JSON.stringify({
-                    quantity: quantityChange,
-                }),
+                body: JSON.stringify({ quantity: quantityChange }),
             });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(errorText || 'Không thể cập nhật số lượng');
+            if (!res.ok) {
+                const t = await res.text();
+                throw new Error(t || 'Không thể cập nhật số lượng');
             }
+            const result = await res.json();
+            if (!result.success) throw new Error(result.message || 'Cập nhật thất bại');
 
-            const result = await response.json();
+            message.success('Đã cập nhật số lượng thành công');
 
-            if (result.success) {
-                message.success('Đã cập nhật số lượng thành công');
-                await fetchGroupData(); // Refresh data
-            } else {
-                throw new Error(result.message || 'Cập nhật thất bại');
-            }
-        } catch (error) {
-            console.error('Error updating quantity:', error);
-            toast.error(error.message || 'Có lỗi xảy ra khi cập nhật số lượng');
+            // refresh ẨN, không bật spinner
+            await fetchGroupData({ silent: true });
+        } catch (e) {
+            console.error('Error updating quantity:', e);
+            toast.error(e.message || 'Có lỗi xảy ra khi cập nhật số lượng');
         } finally {
             setActionLoading((s) => ({ ...s, quantityUpdate: { ...s.quantityUpdate, [itemId]: false } }));
         }
     };
 
-    // NEW: Delete item
+    const openDeleteConfirm = (itemId, itemTitle) => {
+        setDeleteConfirm({ open: true, itemId, itemTitle });
+    };
+
     const handleDeleteConfirmed = async (itemId, itemTitle) => {
         if (!itemId) return;
-
         try {
-            setActionLoading((s) => ({
-                ...s,
-                deleteItem: { ...s.deleteItem, [itemId]: true },
-            }));
-
+            setActionLoading((s) => ({ ...s, deleteItem: { ...s.deleteItem, [itemId]: true } }));
             const token = groupData?.join_token || getGroupToken();
 
-            const response = await fetch(`http://localhost:8000/api/group-orders/${token}/items/${itemId}`, {
+            const res = await fetch(`http://localhost:8000/api/group-orders/${token}/items/${itemId}`, {
                 method: 'DELETE',
                 headers: getAuthHeaders(),
                 credentials: 'include',
             });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(errorText || 'Không thể xóa sản phẩm');
+            if (!res.ok) {
+                const t = await res.text();
+                throw new Error(t || 'Không thể xóa sản phẩm');
             }
 
             message.success(`Đã xóa sản phẩm "${itemTitle}" thành công`);
-            await fetchGroupData();
-        } catch (error) {
-            console.error('Error deleting item:', error);
-            toast.error(error.message || 'Có lỗi xảy ra khi xóa sản phẩm');
+            // refresh ẨN
+            await fetchGroupData({ silent: true });
+        } catch (e) {
+            console.error('Error deleting item:', e);
+            toast.error(e.message || 'Có lỗi xảy ra khi xóa sản phẩm');
         } finally {
-            setActionLoading((s) => ({
-                ...s,
-                deleteItem: { ...s.deleteItem, [itemId]: false },
-            }));
+            setActionLoading((s) => ({ ...s, deleteItem: { ...s.deleteItem, [itemId]: false } }));
+            setDeleteConfirm({ open: false, itemId: null, itemTitle: '' });
         }
     };
 
-    // ACTIONS (existing)
+    // lock / leave / kick
     const handleLockGroup = async () => {
         try {
             setActionLoading((s) => ({ ...s, lock: true }));
@@ -324,12 +309,12 @@ const CartGroup = () => {
             }
 
             toast.success('Đã khóa nhóm (lock) thành công');
-            await fetchGroupData();
+            await fetchGroupData({ silent: false });
         } catch (e) {
             toast.error(e.message);
         } finally {
             setActionLoading((s) => ({ ...s, lock: false }));
-            setShowLockConfirm(false); // đóng modal
+            setShowLockConfirm(false);
         }
     };
 
@@ -380,7 +365,7 @@ const CartGroup = () => {
                         throw new Error(t || 'Không thể kick thành viên');
                     }
                     toast.success(`Đã kick thành viên ${userId}`);
-                    await fetchGroupData();
+                    await fetchGroupData({ silent: true });
                 } catch (e) {
                     toast.error(e.message);
                 } finally {
@@ -394,12 +379,8 @@ const CartGroup = () => {
         if (joinUrl) {
             navigator.clipboard
                 .writeText(joinUrl)
-                .then(() => {
-                    message.success('Đã copy đường link!');
-                })
-                .catch(() => {
-                    message.error('Không thể copy đường link');
-                });
+                .then(() => message.success('Đã copy đường link!'))
+                .catch(() => message.error('Không thể copy đường link'));
         }
     };
 
@@ -411,33 +392,42 @@ const CartGroup = () => {
                     text: 'Tham gia cùng tôi mua hàng với giá tốt hơn!',
                     url: joinUrl,
                 })
-                .catch(() => {
-                    handleCopyJoinUrl();
-                });
-        } else {
-            handleCopyJoinUrl();
-        }
+                .catch(() => handleCopyJoinUrl());
+        } else handleCopyJoinUrl();
     };
 
-    const handleBackToCart = () => {
-        router.push('/cart');
-    };
+    const handleBackToCart = () => router.push('/cart');
+    const handleAddProducts = () => router.push('/buybooks');
 
-    const handleAddProducts = () => {
-        router.push('/buybooks');
-    };
-
-    const handleRefresh = () => {
-        fetchGroupData();
-    };
-
-    // Load group data on component mount
+    // mount: lấy user + fetch lần đầu
     useEffect(() => {
         loadCurrentUserId();
-        fetchGroupData();
+        fetchGroupData({ silent: false });
     }, []);
 
-    // Update time remaining periodically
+    // polling ẩn 5s/lần bằng setTimeout (không rung spinner)
+    useEffect(() => {
+        let cancelled = false;
+        let timer = null;
+
+        const tick = async () => {
+            if (cancelled) return;
+            await fetchGroupData({ silent: true });
+            if (!cancelled) {
+                timer = setTimeout(tick, POLL_INTERVAL_MS);
+            }
+        };
+
+        // chờ 5s rồi poll tiếp cho đỡ dồn
+        timer = setTimeout(tick, POLL_INTERVAL_MS);
+
+        return () => {
+            cancelled = true;
+            if (timer) clearTimeout(timer);
+        };
+    }, []);
+
+    // update time remaining mỗi phút
     useEffect(() => {
         if (groupData?.expires_at) {
             updateTimeRemaining();
@@ -446,7 +436,7 @@ const CartGroup = () => {
         }
     }, [groupData?.expires_at]);
 
-    // Loading state
+    // UI states
     if (loading) {
         return (
             <div className="cart-loading" style={{ textAlign: 'center', padding: '100px 0' }}>
@@ -458,7 +448,6 @@ const CartGroup = () => {
         );
     }
 
-    // Error state
     if (error) {
         return (
             <div className="cart-container">
@@ -490,7 +479,6 @@ const CartGroup = () => {
         );
     }
 
-    // No data state
     if (!groupData) {
         return (
             <div className="cart-container">
@@ -526,7 +514,6 @@ const CartGroup = () => {
                     <Button size="small" onClick={handleRefresh} loading={loading}>
                         Làm mới
                     </Button>
-                    {/* Khóa nhóm */}
                     <Button
                         size="small"
                         icon={<LockOutlined />}
@@ -537,7 +524,6 @@ const CartGroup = () => {
                         Khóa nhóm
                     </Button>
 
-                    {/* Chủ nhóm có thể thoát (out) luôn qua API chung */}
                     {isOwner && (
                         <Button
                             size="small"
@@ -554,7 +540,7 @@ const CartGroup = () => {
 
             <Row gutter={24}>
                 <Col xs={24} lg={16}>
-                    {/* Group Info Card */}
+                    {/* Group Info */}
                     <Card
                         className="cart-items-card"
                         title={
@@ -614,10 +600,7 @@ const CartGroup = () => {
                                     <Input
                                         value={joinUrl}
                                         readOnly
-                                        style={{
-                                            width: 'calc(100% - 160px)',
-                                            backgroundColor: '#f6ffed',
-                                        }}
+                                        style={{ width: 'calc(100% - 160px)', backgroundColor: '#f6ffed' }}
                                     />
                                     <Button
                                         type="primary"
@@ -639,7 +622,7 @@ const CartGroup = () => {
                         </div>
                     </Card>
 
-                    {/* Members List Card with Items */}
+                    {/* Members + Items — GIỮ y chang chỗ tăng/giảm & xoá */}
                     <Card
                         className="cart-items-card"
                         title="Danh sách thành viên và sản phẩm"
@@ -648,7 +631,6 @@ const CartGroup = () => {
                         <div className="cart-items-list">
                             {groupData.membersWithItems.map((member) => {
                                 const isMemberOwner = member.role === 'owner';
-                                const isSelf = currentUserId && String(member.user_id) === String(currentUserId);
 
                                 return (
                                     <div
@@ -703,29 +685,29 @@ const CartGroup = () => {
                                                 marginBottom: member.items?.length ? 12 : 0,
                                             }}
                                         >
-                                            {isSelf && (
-                                                <Button
-                                                    danger
-                                                    icon={<LogoutOutlined />}
-                                                    onClick={handleLeaveGroup}
-                                                    loading={actionLoading.leave}
-                                                >
-                                                    Thoát nhóm
-                                                </Button>
-                                            )}
-                                            {isOwner && !isMemberOwner && !isSelf && (
-                                                <Button
-                                                    danger
-                                                    icon={<DeleteOutlined />}
-                                                    onClick={() => handleKickMember(member.user_id)}
-                                                    loading={!!actionLoading.kick[member.user_id]}
-                                                >
-                                                    Kick
-                                                </Button>
-                                            )}
+                                            <Button
+                                                danger
+                                                icon={<LogoutOutlined />}
+                                                onClick={handleLeaveGroup}
+                                                loading={actionLoading.leave}
+                                            >
+                                                Thoát nhóm
+                                            </Button>
+                                            {/* kick cho owner, giữ nguyên kiểu m muốn */}
+                                            {String(groupData.owner_user_id) === String(currentUserId) &&
+                                                member.role !== 'owner' && (
+                                                    <Button
+                                                        danger
+                                                        icon={<DeleteOutlined />}
+                                                        onClick={() => handleKickMember(member.user_id)}
+                                                        loading={!!actionLoading.kick[member.user_id]}
+                                                    >
+                                                        Kick
+                                                    </Button>
+                                                )}
                                         </div>
 
-                                        {/* Member's Items + ENHANCED with quantity controls */}
+                                        {/* Member's Items + GIỮ CTRL tăng/giảm & xoá ở đây */}
                                         {member.items && member.items.length > 0 && (
                                             <div style={{ paddingLeft: '36px', marginTop: '12px' }}>
                                                 <Text
@@ -771,9 +753,7 @@ const CartGroup = () => {
                                                                             border: '2px solid #e8e8e8',
                                                                             boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                                                                         }}
-                                                                        preview={{
-                                                                            mask: 'Xem ảnh',
-                                                                        }}
+                                                                        preview={{ mask: 'Xem ảnh' }}
                                                                         fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
                                                                     />
                                                                 </div>
@@ -822,8 +802,7 @@ const CartGroup = () => {
                                                                     </Text>
                                                                 </div>
 
-                                                                {/* QUANTITY CONTROLS - Only show for current user's items */}
-
+                                                                {/* GIỮ NGUYÊN: tăng/giảm & xoá luôn hiển thị */}
                                                                 <div
                                                                     style={{
                                                                         display: 'flex',
@@ -833,7 +812,7 @@ const CartGroup = () => {
                                                                     }}
                                                                 >
                                                                     <Text type="secondary" style={{ fontSize: '12px' }}>
-                                                                        Số lượng1:
+                                                                        Số lượng:
                                                                     </Text>
                                                                     <Button
                                                                         size="small"
@@ -858,29 +837,17 @@ const CartGroup = () => {
                                                                         onClick={() => handleUpdateQuantity(item.id, 1)}
                                                                         loading={actionLoading.quantityUpdate[item.id]}
                                                                     />
-                                                                        <Button
-                                                                            size="small"
-                                                                            danger
-                                                                            icon={<DeleteOutlined />}
-                                                                            onClick={() =>
-                                                                                handleDeleteConfirmed(item.id, item.title)
-                                                                            }
-                                                                            loading={actionLoading.deleteItem[item.id]}
-                                                                            title="Xóa sản phẩm1"
-                                                                        />
+                                                                    <Button
+                                                                        size="small"
+                                                                        danger
+                                                                        icon={<DeleteOutlined />}
+                                                                        onClick={() =>
+                                                                            openDeleteConfirm(item.id, item.title)
+                                                                        }
+                                                                        loading={actionLoading.deleteItem[item.id]}
+                                                                        title="Xóa sản phẩm"
+                                                                    />
                                                                 </div>
-
-                                                                {/* Show quantity for non-editable items */}
-                                                                {(!isSelf || groupData.status !== 'open') && (
-                                                                    <div style={{ marginBottom: '4px' }}>
-                                                                        <Text
-                                                                            type="secondary"
-                                                                            style={{ fontSize: '12px' }}
-                                                                        >
-                                                                            Số lượng: <Text strong>{item.qty}</Text>
-                                                                        </Text>
-                                                                    </div>
-                                                                )}
                                                             </div>
                                                         </div>
 
@@ -912,7 +879,7 @@ const CartGroup = () => {
                 </Col>
 
                 <Col xs={24} lg={8}>
-                    {/* Summary Card */}
+                    {/* Summary */}
                     <Card className="cart-summary-card" title="Tổng kết nhóm">
                         <div className="cart-summary">
                             {groupData.status === 'open' ? (
@@ -986,8 +953,7 @@ const CartGroup = () => {
                                             <Button block onClick={handleShareGroup} icon={<UserAddOutlined />}>
                                                 Mời thêm bạn bè
                                             </Button>
-                                            {/* Nút thoát nhóm nhanh cho bất kỳ ai */}
-                                            {!isOwner && (
+                                            {String(groupData.owner_user_id) !== String(currentUserId) && (
                                                 <Button
                                                     block
                                                     danger
@@ -1005,7 +971,7 @@ const CartGroup = () => {
                         </div>
                     </Card>
 
-                    {/* Group Statistics Card */}
+                    {/* Stats */}
                     <Card title="Thống kê nhóm" style={{ marginTop: '16px' }}>
                         <Space direction="vertical" style={{ width: '100%' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -1025,6 +991,7 @@ const CartGroup = () => {
                 </Col>
             </Row>
 
+            {/* Lock confirm */}
             <Modal
                 title="Khóa nhóm & dọn item?"
                 open={showLockConfirm}
@@ -1037,15 +1004,16 @@ const CartGroup = () => {
                 <p>Thao tác này sẽ gọi API lock phòng và xóa item theo luật của phòng. Bạn chắc chưa?</p>
             </Modal>
 
+            {/* Delete confirm — FIX onOk truyền id/title */}
             <Modal
                 title="Xóa sản phẩm?"
                 open={deleteConfirm.open}
-                onOk={() => handleDeleteConfirmed()}
+                onOk={() => handleDeleteConfirmed(deleteConfirm.itemId, deleteConfirm.itemTitle)}
                 onCancel={() => setDeleteConfirm({ open: false, itemId: null, itemTitle: '' })}
                 okText="Xóa"
                 okButtonProps={{ danger: true }}
                 cancelText="Hủy"
-                confirmLoading={deleteConfirm.itemId && actionLoading.deleteItem?.[deleteConfirm.itemId]}
+                confirmLoading={!!deleteConfirm.itemId && !!actionLoading.deleteItem?.[deleteConfirm.itemId]}
             >
                 <p>
                     Bạn có chắc muốn xóa <b>{deleteConfirm.itemTitle}</b> khỏi giỏ hàng nhóm?
