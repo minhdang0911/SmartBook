@@ -24,72 +24,46 @@ class TopicController extends Controller
 
     public function store(Request $request)
     {
+        // Generate slug trước để validate
+        $slug = $request->slug ? Str::slug($request->slug) : Str::slug($request->name);
+        $request->merge(['slug' => $slug]);
+
         $request->validate([
-            'name' => 'required|max:100',
+            'name' => 'required|max:100|unique:topics,name',
+            'slug' => 'required|unique:topics,slug',
         ], [
             'name.required' => 'Vui lòng nhập tên chủ đề.',
             'name.max' => 'Tên chủ đề không được vượt quá 100 ký tự.',
+            'name.unique' => 'Tên chủ đề đã tồn tại.',
+            'slug.unique' => 'Slug đã tồn tại.',
         ]);
-
-        $slug = $request->slug ? Str::slug($request->slug) : Str::slug($request->name);
-
-        // Check trùng slug
-        if (Topic::where('slug', $slug)->exists()) {
-            return redirect()->back()
-                ->withErrors(['name' => 'Slug đã tồn tại.'])
-                ->withInput()
-                ->with('_form', 'add');
-        }
-
-        // Check trùng tên
-        if (Topic::where('name', $request->name)->exists()) {
-            return redirect()->back()
-                ->withErrors(['name' => 'Tên chủ đề đã tồn tại.'])
-                ->withInput()
-                ->with('_form', 'add');
-        }
 
         Topic::create([
             'name' => $request->name,
-            'slug' => $slug,
+            'slug' => $request->slug,
         ]);
 
         return redirect()->back()->with('success', 'Thêm chủ đề thành công!');
     }
 
-
     public function update(Request $request, Topic $topic)
     {
+        $slug = $request->slug ? Str::slug($request->slug) : Str::slug($request->name);
+        $request->merge(['slug' => $slug]);
+
         $request->validate([
-            'name' => 'required|max:100',
+            'name' => 'required|max:100|unique:topics,name,' . $topic->id,
+            'slug' => 'required|unique:topics,slug,' . $topic->id,
         ], [
             'name.required' => 'Vui lòng nhập tên chủ đề.',
             'name.max' => 'Tên chủ đề không được vượt quá 100 ký tự.',
+            'name.unique' => 'Tên chủ đề đã tồn tại.',
+            'slug.unique' => 'Slug đã tồn tại.',
         ]);
-
-        $slug = $request->slug ? Str::slug($request->slug) : Str::slug($request->name);
-
-        // Check trùng slug
-        if (Topic::where('slug', $slug)->where('id', '!=', $topic->id)->exists()) {
-            return redirect()->back()
-                ->withErrors(['name' => 'Slug đã tồn tại.'])
-                ->withInput()
-                ->with('_form', 'edit')
-                ->with('_edit_id', $topic->id);
-        }
-
-        // Check trùng tên
-        if (Topic::where('name', $request->name)->where('id', '!=', $topic->id)->exists()) {
-            return redirect()->back()
-                ->withErrors(['name' => 'Tên chủ đề đã tồn tại.'])
-                ->withInput()
-                ->with('_form', 'edit')
-                ->with('_edit_id', $topic->id);
-        }
 
         $topic->update([
             'name' => $request->name,
-            'slug' => $slug,
+            'slug' => $request->slug,
         ]);
 
         return redirect()->back()->with('success', 'Cập nhật chủ đề thành công!');
