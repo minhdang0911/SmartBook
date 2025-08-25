@@ -6,8 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Book;
 use Illuminate\Http\Request;
-use App\Http\Requests\Admin\StoreCategoryRequest;
-use App\Http\Requests\Admin\UpdateCategoryRequest;
 
 class CategoryController extends Controller
 {
@@ -27,9 +25,22 @@ class CategoryController extends Controller
         return view('admin.categories.create');
     }
 
-    public function store(StoreCategoryRequest $request)
+    public function store(Request $request)
     {
-        Category::create($request->validated());
+        $request->validate(
+            [
+                'name' => 'required|string|max:100|unique:categories,name',
+            ],
+            [
+                'name.required' => 'Tên danh mục không được để trống.',
+                'name.max' => 'Tên danh mục không được vượt quá 100 ký tự.',
+                'name.unique' => 'Tên danh mục đã tồn tại.',
+            ]
+        );
+
+        Category::create([
+            'name' => $request->name,
+        ]);
 
         return redirect()->route('admin.categories.index')
             ->with('success', 'Danh mục đã được thêm thành công!');
@@ -40,9 +51,22 @@ class CategoryController extends Controller
         return view('admin.categories.edit', compact('category'));
     }
 
-    public function update(UpdateCategoryRequest $request, Category $category)
+    public function update(Request $request, Category $category)
     {
-        $category->update($request->validated());
+        $request->validate(
+            [
+                'name' => 'required|string|max:100|unique:categories,name,' . $category->id,
+            ],
+            [
+                'name.required' => 'Tên danh mục không được để trống.',
+                'name.max' => 'Tên danh mục không được vượt quá 100 ký tự.',
+                'name.unique' => 'Tên danh mục đã tồn tại.',
+            ]
+        );
+
+        $category->update([
+            'name' => $request->name,
+        ]);
 
         return redirect()->route('admin.categories.index')
             ->with('success', 'Danh mục đã được cập nhật.');

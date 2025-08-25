@@ -6,9 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Publisher;
 use App\Models\Book;
 use Illuminate\Http\Request;
-use App\Http\Requests\Admin\StorePublisherRequest;
-use App\Http\Requests\Admin\UpdatePublisherRequest;
 use App\Services\CloudinaryService;
+
 class PublisherController extends Controller
 {
     public function index(Request $request)
@@ -27,9 +26,19 @@ class PublisherController extends Controller
         return view('admin.publishers.create');
     }
 
-    public function store(StorePublisherRequest $request)
+    public function store(Request $request)
     {
-        $data = $request->validated();
+        $validated = $request->validate(
+            [
+                'name'  => 'required|string|max:100|unique:publishers,name',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            ],
+            [
+                'name.required' => 'Tên nhà xuất bản không được để trống.',
+                'name.max'      => 'Tên nhà xuất bản không được vượt quá 100 ký tự.',
+                'name.unique'   => 'Tên nhà xuất bản đã tồn tại.',
+            ]
+        );
 
         if ($request->hasFile('image')) {
             $cloudinaryService = new CloudinaryService();
@@ -37,24 +46,33 @@ class PublisherController extends Controller
                 $request->file('image'),
                 'publishers'
             );
-            $data['image_url'] = $imageUrl;
+            $validated['image_url'] = $imageUrl;
         }
 
-        Publisher::create($data);
+        Publisher::create($validated);
 
         return redirect()->route('admin.publishers.index')
             ->with('success', 'Nhà xuất bản đã được thêm thành công!');
     }
-
 
     public function edit(Publisher $publisher)
     {
         return view('admin.publishers.edit', compact('publisher'));
     }
 
-    public function update(UpdatePublisherRequest $request, Publisher $publisher)
+    public function update(Request $request, Publisher $publisher)
     {
-        $data = $request->validated();
+        $validated = $request->validate(
+            [
+                'name'  => 'required|string|max:100|unique:publishers,name,' . $publisher->id,
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            ],
+            [
+                'name.required' => 'Tên nhà xuất bản không được để trống.',
+                'name.max'      => 'Tên nhà xuất bản không được vượt quá 100 ký tự.',
+                'name.unique'   => 'Tên nhà xuất bản đã tồn tại.',
+            ]
+        );
 
         if ($request->hasFile('image')) {
             $cloudinaryService = new CloudinaryService();
@@ -62,10 +80,10 @@ class PublisherController extends Controller
                 $request->file('image'),
                 'publishers'
             );
-            $data['image_url'] = $imageUrl;
+            $validated['image_url'] = $imageUrl;
         }
 
-        $publisher->update($data);
+        $publisher->update($validated);
 
         return redirect()->route('admin.publishers.index')
             ->with('success', 'Nhà xuất bản đã được cập nhật.');
@@ -84,13 +102,11 @@ class PublisherController extends Controller
         if (!empty($publisher->image_url)) {
             try {
                 $cloudinaryService = new CloudinaryService();
-
                 $cloudinaryService->deleteImageByUrl($publisher->image_url);
-
             } catch (\Exception $e) {
                 \Log::error('Không thể xóa ảnh trên Cloudinary', [
                     'error' => $e->getMessage(),
-                    'url' => $publisher->image_url
+                    'url'   => $publisher->image_url,
                 ]);
             }
         }
@@ -101,7 +117,6 @@ class PublisherController extends Controller
             ->with('success', 'Nhà xuất bản đã bị xóa thành công.');
     }
 
-
     public function apiIndex()
     {
         $publishers = Publisher::orderBy('name')
@@ -110,10 +125,7 @@ class PublisherController extends Controller
 
         return response()->json([
             'status' => true,
-            'data' => $publishers,
+            'data'   => $publishers,
         ]);
     }
-
-
-
 }

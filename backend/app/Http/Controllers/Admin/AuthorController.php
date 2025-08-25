@@ -3,12 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\StoreAuthorRequest;
-use App\Http\Requests\Admin\UpdateAuthorRequest;
 use App\Models\Author;
 use App\Models\Book;
 use Illuminate\Http\Request;
-
 
 class AuthorController extends Controller
 {
@@ -28,9 +25,20 @@ class AuthorController extends Controller
         return view('admin.authors.create');
     }
 
-    public function store(StoreAuthorRequest $request)
+    public function store(Request $request)
     {
-        Author::create($request->validated());
+        $validated = $request->validate(
+            [
+                'name' => 'required|string|max:100|unique:authors,name',
+            ],
+            [
+                'name.required' => 'Tên tác giả không được để trống.',
+                'name.max' => 'Tên tác giả không được vượt quá 100 ký tự.',
+                'name.unique' => 'Tên tác giả đã tồn tại.',
+            ]
+        );
+
+        Author::create($validated);
 
         return redirect()->route('admin.authors.index')
             ->with('success', 'Tác giả đã được thêm thành công!');
@@ -41,9 +49,20 @@ class AuthorController extends Controller
         return view('admin.authors.edit', compact('author'));
     }
 
-    public function update(UpdateAuthorRequest $request, Author $author)
+    public function update(Request $request, Author $author)
     {
-        $author->update($request->validated());
+        $validated = $request->validate(
+            [
+                'name' => 'required|string|max:100|unique:authors,name,' . $author->id,
+            ],
+            [
+                'name.required' => 'Tên tác giả không được để trống.',
+                'name.max' => 'Tên tác giả không được vượt quá 100 ký tự.',
+                'name.unique' => 'Tên tác giả đã tồn tại.',
+            ]
+        );
+
+        $author->update($validated);
 
         return redirect()->route('admin.authors.index')
             ->with('success', 'Tác giả đã được cập nhật.');
