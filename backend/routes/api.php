@@ -51,32 +51,43 @@ Route::prefix('comments')->group(function () {
 
 
 
+// routes/api.php
 Route::prefix('group-orders')->group(function () {
-    // public xem phòng
     Route::get('/{token}', [GroupOrderController::class, 'show']);
 
-    // các route dưới đây BẮT BUỘC Bearer token
     Route::middleware('auth:api')->group(function () {
-        Route::post('/', [GroupOrderController::class, 'store']); // tạo phòng
-        Route::post('/{token}/join', [GroupOrderController::class, 'join']); // join bằng link
+        Route::post('/', [GroupOrderController::class, 'store']);
+        Route::post('/{token}/join', [GroupOrderController::class, 'join']);
 
         // items
-        Route::post('/{token}/items', [GroupOrderController::class, 'addItem']); // thêm món
-        Route::delete('/{token}/items/{id}', [GroupOrderController::class, 'removeItem']); // xoá 1 món
-        Route::delete('/{token}/items', [GroupOrderController::class, 'removeItems']); // xoá nhiều món (body: { ids: [] })
-        Route::patch('/{token}/items/{id}/quantity', [GroupOrderController::class, 'updateItemQuantity']); // update qty
+        Route::post('/{token}/items', [GroupOrderController::class, 'addItem']);
+        Route::delete('/{token}/items/{id}', [GroupOrderController::class, 'removeItem']);
+        Route::delete('/{token}/items', [GroupOrderController::class, 'removeItems']);
+        Route::patch('/{token}/items/{id}/quantity', [GroupOrderController::class, 'updateItemQuantity']);
 
         // group actions
-        Route::post('/{token}/lock', [GroupOrderController::class, 'lock']); // khoá
-        Route::post('/{token}/settlements/recalc', [GroupOrderController::class, 'recalc']); // chia tiền
-        Route::post('/{token}/checkout', [GroupOrderController::class, 'checkout']); // tạo Order thật
+        Route::post('/{token}/lock', [GroupOrderController::class, 'lock']);
+        Route::post('/{token}/settlements/recalc', [GroupOrderController::class, 'recalc']);
+
+        // NEW: tạo link thanh toán + gửi mail
+        Route::post('/{token}/settlements/paylinks', [GroupOrderController::class, 'createPayLinks']); // NEW
+
+        // (giữ nếu cần)
+        Route::post('/{token}/checkout', [GroupOrderController::class, 'checkout']);
 
         // members
-        Route::delete('/{token}/users/{userId?}', [GroupOrderController::class, 'kickOrLeaveByUser']); // kick/leave
+        Route::delete('/{token}/kick/{userId}', [GroupOrderController::class, 'kick']);
+        Route::delete('/{token}/users/{userId}', [GroupOrderController::class, 'kick']);
+        Route::delete('/{token}/leave', [GroupOrderController::class, 'leave']);
     });
+
+    // NEW: IPN/Return (không cần auth)
+    Route::post('/payments/momo/ipn',   [GroupOrderController::class, 'momoIpn']);     // NEW
+    Route::get ('/payments/vnpay/return',[GroupOrderController::class, 'vnpayReturn']); // NEW
+    // Nếu m muốn IPN riêng cho VNPay:
+    // Route::post('/payments/vnpay/ipn', [GroupOrderController::class, 'vnpayIpn']);
 });
 
-// Thêm vào routes/web.php trong nhóm admin routes
 
 Route::prefix('admin')->name('admin.')->group(function () {
 

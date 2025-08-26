@@ -2,7 +2,7 @@ import axios from 'axios';
 
 export const apiLoginUser = async (email, password) => {
     try {
-        const response = await axios.post(`${BASE_URL}/login`, {
+        const response = await axios.post(`http://localhost:8000/api/login`, {
             email,
             password,
         });
@@ -45,6 +45,7 @@ export const apiRegisterUser = async (name, email, password, password_confirmati
     });
     return res.data;
 };
+
 
 export const apiForgotPassword = async (email) => {
     try {
