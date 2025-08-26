@@ -94,64 +94,70 @@ class GroupOrderController extends Controller
     /**
      * Thêm món (snapshot giá) — KHÔNG nhận member_id, tự map theo JWT đã join
      */
-    public function addItem(Request $req, string $token)
-    {
-        $data = $req->validate([
-            'book_id' => 'required|exists:books,id',
-            'quantity' => 'required|integer|min:1'
-        ]);
+public function addItem(Request $req, string $token)
+{
+    $data = $req->validate([
+        'book_id' => 'required|exists:books,id',
+        'quantity' => 'required|integer|min:1'
+    ]);
 
-        $group = GroupOrder::open()->where('join_token', $token)->firstOrFail();
+    $group = GroupOrder::open()->where('join_token', $token)->firstOrFail();
 
-        // chỉ cho user đã join group này add món
-        $member = $group->members()->where('user_id', $req->user()->id)->first();
-        if (!$member) {
-            return response()->json(['message' => 'Bạn chưa join group này'], 403);
-        }
-
-        $book = Book::select('id', 'price', 'discount_price', 'stock', 'is_physical')->findOrFail($data['book_id']);
-        $price = $book->discount_price ?? $book->price;
-
-        // Kiểm tra xem item đã tồn tại chưa
-        $existingItem = $group->items()
-            ->where('member_id', $member->id)
-            ->where('book_id', $book->id)
-            ->first();
-
-        $totalQuantity = $data['quantity'];
-        
-        if ($existingItem) {
-            $totalQuantity = $existingItem->quantity + $data['quantity'];
-        }
-
-        // Kiểm tra tồn kho với tổng số lượng
-        if ($book->is_physical && $book->stock < $totalQuantity) {
-            return response()->json(['message' => 'Hết hàng hoặc không đủ tồn'], 400);
-        }
-
-        if ($existingItem) {
-            // Cập nhật số lượng và giá nếu item đã tồn tại
-            $existingItem->update([
-                'quantity' => $totalQuantity,
-                'price_snapshot' => $price, // cập nhật giá mới nhất
-            ]);
-            $item = $existingItem;
-        } else {
-            // Tạo item mới nếu chưa tồn tại
-            $item = $group->items()->create([
-                'member_id' => $member->id,
-                'book_id' => $book->id,
-                'quantity' => $data['quantity'],
-                'price_snapshot' => $price,
-            ]);
-        }
-
-        // load thêm cover_image luôn
-        return response()->json(
-            $item->load('book:id,title,cover_image'),
-            201
-        );
+    // chỉ cho user đã join group này add món
+    $member = $group->members()->where('user_id', $req->user()->id)->first();
+    if (!$member) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Bạn chưa join group này'
+        ], 403);
     }
+
+    $book = Book::select('id', 'price', 'discount_price', 'stock', 'is_physical')->findOrFail($data['book_id']);
+    $price = $book->discount_price ?? $book->price;
+
+    // Kiểm tra xem item đã tồn tại chưa
+    $existingItem = $group->items()
+        ->where('member_id', $member->id)
+        ->where('book_id', $book->id)
+        ->first();
+
+    $totalQuantity = $data['quantity'];
+    
+    if ($existingItem) {
+        $totalQuantity = $existingItem->quantity + $data['quantity'];
+    }
+
+    // Kiểm tra tồn kho với tổng số lượng
+    if ($book->is_physical && $book->stock < $totalQuantity) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Hết hàng hoặc không đủ tồn'
+        ], 400);
+    }
+
+    if ($existingItem) {
+        // Cập nhật số lượng và giá nếu item đã tồn tại
+        $existingItem->update([
+            'quantity' => $totalQuantity,
+            'price_snapshot' => $price,
+        ]);
+        $item = $existingItem;
+    } else {
+        // Tạo item mới nếu chưa tồn tại
+        $item = $group->items()->create([
+            'member_id' => $member->id,
+            'book_id' => $book->id,
+            'quantity' => $data['quantity'],
+            'price_snapshot' => $price,
+        ]);
+    }
+
+    // load thêm cover_image luôn
+    return response()->json([
+        'success' => true,
+        'item' => $item->load('book:id,title,cover_image')
+    ], 201);
+}
 
     /**
      * Xoá món — owner hoặc chính chủ item (đều phải JWT)
