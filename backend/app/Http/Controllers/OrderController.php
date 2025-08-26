@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use App\Mail\OrderConfirmationMail;
+use App\Models\GroupOrder;
 use Carbon\Carbon;
 
 class OrderController extends Controller
@@ -620,84 +621,108 @@ class OrderController extends Controller
         }
     }
 
-    public function index(Request $request): JsonResponse
-    {
-        try {
-            $user = Auth::user();
-            $perPage = $request->input('per_page', 10);
-            $status = $request->input('status');
-            $sortBy = $request->input('sort_by', 'created_at');
-            $sortOrder = $request->input('sort_order', 'desc');
+public function index(Request $request): JsonResponse
+{
+    try {
+        $user = Auth::user();
+        $perPage = $request->input('per_page', 10);
+        $status = $request->input('status');
+        $sortBy = $request->input('sort_by', 'created_at');
+        $sortOrder = $request->input('sort_order', 'desc');
 
-            $query = Order::with(['orderItems.book.author', 'orderItems.book.category'])
-                ->where('user_id', $user->id);
+        // --- Query đơn hàng thường ---
+        $query = Order::with(['orderItems.book.author', 'orderItems.book.category'])
+            ->where('user_id', $user->id);
 
-            if ($status) {
-                $query->where('status', $status);
-            }
+        if ($status) {
+            $query->where('status', $status);
+        }
 
-            $query->orderBy($sortBy, $sortOrder);
-            $orders = $query->paginate($perPage);
+        $query->orderBy($sortBy, $sortOrder);
+        $orders = $query->paginate($perPage);
 
-            $formattedOrders = collect($orders->items())->map(function ($order) {
+        $formattedOrders = collect($orders->items())->map(function ($order) {
+            return [
+                'id'          => $order->id,
+                'status'      => $order->status,
+                'payment'     => $order->payment,
+                'price'       => $order->price,
+                'shipping_fee'=> $order->shipping_fee,
+                'total_price' => $order->total_price,
+                'address'     => $order->address,
+                'phone'       => $order->phone,
+                'created_at'  => $order->created_at,
+                'updated_at'  => $order->updated_at,
+                'items'       => $order->orderItems->map(function ($item) {
+                    return [
+                        'id'       => $item->id,
+                        'quantity' => $item->quantity,
+                        'price'    => $item->price,
+                        'book'     => [
+                            'id'       => $item->book->id,
+                            'title'    => $item->book->title,
+                            'image'    => $item->book->image,
+                            'price'    => $item->book->price,
+                            'author'   => $item->book->author?->name,
+                            'category' => $item->book->category?->name,
+                        ]
+                    ];
+                }),
+                'total_items' => $order->orderItems->sum('quantity')
+            ];
+        });
+
+        // --- Query lịch sử group orders ---
+        $groupOrders = GroupOrder::with(['members.user:id,name','items.book:id,title,cover_image'])
+            ->whereHas('members', fn($q) => $q->where('user_id', $user->id))
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($g) {
                 return [
-                    'id' => $order->id,
-                    'status' => $order->status,
-                    'payment' => $order->payment,
-                    'price' => $order->price,
-                    'shipping_fee' => $order->shipping_fee,
-                    'total_price' => $order->total_price,
-                    'address' => $order->address,
-                    'sonha' => $order->sonha,
-                    'phone' => $order->phone,
-                    'street' => $order->street,
-                    'ward_name' => $order->ward_name,
-                    'district_name' => $order->district_name,
-                    'shipping_code' => $order->shipping_code,
-                    'created_at' => $order->created_at,
-                    'updated_at' => $order->updated_at,
-                   
-                    'items' => $order->orderItems->map(function ($item) {
-                        return [
-                            'id' => $item->id,
-                            'quantity' => $item->quantity,
-                            'price' => $item->price,
-                            'book' => [
-                                'id' => $item->book->id,
-                                'title' => $item->book->title,
-                                'image' => $item->book->image,
-                                'price' => $item->book->price,
-                                'author' => $item->book->author ? $item->book->author->name : null,
-                                'category' => $item->book->category ? $item->book->category->name : null,
-                            ]
-                        ];
-                    }),
-                    'total_items' => $order->orderItems->sum('quantity')
+                    'id'         => $g->id,
+                    'status'     => $g->status,
+                    'expires_at' => $g->expires_at,
+                    'join_url'   => $g->join_url,
+                    'members'    => $g->members->map(fn($m) => [
+                        'id'    => $m->id,
+                        'name'  => $m->display_name,
+                        'role'  => $m->role,
+                        'user_id' => $m->user_id,
+                    ]),
+                    'items' => $g->items->map(fn($i) => [
+                        'id'    => $i->id,
+                        'title' => $i->book->title,
+                        'cover_image' => $i->book->cover_image,
+                        'qty'   => $i->quantity,
+                        'price' => $i->price_snapshot,
+                    ]),
+                    'total' => $g->items->sum(fn($i) => $i->quantity * $i->price_snapshot),
+                    'created_at' => $g->created_at,
                 ];
             });
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Lấy danh sách đơn hàng thành công',
-                'data' => [
-                    'orders' => $formattedOrders,
-                    'pagination' => [
-                        'current_page' => $orders->currentPage(),
-                        'per_page' => $orders->perPage(),
-                        'total' => $orders->total(),
-                        'last_page' => $orders->lastPage(),
-                        'from' => $orders->firstItem(),
-                        'to' => $orders->lastItem()
-                    ]
-                ]
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Lấy danh sách đơn hàng thành công',
+            'data' => [
+                'orders'       => $formattedOrders,
+                'pagination'   => [
+                    'current_page' => $orders->currentPage(),
+                    'per_page'     => $orders->perPage(),
+                    'total'        => $orders->total(),
+                    'last_page'    => $orders->lastPage(),
+                ],
+                'group_orders' => $groupOrders, // 👈 thêm lịch sử group order ở đây
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+        ], 500);
     }
+}
+
 
     public function show($orderId): JsonResponse
     {
