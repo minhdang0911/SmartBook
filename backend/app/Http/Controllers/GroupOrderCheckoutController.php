@@ -1,4 +1,4 @@
-<?php
+<?php 
 
 namespace App\Http\Controllers;
 
@@ -75,8 +75,8 @@ class GroupOrderCheckoutController extends Controller
 
         DB::beginTransaction();
         try {
-            // Lấy group order với items và members
-            $groupOrder = GroupOrder::with(['items.book', 'members'])
+            // Lấy group order (không lock ở đây), chỉ kiểm tra tình trạng
+            $groupOrder = GroupOrder::with(['members'])
                 ->where('token', $groupOrderToken)
                 ->where('status', 'open')
                 ->first();
@@ -97,16 +97,21 @@ class GroupOrderCheckoutController extends Controller
                 ], 403);
             }
 
-            // Kiểm tra group order có items không
-            if ($groupOrder->items->isEmpty()) {
+            // KHÓA các items của group để tránh race-condition khi checkout
+            $lockedItems = GroupOrderItem::with('book')
+                ->where('group_order_id', $groupOrder->id)
+                ->lockForUpdate()
+                ->get();
+
+            if ($lockedItems->isEmpty()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Giỏ hàng nhóm không có sản phẩm nào.'
                 ], 400);
             }
 
-            // Tính tổng tiền
-            $total = $groupOrder->items->sum(function ($item) {
+            // Tính tổng tiền từ snapshot
+            $total = $lockedItems->sum(function ($item) {
                 return $item->quantity * $item->price_snapshot;
             });
 
@@ -151,7 +156,7 @@ class GroupOrderCheckoutController extends Controller
             ]);
 
             // Tạo order items và kiểm tra stock
-            foreach ($groupOrder->items as $groupItem) {
+            foreach ($lockedItems as $groupItem) {
                 $book = $groupItem->book;
 
                 if (!$book) {
@@ -184,7 +189,7 @@ class GroupOrderCheckoutController extends Controller
                 $book->stock -= $groupItem->quantity;
                 $book->save();
 
-                // Tạo order item
+                // Tạo order item, tạm thời còn giữ liên kết group_order_item_id
                 OrderItem::create([
                     'order_id' => $order->id,
                     'book_id' => $book->id,
@@ -209,7 +214,23 @@ class GroupOrderCheckoutController extends Controller
             ]);
 
             // Đánh dấu tất cả items trong group order là đã checkout
-            $groupOrder->items()->update(['status' => 'confirmed']);
+            GroupOrderItem::where('group_order_id', $groupOrder->id)->update(['status' => 'confirmed']);
+
+            /**
+             * =========================
+             *  DỌN SẠCH ITEM SAU CHECKOUT
+             * =========================
+             * YÊU CẦU: order_items.group_order_item_id phải nullable
+             * hoặc FK ON DELETE SET NULL để không vướng khóa ngoại.
+             */
+
+            // Gỡ liên kết từ order_items -> group_order_items (tránh FK khi xóa)
+            OrderItem::where('order_id', $order->id)
+                ->whereNotNull('group_order_item_id')
+                ->update(['group_order_item_id' => null]);
+
+            // Xóa sạch items của group
+            GroupOrderItem::where('group_order_id', $groupOrder->id)->delete();
 
             DB::commit();
             Log::info('Group order checkout completed successfully', [
@@ -241,7 +262,7 @@ class GroupOrderCheckoutController extends Controller
                         'token' => $groupOrder->token,
                         'status' => $groupOrder->status,
                         'members_count' => $groupOrder->members->count(),
-                        'total_items' => $groupOrder->items->sum('quantity')
+                        'total_items' => 0 // sau khi dọn sạch
                     ]
                 ]
             ]);
@@ -250,7 +271,7 @@ class GroupOrderCheckoutController extends Controller
             DB::rollBack();
             Log::error('Group order checkout failed', [
                 'group_order_token' => $groupOrderToken,
-                'user_id' => $user->id,
+                'user_id' => $user->id ?? null,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -509,7 +530,8 @@ class GroupOrderCheckoutController extends Controller
                 // Cập nhật group order
                 if ($order->groupOrder) {
                     $order->groupOrder->update(['status' => 'cancelled']);
-                    $order->groupOrder->items()->update(['status' => 'cancelled']);
+                    // Các item group lúc checkout đã xóa, chỉ cập nhật status nếu còn sót
+                    GroupOrderItem::where('group_order_id', $order->group_order_id)->update(['status' => 'cancelled']);
                 }
 
                 DB::commit();
@@ -757,7 +779,6 @@ class GroupOrderCheckoutController extends Controller
     protected function createGHNShippingOrder($order, $request = null)
     {
         // Giữ nguyên logic GHN từ OrderController
-        // ... (copy từ OrderController->createGHNShippingOrder)
         try {
             $items = $order->orderItems->map(function ($item) {
                 return [

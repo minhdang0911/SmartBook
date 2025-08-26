@@ -19,24 +19,20 @@ class Event extends Model
 
     public function books()
     {
-        return $this->belongsToMany(Book::class, 'event_products', 'event_id', 'books_id')
-                    ->withPivot('quantity_limit', 'sold_quantity'); // Bỏ discount_percent
+        // pivot chuẩn là book_id, không phải books_id
+      return $this->belongsToMany(Book::class, 'event_products', 'event_id', 'books_id')
+        ->withPivot('quantity_limit', 'sold_quantity');
     }
 
     /**
-     * Thêm sách vào sự kiện (chỉ lưu quantity info, giá giảm lưu trong books table)
-     *
-     * @param int $bookId
-     * @param int $quantityLimit
-     * @param int $soldQuantity
-     * @return void
+     * Thêm sách vào event (lưu quantity ở pivot)
      */
     public function addBook($bookId, $quantityLimit, $soldQuantity = 0)
     {
         $this->books()->syncWithoutDetaching([
             $bookId => [
                 'quantity_limit' => $quantityLimit,
-                'sold_quantity' => $soldQuantity
+                'sold_quantity'  => $soldQuantity,
             ]
         ]);
     }
@@ -52,16 +48,16 @@ class Event extends Model
     }
 
     /**
-     * Kiểm tra event có đang active không
+     * Kiểm tra event active
      */
     public function isActive()
     {
-        return $this->status === 'active' && 
-               now()->between($this->start_date, $this->end_date);
+        return $this->status === 'active' &&
+            now()->between($this->start_date, $this->end_date);
     }
 
     /**
-     * Lấy tổng số sản phẩm trong event
+     * Tổng số sản phẩm trong event
      */
     public function getTotalProductsAttribute()
     {
@@ -69,7 +65,7 @@ class Event extends Model
     }
 
     /**
-     * Lấy tổng số lượng đã bán
+     * Tổng số lượng đã bán
      */
     public function getTotalSoldAttribute()
     {
