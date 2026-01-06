@@ -8,21 +8,29 @@ use Illuminate\Http\Request;
 class CategoryController extends Controller
 {
     /**
+     * Helper: trả JSON không escape Unicode (fix \u00ea, \u1ec7...)
+     */
+    private function json($data, int $status = 200, array $headers = [])
+    {
+        return response()->json($data, $status, $headers, JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
      * Lấy tất cả danh mục
      */
     public function index()
     {
         try {
             $categories = Category::all();
-            
-            return response()->json([
+
+            return $this->json([
                 'success' => true,
                 'data' => $categories,
                 'message' => 'Lấy danh sách danh mục thành công'
             ], 200);
-            
+
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->json([
                 'success' => false,
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ], 500);
@@ -36,15 +44,15 @@ class CategoryController extends Controller
     {
         try {
             $categories = Category::with('books')->get();
-            
-            return response()->json([
+
+            return $this->json([
                 'success' => true,
                 'data' => $categories,
                 'message' => 'Lấy danh sách danh mục kèm sách thành công'
             ], 200);
-            
+
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->json([
                 'success' => false,
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ], 500);
@@ -58,15 +66,15 @@ class CategoryController extends Controller
     {
         try {
             $category = Category::findOrFail($id);
-            
-            return response()->json([
+
+            return $this->json([
                 'success' => true,
                 'data' => $category,
                 'message' => 'Lấy thông tin danh mục thành công'
             ], 200);
-            
+
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->json([
                 'success' => false,
                 'message' => 'Không tìm thấy danh mục'
             ], 404);
@@ -80,15 +88,15 @@ class CategoryController extends Controller
     {
         try {
             $category = Category::with('books')->findOrFail($id);
-            
-            return response()->json([
+
+            return $this->json([
                 'success' => true,
                 'data' => $category,
                 'message' => 'Lấy thông tin danh mục kèm sách thành công'
             ], 200);
-            
+
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->json([
                 'success' => false,
                 'message' => 'Không tìm thấy danh mục'
             ], 404);
@@ -109,20 +117,20 @@ class CategoryController extends Controller
                 'name' => $request->name
             ]);
 
-            return response()->json([
+            return $this->json([
                 'success' => true,
                 'data' => $category,
                 'message' => 'Tạo danh mục thành công'
             ], 201);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
+            return $this->json([
                 'success' => false,
                 'message' => 'Dữ liệu không hợp lệ',
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->json([
                 'success' => false,
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ], 500);
@@ -136,7 +144,7 @@ class CategoryController extends Controller
     {
         try {
             $category = Category::findOrFail($id);
-            
+
             $request->validate([
                 'name' => 'required|string|max:255|unique:categories,name,' . $id
             ]);
@@ -145,20 +153,20 @@ class CategoryController extends Controller
                 'name' => $request->name
             ]);
 
-            return response()->json([
+            return $this->json([
                 'success' => true,
                 'data' => $category,
                 'message' => 'Cập nhật danh mục thành công'
             ], 200);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
+            return $this->json([
                 'success' => false,
                 'message' => 'Dữ liệu không hợp lệ',
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->json([
                 'success' => false,
                 'message' => 'Không tìm thấy danh mục hoặc có lỗi xảy ra'
             ], 404);
@@ -172,24 +180,24 @@ class CategoryController extends Controller
     {
         try {
             $category = Category::findOrFail($id);
-            
+
             // Kiểm tra xem danh mục có sách nào không
             if ($category->books()->count() > 0) {
-                return response()->json([
+                return $this->json([
                     'success' => false,
                     'message' => 'Không thể xóa danh mục này vì còn có sách thuộc danh mục'
                 ], 400);
             }
-            
+
             $category->delete();
 
-            return response()->json([
+            return $this->json([
                 'success' => true,
                 'message' => 'Xóa danh mục thành công'
             ], 200);
 
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->json([
                 'success' => false,
                 'message' => 'Không tìm thấy danh mục'
             ], 404);
