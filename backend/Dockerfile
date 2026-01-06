@@ -1,6 +1,6 @@
 FROM php:8.2-apache
 
-# Enable Apache modules
+# Enable Apache modules - QUAN TRỌNG!
 RUN a2enmod rewrite headers
 
 # Install dependencies
@@ -17,7 +17,7 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copy composer files
+# Install PHP dependencies
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --no-scripts
 
@@ -27,39 +27,60 @@ COPY . .
 # Run composer scripts
 RUN composer dump-autoload --optimize
 
-# Build assets
+# Build frontend
 RUN npm ci || npm install
 RUN npm run build
 
-# Set permissions
-RUN chown -R www-data:www-data storage bootstrap/cache \
- && chmod -R 775 storage bootstrap/cache
+# Create cache directories
+RUN mkdir -p bootstrap/cache storage/framework/{sessions,views,cache} \
+ && chmod -R 775 bootstrap/cache storage
 
-# Laravel optimizations - QUAN TRỌNG!
-RUN php artisan config:cache || true
-RUN php artisan route:cache || true
-RUN php artisan view:cache || true
+# Set ownership
+RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Apache config
+# ============ CRITICAL: Apache Configuration ============
+
+# 1. Set document root to Laravel public directory
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
-RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
 
-# Laravel directory config
+# 2. Create Apache config for Laravel with proper Directory settings
 RUN echo '<Directory /var/www/html/public>\n\
-    Options Indexes FollowSymLinks\n\
+    Options -Indexes +FollowSymLinks\n\
     AllowOverride All\n\
     Require all granted\n\
-</Directory>' > /etc/apache2/conf-available/laravel.conf \
- && a2enconf laravel
+    DirectoryIndex index.php\n\
+    FallbackResource /index.php\n\
+</Directory>\n\
+\n\
+<FilesMatch \.php$>\n\
+    SetHandler application/x-httpd-php\n\
+</FilesMatch>' > /etc/apache2/conf-available/laravel.conf
 
-# Dynamic port
+RUN a2enconf laravel
+
+# 3. Update VirtualHost configuration
+RUN echo '<VirtualHost *:${PORT}>\n\
+    ServerAdmin webmaster@localhost\n\
+    DocumentRoot /var/www/html/public\n\
+    \n\
+    <Directory /var/www/html/public>\n\
+        Options -Indexes +FollowSymLinks\n\
+        AllowOverride All\n\
+        Require all granted\n\
+    </Directory>\n\
+    \n\
+    ErrorLog ${APACHE_LOG_DIR}/error.log\n\
+    CustomLog ${APACHE_LOG_DIR}/access.log combined\n\
+</VirtualHost>' > /etc/apache2/sites-available/000-default.conf
+
+# 4. Configure Apache to use PORT environment variable
 RUN echo 'Listen ${PORT}' > /etc/apache2/ports.conf
-RUN sed -i 's/<VirtualHost \*:80>/<VirtualHost *:${PORT}>/g' /etc/apache2/sites-available/000-default.conf
+
+# ============ End Apache Configuration ============
 
 EXPOSE ${PORT}
 
-# Startup script
-CMD sed -i "s/Listen \${PORT}/Listen $PORT/g" /etc/apache2/ports.conf && \
-    sed -i "s/<VirtualHost \*:\${PORT}>/<VirtualHost *:$PORT>/g" /etc/apache2/sites-available/000-default.conf && \
-    apache2-foreground
+# Start Apache with environment variable substitution
+CMD bash -c "source /etc/apache2/envvars && apache2 -DFOREGROUND"
