@@ -4,36 +4,32 @@ namespace App\Providers;
 
 use Cloudinary\Configuration\Configuration;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Http\JsonResponse; // ✅ thêm dòng này
+use Illuminate\Http\JsonResponse;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         // Configure Cloudinary
         Configuration::instance([
             'cloud' => [
-                'cloud_name' => 'dz7y2yufu',
-                'api_key'    => '155772835832488',
-                'api_secret' => 'Ho_6ApwWCE5s1dYtBzHAbPlSSD0',
+                'cloud_name' => env('CLOUDINARY_CLOUD_NAME', 'dz7y2yufu'),
+                'api_key'    => env('CLOUDINARY_API_KEY', '155772835832488'),
+                'api_secret' => env('CLOUDINARY_API_SECRET', 'Ho_6ApwWCE5s1dYtBzHAbPlSSD0'),
             ],
             'url' => [
                 'secure' => true
             ]
         ]);
 
-        // ✅ FIX Unicode JSON (QUAN TRỌNG)
-        JsonResponse::setEncodingOptions(JSON_UNESCAPED_UNICODE);
+        // ✅ Set JSON encoding options globally (không crash theo version)
+        if (method_exists(JsonResponse::class, 'defaultEncodingOptions')) {
+            JsonResponse::defaultEncodingOptions(JSON_UNESCAPED_UNICODE);
+        }
     }
 }
