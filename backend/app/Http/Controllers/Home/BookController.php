@@ -16,6 +16,14 @@ use App\Exports\BookTemplateExport;
 
 class BookController extends Controller
 {
+    /**
+     * Helper: trả JSON không escape Unicode (fix \u00ea, \u1ec7...)
+     */
+    private function json($data, int $status = 200, array $headers = [])
+    {
+        return response()->json($data, $status, $headers, JSON_UNESCAPED_UNICODE);
+    }
+
     public function index()
     {
         // 5 sách giấy được đánh giá cao nhiều nhất
@@ -46,12 +54,12 @@ class BookController extends Controller
             ->take(20)
             ->get();
 
-        return response()->json([
+        return $this->json([
             'status' => 'success',
-            'top_rated_books' => $topRatedBooks,              // 5 sách giấy đánh giá cao nhất
-            'top_viewed_books' => $topViewedBooks,       // 5 sách giấy xem nhiều nhất
-            'latest_paper_books' => $latestPaperBooks,   // 10 sách giấy mới
-            'latest_ebooks' => $latestEbooks             // 10 sách điện tử mới
+            'top_rated_books' => $topRatedBooks,        // 5 sách giấy đánh giá cao nhất
+            'top_viewed_books' => $topViewedBooks,      // 5 sách giấy xem nhiều nhất
+            'latest_paper_books' => $latestPaperBooks,  // 10 sách giấy mới
+            'latest_ebooks' => $latestEbooks            // 10 sách điện tử mới
         ]);
     }
 
@@ -63,7 +71,7 @@ class BookController extends Controller
                 ->orderBy('title', 'asc')
                 ->get();
 
-            return response()->json([
+            return $this->json([
                 'status' => 'success',
                 'message' => 'Lấy danh sách ID và tên sách thành công',
                 'data' => $books,
@@ -71,7 +79,7 @@ class BookController extends Controller
             ], 200);
 
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->json([
                 'status' => 'error',
                 'message' => 'Có lỗi xảy ra khi lấy danh sách sách',
                 'error' => $e->getMessage()
@@ -254,7 +262,7 @@ class BookController extends Controller
             ];
         }
 
-        return response()->json($result);
+        return $this->json($result);
     }
 
     // Helper function để hiển thị các filter đã áp dụng
@@ -323,12 +331,12 @@ class BookController extends Controller
         $book = Book::with(['author', 'publisher', 'category'])->find($id);
 
         if (!$book) {
-            return response()->json(['message' => 'Book not found1'], 404);
+            return $this->json(['message' => 'Book not found1'], 404);
         }
 
         if ($book->is_physical == 1) {
             // Sách giấy
-            return response()->json([
+            return $this->json([
                 'id' => $book->id,
                 'title' => $book->title,
                 'description' => $book->description,
@@ -359,7 +367,7 @@ class BookController extends Controller
             ]);
         } elseif ($book->is_physical == 0) {
             // Sách điện tử
-            return response()->json([
+            return $this->json([
                 'id' => $book->id,
                 'title' => $book->title,
                 'description' => $book->description,
@@ -382,26 +390,25 @@ class BookController extends Controller
                 'is_physical' => $book->is_physical,
             ]);
         } else {
-            return response()->json(['message' => 'Unknown book type'], 400);
+            return $this->json(['message' => 'Unknown book type'], 400);
         }
     }
 
-    //view update 
+    // view update
     public function increaseView($id)
     {
-        $book = \App\Models\Book::find($id);
+        $book = Book::find($id);
 
         if (!$book) {
-            return response()->json([
+            return $this->json([
                 'success' => false,
                 'message' => 'Không tìm thấy sách.',
             ], 404);
         }
 
-        // Tăng view lên 1
         $book->increment('views');
 
-        return response()->json([
+        return $this->json([
             'success' => true,
             'message' => 'Lượt xem đã được cập nhật.',
             'views' => $book->views,
@@ -413,13 +420,12 @@ class BookController extends Controller
      */
     public function importBooks(Request $request)
     {
-        // Validate file upload
         $validator = Validator::make($request->all(), [
-            'excel_file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
+            'excel_file' => 'required|file|mimes:xlsx,xls,csv|max:10240',
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
+            return $this->json([
                 'status' => 'error',
                 'message' => 'File không hợp lệ',
                 'errors' => $validator->errors()
@@ -428,40 +434,33 @@ class BookController extends Controller
 
         try {
             $file = $request->file('excel_file');
-            
-            // Import data using Maatwebsite Excel
-            $data = Excel::toArray([], $file)[0]; // Lấy sheet đầu tiên
-            
-            // Bỏ qua dòng header (dòng đầu tiên)
+
+            $data = Excel::toArray([], $file)[0];
             array_shift($data);
-            
+
             $successCount = 0;
             $errorCount = 0;
             $errors = [];
             $duplicates = [];
 
             DB::beginTransaction();
-            
+
             foreach ($data as $rowIndex => $row) {
                 try {
-                    // Kiểm tra nếu dòng trống
                     if (empty(array_filter($row))) {
                         continue;
                     }
 
-                    // Map dữ liệu từ Excel
                     $bookData = $this->mapExcelRowToBookData($row);
-                    
-                    // Validate dữ liệu
+
                     $validationResult = $this->validateBookData($bookData, $rowIndex + 2);
-                    
+
                     if (!$validationResult['valid']) {
                         $errors[] = $validationResult['error'];
                         $errorCount++;
                         continue;
                     }
 
-                    // Kiểm tra trùng lặp
                     $existingBook = Book::where('title', $bookData['title'])->first();
                     if ($existingBook) {
                         $duplicates[] = [
@@ -472,7 +471,6 @@ class BookController extends Controller
                         continue;
                     }
 
-                    // Tạo sách mới với ID trực tiếp
                     Book::create([
                         'title' => $bookData['title'],
                         'description' => $bookData['description'],
@@ -502,7 +500,7 @@ class BookController extends Controller
 
             DB::commit();
 
-            return response()->json([
+            return $this->json([
                 'status' => 'success',
                 'message' => 'Import hoàn tất',
                 'summary' => [
@@ -511,13 +509,12 @@ class BookController extends Controller
                     'error_count' => $errorCount,
                     'duplicate_count' => count($duplicates)
                 ],
-                 
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            return response()->json([
+
+            return $this->json([
                 'status' => 'error',
                 'message' => 'Lỗi khi xử lý file: ' . $e->getMessage()
             ], 500);
@@ -525,25 +522,23 @@ class BookController extends Controller
     }
 
     /**
-     * Lấy template Excel để import  
+     * Lấy template Excel để import
      */
-  public function downloadTemplate()
-{
-    try {
-        $fileName = 'book_import_template_' . date('Y-m-d_H-i-s') . '.xlsx';
-        
-        // ✅ Không cần truyền data vào constructor nữa, lấy trực tiếp trong Export class
-        return Excel::download(new BookTemplateExport(), $fileName);
+    public function downloadTemplate()
+    {
+        try {
+            $fileName = 'book_import_template_' . date('Y-m-d_H-i-s') . '.xlsx';
+            return Excel::download(new BookTemplateExport(), $fileName);
 
-    } catch (\Exception $e) {
-        \Log::error('Template Download Error: ' . $e->getMessage());
-        
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Lỗi khi tạo template: ' . $e->getMessage()
-        ], 500);
+        } catch (\Exception $e) {
+            \Log::error('Template Download Error: ' . $e->getMessage());
+
+            return $this->json([
+                'status' => 'error',
+                'message' => 'Lỗi khi tạo template: ' . $e->getMessage()
+            ], 500);
+        }
     }
-}
 
     /**
      * Xem trước dữ liệu từ file Excel
@@ -555,7 +550,7 @@ class BookController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
+            return $this->json([
                 'status' => 'error',
                 'message' => 'File không hợp lệ',
                 'errors' => $validator->errors()
@@ -564,19 +559,16 @@ class BookController extends Controller
 
         try {
             $file = $request->file('excel_file');
-            
-            // Import với heading row để lấy header
+
             $data = Excel::toArray([], $file)[0];
-            
-            // Lấy header
+
             $headers = array_shift($data);
-            
-            // Lấy tối đa 10 dòng để preview
+
             $previewData = array_slice($data, 0, 10);
-            
+
             $preview = [];
             $validationErrors = [];
-            
+
             foreach ($previewData as $rowIndex => $row) {
                 if (empty(array_filter($row))) {
                     continue;
@@ -584,29 +576,29 @@ class BookController extends Controller
 
                 $bookData = $this->mapExcelRowToBookData($row);
                 $validationResult = $this->validateBookData($bookData, $rowIndex + 2);
-                
+
                 $preview[] = [
                     'row' => $rowIndex + 2,
                     'data' => $bookData,
                     'valid' => $validationResult['valid']
                 ];
-                
+
                 if (!$validationResult['valid']) {
                     $validationErrors[] = $validationResult['error'];
                 }
             }
 
-            return response()->json([
+            return $this->json([
                 'status' => 'success',
                 'headers' => $headers,
                 'preview_data' => $preview,
-                'total_rows' => count($data) + count($previewData), // +previewData vì đã shift header
+                'total_rows' => count($data) + count($previewData),
                 'preview_rows' => count($preview),
                 'validation_errors' => $validationErrors
             ]);
 
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->json([
                 'status' => 'error',
                 'message' => 'Lỗi khi xử lý file: ' . $e->getMessage()
             ], 500);
@@ -621,7 +613,7 @@ class BookController extends Controller
         try {
             $data = [
                 'authors' => Author::select('id', 'name')->orderBy('name')->get(),
-                'categories' => Category::select('id', 'name')->orderBy('name')->get(), 
+                'categories' => Category::select('id', 'name')->orderBy('name')->get(),
                 'publishers' => Publisher::select('id', 'name')->orderBy('name')->get(),
                 'book_types' => [
                     ['value' => 'paper', 'label' => 'Sách giấy'],
@@ -629,19 +621,20 @@ class BookController extends Controller
                 ]
             ];
 
-            return response()->json([
+            return $this->json([
                 'status' => 'success',
                 'message' => 'Lấy dữ liệu dropdown thành công',
                 'data' => $data
             ]);
 
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->json([
                 'status' => 'error',
                 'message' => 'Lỗi khi lấy dữ liệu dropdown: ' . $e->getMessage()
             ], 500);
         }
     }
+
     public function getImportStats()
     {
         try {
@@ -657,13 +650,13 @@ class BookController extends Controller
                 ]
             ];
 
-            return response()->json([
+            return $this->json([
                 'status' => 'success',
                 'data' => $stats
             ]);
 
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->json([
                 'status' => 'error',
                 'message' => 'Lỗi khi lấy thống kê: ' . $e->getMessage()
             ], 500);
@@ -676,16 +669,16 @@ class BookController extends Controller
     private function mapExcelRowToBookData($row)
     {
         return [
-            'title' => trim($row[0] ?? ''),                    // Cột A
-            'description' => trim($row[1] ?? ''),              // Cột B
-            'author_id' => $this->parseIdFromDropdown($row[2] ?? ''),     // Cột C - ID tác giả
-            'category_id' => $this->parseIdFromDropdown($row[3] ?? ''),   // Cột D - ID thể loại
-            'publisher_id' => $this->parseIdFromDropdown($row[4] ?? ''),  // Cột E - ID nhà xuất bản
-            'price' => $this->parseNumber($row[5] ?? 0),       // Cột F
-            'discount_price' => $this->parseNumber($row[6] ?? null), // Cột G
-            'stock' => (int)($row[7] ?? 0),                    // Cột H
-            'is_physical' => $this->parseBookType($row[8] ?? ''), // Cột I
-            'cover_image' => trim($row[9] ?? ''),              // Cột J
+            'title' => trim($row[0] ?? ''),
+            'description' => trim($row[1] ?? ''),
+            'author_id' => $this->parseIdFromDropdown($row[2] ?? ''),
+            'category_id' => $this->parseIdFromDropdown($row[3] ?? ''),
+            'publisher_id' => $this->parseIdFromDropdown($row[4] ?? ''),
+            'price' => $this->parseNumber($row[5] ?? 0),
+            'discount_price' => $this->parseNumber($row[6] ?? null),
+            'stock' => (int)($row[7] ?? 0),
+            'is_physical' => $this->parseBookType($row[8] ?? ''),
+            'cover_image' => trim($row[9] ?? ''),
         ];
     }
 
@@ -703,7 +696,6 @@ class BookController extends Controller
         if (empty($data['author_id']) || $data['author_id'] <= 0) {
             $errors[] = 'ID tác giả không hợp lệ';
         } else {
-            // Kiểm tra author có tồn tại không
             if (!Author::find($data['author_id'])) {
                 $errors[] = 'Không tìm thấy tác giả với ID: ' . $data['author_id'];
             }
@@ -712,7 +704,6 @@ class BookController extends Controller
         if (empty($data['category_id']) || $data['category_id'] <= 0) {
             $errors[] = 'ID thể loại không hợp lệ';
         } else {
-            // Kiểm tra category có tồn tại không
             if (!Category::find($data['category_id'])) {
                 $errors[] = 'Không tìm thấy thể loại với ID: ' . $data['category_id'];
             }
@@ -721,7 +712,6 @@ class BookController extends Controller
         if (empty($data['publisher_id']) || $data['publisher_id'] <= 0) {
             $errors[] = 'ID nhà xuất bản không hợp lệ';
         } else {
-            // Kiểm tra publisher có tồn tại không
             if (!Publisher::find($data['publisher_id'])) {
                 $errors[] = 'Không tìm thấy nhà xuất bản với ID: ' . $data['publisher_id'];
             }
@@ -760,10 +750,9 @@ class BookController extends Controller
         if (empty($value)) {
             return null;
         }
-        
-        // Xóa ký tự không phải số
+
         $cleaned = preg_replace('/[^\d.]/', '', $value);
-        
+
         return is_numeric($cleaned) ? (float)$cleaned : 0;
     }
 
@@ -773,14 +762,14 @@ class BookController extends Controller
     private function parseBookType($value)
     {
         $value = strtolower(trim($value));
-        
+
         if (in_array($value, ['paper', 'giấy', 'sách giấy', '1'])) {
             return 1;
         } elseif (in_array($value, ['ebook', 'điện tử', 'sách điện tử', '0'])) {
             return 0;
         }
-        
-        return 1; // Default là sách giấy
+
+        return 1;
     }
 
     /**
@@ -789,63 +778,23 @@ class BookController extends Controller
     private function parseIdFromDropdown($value)
     {
         $value = trim($value);
-        
-        // Nếu là số thuần túy
+
         if (is_numeric($value)) {
             return (int)$value;
         }
-        
-        // Nếu format "ID - Name", lấy phần ID
+
         if (strpos($value, ' - ') !== false) {
             $parts = explode(' - ', $value);
             $id = trim($parts[0]);
             return is_numeric($id) ? (int)$id : 0;
         }
-        
-        // Nếu format "ID-Name" (không có khoảng trắng)
+
         if (strpos($value, '-') !== false) {
             $parts = explode('-', $value);
             $id = trim($parts[0]);
             return is_numeric($id) ? (int)$id : 0;
         }
-        
+
         return 0;
     }
-
-    /**
-     * METHODS KHÔNG CẦN DÙNG NỮA VÌ ĐÃ SỬ DỤNG ID TRỰC TIẾP
-     */
-    
-    // /**
-    //  * Tìm hoặc tạo tác giả
-    //  */
-    // private function findOrCreateAuthor($name)
-    // {
-    //     return Author::firstOrCreate(
-    //         ['name' => $name],
-    //         ['bio' => '', 'avatar' => '']
-    //     );
-    // }
-
-    // /**
-    //  * Tìm hoặc tạo thể loại
-    //  */
-    // private function findOrCreateCategory($name)
-    // {
-    //     return Category::firstOrCreate(
-    //         ['name' => $name],
-    //         ['description' => '']
-    //     );
-    // }
-
-    // /**
-    //  * Tìm hoặc tạo nhà xuất bản
-    //  */
-    // private function findOrCreatePublisher($name)
-    // {
-    //     return Publisher::firstOrCreate(
-    //         ['name' => $name],
-    //         ['description' => '', 'address' => '', 'phone' => '', 'email' => '']
-    //     );
-    // }
 }
