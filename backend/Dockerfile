@@ -1,62 +1,65 @@
 FROM php:8.2-apache
 
-# 1) Enable Apache modules
+# Enable Apache modules
 RUN a2enmod rewrite headers
 
-# 2) Install system dependencies + PHP extensions
+# Install dependencies
 RUN apt-get update && apt-get install -y \
     git unzip curl ca-certificates \
-    libzip-dev \
-    libicu-dev \
-    libonig-dev \
+    libzip-dev libicu-dev libonig-dev \
     libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
-    fontconfig \
-    nodejs npm \
+    fontconfig nodejs npm \
  && docker-php-ext-configure gd --with-freetype --with-jpeg \
  && docker-php-ext-install pdo pdo_mysql zip mbstring intl bcmath gd \
  && rm -rf /var/lib/apt/lists/*
 
-# 3) Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# 4) Copy composer files and install dependencies
+# Copy composer files
 COPY composer.json composer.lock ./
-RUN composer install \
-    --no-dev \
-    --prefer-dist \
-    --no-interaction \
-    --no-progress \
-    --no-scripts \
-    --optimize-autoloader
+RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --no-scripts
 
-# 5) Copy application files
+# Copy application
 COPY . .
 
-# 6) Run post-install scripts
-RUN composer dump-autoload --optimize \
- && php artisan package:discover --ansi || true
+# Run composer scripts
+RUN composer dump-autoload --optimize
 
-# 7) Install and build frontend assets
+# Build assets
 RUN npm ci || npm install
 RUN npm run build
 
-# 8) Set permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
- && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+# Set permissions
+RUN chown -R www-data:www-data storage bootstrap/cache \
+ && chmod -R 775 storage bootstrap/cache
 
-# 9) Configure Apache to point to Laravel's public directory
-RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf \
- && sed -i 's|/var/www/|/var/www/html/public|g' /etc/apache2/apache2.conf
+# Laravel optimizations - QUAN TRỌNG!
+RUN php artisan config:cache || true
+RUN php artisan route:cache || true
+RUN php artisan view:cache || true
 
-# 10) Set Apache to listen on PORT environment variable
-RUN echo "Listen \${PORT}" > /etc/apache2/ports.conf
+# Apache config
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
-# 11) Update virtual host to use PORT
-RUN sed -i 's|<VirtualHost \*:80>|<VirtualHost *:${PORT}>|g' /etc/apache2/sites-available/000-default.conf
+# Laravel directory config
+RUN echo '<Directory /var/www/html/public>\n\
+    Options Indexes FollowSymLinks\n\
+    AllowOverride All\n\
+    Require all granted\n\
+</Directory>' > /etc/apache2/conf-available/laravel.conf \
+ && a2enconf laravel
+
+# Dynamic port
+RUN echo 'Listen ${PORT}' > /etc/apache2/ports.conf
+RUN sed -i 's/<VirtualHost \*:80>/<VirtualHost *:${PORT}>/g' /etc/apache2/sites-available/000-default.conf
 
 EXPOSE ${PORT}
 
-# 12) Start Apache
-CMD ["apache2-foreground"]
+# Startup script
+CMD sed -i "s/Listen \${PORT}/Listen $PORT/g" /etc/apache2/ports.conf && \
+    sed -i "s/<VirtualHost \*:\${PORT}>/<VirtualHost *:$PORT>/g" /etc/apache2/sites-available/000-default.conf && \
+    apache2-foreground
