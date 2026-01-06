@@ -24,6 +24,43 @@ class BookController extends Controller
         return response()->json($data, $status, $headers, JSON_UNESCAPED_UNICODE);
     }
 
+    /**
+     * Helper: chuyển HTML -> plain text (bỏ <p>, <table>, ...)
+     */
+    private function plainText(?string $html): string
+    {
+        if (!$html) return '';
+
+        // Bỏ tag
+        $text = strip_tags($html);
+
+        // Decode entity (&nbsp; &amp; ...)
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        // Gom khoảng trắng cho gọn
+        $text = preg_replace('/[ \t]+/', ' ', $text);
+
+        // Chuẩn hoá xuống dòng
+        $text = preg_replace("/\r\n|\r|\n/", "\n", $text);
+
+        return trim($text);
+    }
+
+    /**
+     * Helper: strip HTML cho description trong collection
+     */
+    private function sanitizeBooksDescription($collection)
+    {
+        if (!$collection) return $collection;
+
+        return $collection->transform(function ($b) {
+            if (isset($b->description)) {
+                $b->description = $this->plainText($b->description);
+            }
+            return $b;
+        });
+    }
+
     public function index()
     {
         // 5 sách giấy được đánh giá cao nhiều nhất
@@ -53,6 +90,12 @@ class BookController extends Controller
             ->orderByDesc('created_at')
             ->take(20)
             ->get();
+
+        // ✅ strip HTML description
+        $this->sanitizeBooksDescription($topRatedBooks);
+        $this->sanitizeBooksDescription($topViewedBooks);
+        $this->sanitizeBooksDescription($latestPaperBooks);
+        $this->sanitizeBooksDescription($latestEbooks);
 
         return $this->json([
             'status' => 'success',
@@ -240,6 +283,10 @@ class BookController extends Controller
         // Lấy kết quả
         if ($request->has('all') && $request->all == 1) {
             $books = $query->get();
+
+            // ✅ strip HTML description
+            $this->sanitizeBooksDescription($books);
+
             $result = [
                 'status' => 'success',
                 'data' => $books,
@@ -247,9 +294,19 @@ class BookController extends Controller
             ];
         } else {
             $books = $query->paginate($limit);
+
+            // ✅ strip HTML description (items của paginator)
+            $items = collect($books->items());
+            $items = $items->map(function ($b) {
+                if (isset($b->description)) {
+                    $b->description = $this->plainText($b->description);
+                }
+                return $b;
+            })->values();
+
             $result = [
                 'status' => 'success',
-                'data' => $books->items(),
+                'data' => $items,
                 'pagination' => [
                     'current_page' => $books->currentPage(),
                     'last_page' => $books->lastPage(),
@@ -334,12 +391,15 @@ class BookController extends Controller
             return $this->json(['message' => 'Book not found1'], 404);
         }
 
+        // ✅ strip HTML description
+        $desc = $this->plainText($book->description);
+
         if ($book->is_physical == 1) {
             // Sách giấy
             return $this->json([
                 'id' => $book->id,
                 'title' => $book->title,
-                'description' => $book->description,
+                'description' => $desc,
                 'cover_image' => $book->cover_image,
                 'author' => $book->author ? [
                     'id' => $book->author->id,
@@ -370,7 +430,7 @@ class BookController extends Controller
             return $this->json([
                 'id' => $book->id,
                 'title' => $book->title,
-                'description' => $book->description,
+                'description' => $desc,
                 'cover_image' => $book->cover_image,
                 'author' => $book->author ? [
                     'id' => $book->author->id,
@@ -397,7 +457,7 @@ class BookController extends Controller
     // view update
     public function increaseView($id)
     {
-        $book = Book::find($id);
+        $book = \App\Models\Book::find($id);
 
         if (!$book) {
             return $this->json([
@@ -406,6 +466,7 @@ class BookController extends Controller
             ], 404);
         }
 
+        // Tăng view lên 1
         $book->increment('views');
 
         return $this->json([
@@ -420,8 +481,9 @@ class BookController extends Controller
      */
     public function importBooks(Request $request)
     {
+        // Validate file upload
         $validator = Validator::make($request->all(), [
-            'excel_file' => 'required|file|mimes:xlsx,xls,csv|max:10240',
+            'excel_file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
         ]);
 
         if ($validator->fails()) {
@@ -435,7 +497,10 @@ class BookController extends Controller
         try {
             $file = $request->file('excel_file');
 
-            $data = Excel::toArray([], $file)[0];
+            // Import data using Maatwebsite Excel
+            $data = Excel::toArray([], $file)[0]; // Lấy sheet đầu tiên
+
+            // Bỏ qua dòng header (dòng đầu tiên)
             array_shift($data);
 
             $successCount = 0;
@@ -447,12 +512,15 @@ class BookController extends Controller
 
             foreach ($data as $rowIndex => $row) {
                 try {
+                    // Kiểm tra nếu dòng trống
                     if (empty(array_filter($row))) {
                         continue;
                     }
 
+                    // Map dữ liệu từ Excel
                     $bookData = $this->mapExcelRowToBookData($row);
 
+                    // Validate dữ liệu
                     $validationResult = $this->validateBookData($bookData, $rowIndex + 2);
 
                     if (!$validationResult['valid']) {
@@ -461,6 +529,7 @@ class BookController extends Controller
                         continue;
                     }
 
+                    // Kiểm tra trùng lặp
                     $existingBook = Book::where('title', $bookData['title'])->first();
                     if ($existingBook) {
                         $duplicates[] = [
@@ -471,6 +540,7 @@ class BookController extends Controller
                         continue;
                     }
 
+                    // Tạo sách mới với ID trực tiếp
                     Book::create([
                         'title' => $bookData['title'],
                         'description' => $bookData['description'],
@@ -509,6 +579,7 @@ class BookController extends Controller
                     'error_count' => $errorCount,
                     'duplicate_count' => count($duplicates)
                 ],
+
             ]);
 
         } catch (\Exception $e) {
@@ -528,6 +599,7 @@ class BookController extends Controller
     {
         try {
             $fileName = 'book_import_template_' . date('Y-m-d_H-i-s') . '.xlsx';
+
             return Excel::download(new BookTemplateExport(), $fileName);
 
         } catch (\Exception $e) {
@@ -560,10 +632,13 @@ class BookController extends Controller
         try {
             $file = $request->file('excel_file');
 
+            // Import với heading row để lấy header
             $data = Excel::toArray([], $file)[0];
 
+            // Lấy header
             $headers = array_shift($data);
 
+            // Lấy tối đa 10 dòng để preview
             $previewData = array_slice($data, 0, 10);
 
             $preview = [];
